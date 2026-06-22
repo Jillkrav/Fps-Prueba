@@ -1,0 +1,228 @@
+[gd_scene load_steps=2 format=3 uid="uid://cxofon4e0u7h"]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_main_menu"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.14, 0.18, 1.0)
+
+[node name="MenuPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="MenuPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 100.0
+offset_right = 200.0
+offset_bottom = 180.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 48
+text = "FPS SURVIVAL PROTO"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Buttons" type="VBoxContainer" parent="MenuPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -50.0
+offset_right = 150.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="BtnJugar" type="Button" parent="MenuPanel/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "JUGAR"
+
+[node name="BtnSalir" type="Button" parent="MenuPanel/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "SALIR"
+
+[node name="MapPanel" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="MapPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 80.0
+offset_right = 250.0
+offset_bottom = 150.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 36
+text = "SELECCIONAR MAPA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MapsGrid" type="HBoxContainer" parent="MapPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -100.0
+offset_right = 400.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="Map1" type="Button" parent="MapPanel/MapsGrid"]
+custom_minimum_size = Vector2(200, 150)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "MAPA 1
+(Laberíntico)"
+
+[node name="Map2" type="Button" parent="MapPanel/MapsGrid"]
+custom_minimum_size = Vector2(200, 150)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "MAPA 2
+(Columnas)"
+
+[node name="Map3" type="Button" parent="MapPanel/MapsGrid"]
+custom_minimum_size = Vector2(200, 150)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "MAPA 3
+(Arena Abierta)"
+
+[node name="BtnMapBack" type="Button" parent="MapPanel"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -100.0
+offset_right = 100.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "VOLVER"
+
+[node name="WeaponPanel" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="WeaponPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 80.0
+offset_right = 250.0
+offset_bottom = 150.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 36
+text = "SELECCIONAR ARMA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WeaponsGrid" type="HBoxContainer" parent="WeaponPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -100.0
+offset_right = 300.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 50
+alignment = 1
+
+[node name="BtnMetralleta" type="Button" parent="WeaponPanel/WeaponsGrid"]
+custom_minimum_size = Vector2(220, 150)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "METRALLETA
+(Fuego rápido,
+menos daño)"
+
+[node name="BtnEscopeta" type="Button" parent="WeaponPanel/WeaponsGrid"]
+custom_minimum_size = Vector2(220, 150)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "ESCOPETA
+(Fuego lento,
+ráfaga dispersa)"
+
+[node name="BtnWeaponBack" type="Button" parent="WeaponPanel"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -100.0
+offset_right = 100.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "VOLVER"
+
+[connection signal="pressed" from="MenuPanel/Buttons/BtnJugar" to="." method="_on_jugar_pressed"]
+[connection signal="pressed" from="MenuPanel/Buttons/BtnSalir" to="." method="_on_salir_pressed"]
+[connection signal="pressed" from="MapPanel/MapsGrid/Map1" to="." method="_on_map_selected" binds= ["res://scenes/maps/map_1.tscn"]]
+[connection signal="pressed" from="MapPanel/MapsGrid/Map2" to="." method="_on_map_selected" binds= ["res://scenes/maps/map_2.tscn"]]
+[connection signal="pressed" from="MapPanel/MapsGrid/Map3" to="." method="_on_map_selected" binds= ["res://scenes/maps/map_3.tscn"]]
+[connection signal="pressed" from="MapPanel/BtnMapBack" to="." method="_on_map_back_pressed"]
+[connection signal="pressed" from="WeaponPanel/WeaponsGrid/BtnMetralleta" to="." method="_on_weapon_selected" binds= ["metralleta"]]
+[connection signal="pressed" from="WeaponPanel/WeaponsGrid/BtnEscopeta" to="." method="_on_weapon_selected" binds= ["escopeta"]]
+[connection signal="pressed" from="WeaponPanel/BtnWeaponBack" to="." method="_on_weapon_back_pressed"]

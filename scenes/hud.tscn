@@ -1,0 +1,215 @@
+[gd_scene load_steps=4 format=3 uid="uid://bix4g2asdxsyg"]
+
+[ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
+[ext_resource type="Texture2D" path="res://icon.svg" id="2_crosshair"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hud"]
+
+[node name="HUDLayer" type="CanvasLayer"]
+process_mode = 3
+script = ExtResource("1_hud")
+
+[node name="HUD" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HUD"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="HUD/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 8
+mouse_filter = 2
+theme_override_constants/separation = 15
+
+[node name="SpawnLabel" type="Label" parent="HUD/MarginContainer/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Siguiente oleada en: 20.0s"
+
+[node name="AmmoContainer" type="HBoxContainer" parent="HUD/MarginContainer/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+mouse_filter = 2
+
+[node name="WeaponLabel" type="Label" parent="HUD/MarginContainer/VBox/AmmoContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Metralleta"
+
+[node name="AmmoLabel" type="Label" parent="HUD/MarginContainer/VBox/AmmoContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "100 / 100"
+
+[node name="HealthBar" type="ProgressBar" parent="HUD/MarginContainer/VBox"]
+custom_minimum_size = Vector2(300, 30)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 1
+value = 100.0
+show_percentage = false
+
+[node name="Label" type="Label" parent="HUD/MarginContainer/VBox/HealthBar"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -11.5
+offset_right = 100.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "VIDA: 100 / 100"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Crosshair" type="TextureRect" parent="HUD"]
+modulate = Color(1, 1, 1, 0.6)
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -6.0
+offset_top = -6.0
+offset_right = 6.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_crosshair")
+expand_mode = 1
+
+[node name="DeathScreen" type="Panel" parent="."]
+visible = false
+self_modulate = Color(1, 0, 0, 0.4)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_hud")
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="DeathScreen"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -120.0
+offset_right = 200.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 48
+text = "HAS MUERTO"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Buttons" type="VBoxContainer" parent="DeathScreen"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = 20.0
+offset_right = 120.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="BtnReintentar" type="Button" parent="DeathScreen/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "REINTENTAR"
+
+[node name="BtnMenu" type="Button" parent="DeathScreen/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "MENU PRINCIPAL"
+
+[node name="PauseScreen" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_hud")
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="PauseScreen"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -120.0
+offset_right = 200.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 48
+text = "PAUSA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Buttons" type="VBoxContainer" parent="PauseScreen"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = 20.0
+offset_right = 120.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="BtnContinuar" type="Button" parent="PauseScreen/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "CONTINUAR"
+
+[node name="BtnMenu" type="Button" parent="PauseScreen/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "MENU PRINCIPAL"
+
+[connection signal="pressed" from="DeathScreen/Buttons/BtnReintentar" to="." method="_on_retry_pressed"]
+[connection signal="pressed" from="DeathScreen/Buttons/BtnMenu" to="." method="_on_menu_pressed"]
+[connection signal="pressed" from="PauseScreen/Buttons/BtnContinuar" to="." method="_on_resume_pressed"]
+[connection signal="pressed" from="PauseScreen/Buttons/BtnMenu" to="." method="_on_menu_pressed"]
