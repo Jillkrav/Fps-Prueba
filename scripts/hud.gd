@@ -7,17 +7,19 @@ extends CanvasLayer
 @onready var next_spawn_label: Label = $HUD/MarginContainer/VBox/SpawnLabel
 @onready var crosshair: TextureRect = $HUD/Crosshair
 
-# Paneles de Fin de Juego
+# Paneles de fin de juego
 @onready var death_screen: Panel = $DeathScreen
 @onready var pause_screen: Panel = $PauseScreen
+
+# Menu dev (Q)
+@onready var dev_menu: Control = $DevMenu
 
 var total_time_elapsed: float = 0.0
 
 func _ready() -> void:
 	death_screen.visible = false
 	pause_screen.visible = false
-	
-	# Buscar si el jugador existe para conectarnos a sus señales
+
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player:
 		connect_player_signals(player)
@@ -32,7 +34,6 @@ func update_spawn_timer(time_left: float) -> void:
 	next_spawn_label.text = "Siguiente oleada en: " + str(snappedf(time_left, 0.1)) + "s"
 
 func _process(_delta: float) -> void:
-	# Manejar pantalla de pausa rápida si se pulsa Escape
 	if Input.is_action_just_pressed("ui_cancel"):
 		toggle_pause()
 
