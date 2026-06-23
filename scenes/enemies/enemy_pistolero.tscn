@@ -1,33 +1,13 @@
-[gd_scene load_steps=5 format=3 uid="uid://dmj6uy7t2r6o2"]
+[gd_scene load_steps=3 format=3 uid="uid://dmj6uy7t2r6o2"]
 
-[ext_resource type="Script" path="res://scripts/enemy_pistolero.gd" id="1_pistolero"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/enemy_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/enemy_pistolero.gd" id="2_pistolero"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_enemy"]
-radius = 0.4
-height = 1.8
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_enemy"]
-radius = 0.4
-height = 1.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_enemy"]
+[sub_resource type="StandardMaterial3D" id="Mat_pistolero"]
 albedo_color = Color(0.9, 0.9, 0.1, 1)
 
-[node name="EnemyPistolero" type="CharacterBody3D" groups=["enemies"]]
-collision_layer = 4
-collision_mask = 15
-script = ExtResource("1_pistolero")
+[node name="EnemyPistolero" instance=ExtResource("1_base")]
+script = ExtResource("2_pistolero")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-shape = SubResource("CapsuleShape3D_enemy")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-mesh = SubResource("CapsuleMesh_enemy")
-surface_material_override/0 = SubResource("StandardMaterial3D_enemy")
-
-[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-target_desired_distance = 6.0
-path_max_distance = 3.0
-avoidance_enabled = true
+[node name="MeshInstance3D" parent="." index="1"]
+surface_material_override/0 = SubResource("Mat_pistolero")
