@@ -56,6 +56,15 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
 
 # ─────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────
+
+## Devuelve true si el jugador está invisible para los NPCs.
+func _player_is_invisible() -> bool:
+	var player: Node = get_tree().get_first_node_in_group("player")
+	return player != null and player.is_in_group("invisible_to_npc")
+
+# ─────────────────────────────────────────
 # CICLO DE VIDA
 # ─────────────────────────────────────────
 
@@ -68,24 +77,16 @@ func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
 
-	# Refrescar objetivo si murió o es inválido
+	# Refrescar objetivo si murió, es inválido, o el jugador cambió de visibilidad
 	if target == null or not is_instance_valid(target) \
-		or (target.has_method("is_dead") and target.get("is_dead") == true):
+		or (target.has_method("is_dead") and target.get("is_dead") == true) \
+		or (target.is_in_group("player") and _player_is_invisible()):
 		_pick_target()
 
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = 0.0
-
-	# Invisible: solo los del Equipo DOS se detienen ante jugador invisible
-	if equipo == Equipo.DOS:
-		var player: Node = get_tree().get_first_node_in_group("player")
-		if player and player.is_in_group("invisible_to_npc"):
-			velocity.x = move_toward(velocity.x, 0, speed)
-			velocity.z = move_toward(velocity.z, 0, speed)
-			move_and_slide()
-			return
 
 	if target and is_instance_valid(target):
 		var target_pos: Vector3 = target.global_transform.origin
@@ -150,22 +151,22 @@ func es_enemigo_de(nodo: Node) -> bool:
 func _pick_target() -> void:
 	target = null
 	var todos_npcs: Array = get_tree().get_nodes_in_group("npcs")
+	var jugador_invisible: bool = _player_is_invisible()
 
 	match equipo:
 		Equipo.DOS:
-			# Busca el objetivo más cercano del equipo rival:
-			# puede ser el jugador o un NPC del Equipo UNO
 			var closest_dist: float = INF
 
-			# Considerar al jugador como objetivo
-			var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
-			if player and not player.get("is_dead"):
-				var d: float = global_transform.origin.distance_to(player.global_transform.origin)
-				if d < closest_dist:
-					closest_dist = d
-					target = player
+			# Solo considera al jugador si NO está invisible
+			if not jugador_invisible:
+				var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+				if player and not player.get("is_dead"):
+					var d: float = global_transform.origin.distance_to(player.global_transform.origin)
+					if d < closest_dist:
+						closest_dist = d
+						target = player
 
-			# Considerar NPCs del Equipo UNO como objetivos
+			# Siempre considera NPCs del Equipo UNO
 			for node in todos_npcs:
 				if node == self:
 					continue
@@ -177,6 +178,7 @@ func _pick_target() -> void:
 
 		Equipo.UNO:
 			# Busca el NPC del Equipo DOS más cercano
+			# (los aliados no atacan al jugador, solo defienden contra enemigos)
 			var closest_dist: float = INF
 			for node in todos_npcs:
 				if node == self:
