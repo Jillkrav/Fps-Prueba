@@ -1,7 +1,6 @@
 extends CharacterBody3D
 class_name Player
 
-# Señales para comunicar cambios en la HUD (desacoplada)
 signal health_changed(current: float, max_val: float)
 signal weapon_changed(weapon_name: String, current_ammo: int, max_ammo: int)
 signal ammo_changed(current_ammo: int, max_ammo: int)
@@ -12,14 +11,10 @@ signal player_died()
 @export var jump_velocity: float = 4.5
 @export var mouse_sensitivity: float = 0.002
 
-# Estado de salud
 var current_health: float = 100.0
 var is_dead: bool = false
-
-# Gravedad
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-# Nodos
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
@@ -78,11 +73,6 @@ func _process(_delta: float) -> void:
 	if is_dead:
 		return
 
-	# Abrir/cerrar menu dev con Q
-	if Input.is_action_just_pressed("dev_menu"):
-		_toggle_dev_menu()
-		return
-
 	if Input.is_action_just_pressed("ui_cancel"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -95,14 +85,6 @@ func _process(_delta: float) -> void:
 
 	if Input.is_physical_key_pressed(KEY_F) or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		shoot()
-
-func _toggle_dev_menu() -> void:
-	var hud: CanvasLayer = get_tree().get_first_node_in_group("hud") as CanvasLayer
-	if not hud:
-		return
-	var dev_menu: Control = hud.get_node_or_null("DevMenu")
-	if dev_menu and dev_menu.has_method("toggle_menu"):
-		dev_menu.toggle_menu()
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
