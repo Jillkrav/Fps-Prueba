@@ -1,9 +1,22 @@
-[gd_scene load_steps=4 format=3 uid="uid://bix4g2asdxsyg"]
+[gd_scene load_steps=5 format=3 uid="uid://bix4g2asdxsyg"]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Texture2D" path="res://icon.svg" id="2_crosshair"]
+[ext_resource type="Script" path="res://scripts/dev_menu.gd" id="3_devmenu"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.05, 0.05, 0.08, 0.92)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.3, 0.4, 1)
 
 [node name="HUDLayer" type="CanvasLayer"]
 process_mode = 3
@@ -208,6 +221,138 @@ text = "CONTINUAR"
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "MENU PRINCIPAL"
+
+[node name="DevMenu" type="Control" parent="."]
+script = ExtResource("3_devmenu")
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -200.0
+offset_right = 150.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelPrincipal" type="Panel" parent="DevMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="DevMenu/PanelPrincipal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+offset_left = 16
+offset_top = 16
+offset_right = -16
+offset_bottom = -16
+
+[node name="LblTitulo" type="Label" parent="DevMenu/PanelPrincipal/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "[DEV MENU]"
+horizontal_alignment = 1
+
+[node name="BtnInvisible" type="Button" parent="DevMenu/PanelPrincipal/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Invisible: OFF"
+
+[node name="BtnGenerar" type="Button" parent="DevMenu/PanelPrincipal/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Generar NPC"
+
+[node name="LblStatus" type="Label" parent="DevMenu/PanelPrincipal/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = ""
+horizontal_alignment = 1
+
+[node name="PanelNPC" type="Panel" parent="DevMenu"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="DevMenu/PanelNPC"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+offset_left = 16
+offset_top = 16
+offset_right = -16
+offset_bottom = -16
+
+[node name="LblTitulo" type="Label" parent="DevMenu/PanelNPC/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Configurar NPC"
+horizontal_alignment = 1
+
+[node name="GridAtributos" type="GridContainer" parent="DevMenu/PanelNPC/VBox"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 8
+
+[node name="LblRelacion" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Relación:"
+
+[node name="OptRelacion" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+
+[node name="LblExperiencia" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Experiencia:"
+
+[node name="OptExperiencia" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+
+[node name="LblArma" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Arma:"
+
+[node name="OptArma" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+
+[node name="BtnSpawn" type="Button" parent="DevMenu/PanelNPC/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Spawnear NPC"
+
+[node name="BtnVolver" type="Button" parent="DevMenu/PanelNPC/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Volver"
 
 [connection signal="pressed" from="DeathScreen/Buttons/BtnReintentar" to="." method="_on_retry_pressed"]
 [connection signal="pressed" from="DeathScreen/Buttons/BtnMenu" to="." method="_on_menu_pressed"]

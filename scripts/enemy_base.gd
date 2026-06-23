@@ -1,12 +1,49 @@
 extends CharacterBody3D
 class_name EnemyBase
 
+# ─────────────────────────────────────────
+# ENUMS
+# ─────────────────────────────────────────
+
+enum Sexo        { MASCULINO, FEMENINO }
+enum Relacion    { ENEMIGO, NEUTRAL, AMIGABLE }
+enum Experiencia { BAJA, MEDIA, ALTA }
+enum Estado {
+	IDLE,
+	GUARDIA,
+	ALERTA,
+	BUSCANDO,
+	ESCONDIENDO,
+	SIGUIENDO,
+	ATACANDO
+}
+
+# ─────────────────────────────────────────
+# IDENTIDAD
+# ─────────────────────────────────────────
+
 @export var enemy_name: String = "Enemigo"
+@export var especie: String = ""
+@export var sexo: Sexo = Sexo.MASCULINO
+@export var relacion: Relacion = Relacion.ENEMIGO
+@export var experiencia: Experiencia = Experiencia.MEDIA
+@export var skin_path: String = ""
+@export var voz_path: String = ""
+@export var estado: Estado = Estado.IDLE
+
+# ─────────────────────────────────────────
+# COMBATE
+# ─────────────────────────────────────────
+
 @export var max_health: float = 30.0
 @export var speed: float = 3.0
 @export var damage: float = 10.0
 @export var attack_range: float = 2.0
 @export var attack_rate: float = 1.0
+
+# ─────────────────────────────────────────
+# VARIABLES INTERNAS
+# ─────────────────────────────────────────
 
 var current_health: float = 30.0
 var target_player: Player = null
@@ -16,6 +53,10 @@ var is_dead: bool = false
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
+
+# ─────────────────────────────────────────
+# CICLO DE VIDA
+# ─────────────────────────────────────────
 
 func _ready() -> void:
 	current_health = max_health
@@ -31,6 +72,13 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = 0.0
+
+	# Si el jugador es invisible, el NPC no hace nada
+	if target_player and target_player.is_in_group("invisible_to_npc"):
+		velocity.x = move_toward(velocity.x, 0, speed)
+		velocity.z = move_toward(velocity.z, 0, speed)
+		move_and_slide()
+		return
 
 	if target_player and not target_player.is_dead:
 		var target_pos: Vector3 = target_player.global_transform.origin
@@ -62,10 +110,18 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+# ─────────────────────────────────────────
+# MOVIMIENTO
+# ─────────────────────────────────────────
+
 func look_at_target_flat(target_pos: Vector3) -> void:
 	var flat_pos: Vector3 = Vector3(target_pos.x, global_transform.origin.y, target_pos.z)
 	if flat_pos.distance_to(global_transform.origin) > 0.1:
 		look_at(flat_pos, Vector3.UP)
+
+# ─────────────────────────────────────────
+# COMBATE
+# ─────────────────────────────────────────
 
 func attempt_attack() -> void:
 	var current_time: int = Time.get_ticks_msec()
@@ -74,7 +130,6 @@ func attempt_attack() -> void:
 		last_attack_time = current_time
 		perform_attack()
 
-# Sobreescribir en clases hijas
 func perform_attack() -> void:
 	if target_player and target_player.has_method("take_damage"):
 		target_player.take_damage(damage)
@@ -98,7 +153,14 @@ func flash_red() -> void:
 			var timer: SceneTreeTimer = get_tree().create_timer(0.1)
 			timer.timeout.connect(func() -> void: mat.albedo_color = orig_color)
 
-# Laser de debug compartido — color por parametro para diferenciarlo por tipo de NPC
+func die() -> void:
+	is_dead = true
+	queue_free()
+
+# ─────────────────────────────────────────
+# DEBUG
+# ─────────────────────────────────────────
+
 func draw_debug_laser(start: Vector3, end: Vector3, color: Color = Color.WHITE) -> void:
 	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 	var immediate_mesh: ImmediateMesh = ImmediateMesh.new()
@@ -118,7 +180,3 @@ func draw_debug_laser(start: Vector3, end: Vector3, color: Color = Color.WHITE) 
 
 	var timer: SceneTreeTimer = get_tree().create_timer(0.08)
 	timer.timeout.connect(func() -> void: mesh_instance.queue_free())
-
-func die() -> void:
-	is_dead = true
-	queue_free()

@@ -6,18 +6,15 @@ extends CanvasLayer
 @onready var weapon_label: Label = $HUD/MarginContainer/VBox/AmmoContainer/WeaponLabel
 @onready var next_spawn_label: Label = $HUD/MarginContainer/VBox/SpawnLabel
 @onready var crosshair: TextureRect = $HUD/Crosshair
-
-# Paneles de Fin de Juego
 @onready var death_screen: Panel = $DeathScreen
 @onready var pause_screen: Panel = $PauseScreen
-
-var total_time_elapsed: float = 0.0
+@onready var dev_menu: Control = $DevMenu
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	death_screen.visible = false
 	pause_screen.visible = false
-	
-	# Buscar si el jugador existe para conectarnos a sus señales
+
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player:
 		connect_player_signals(player)
@@ -32,7 +29,11 @@ func update_spawn_timer(time_left: float) -> void:
 	next_spawn_label.text = "Siguiente oleada en: " + str(snappedf(time_left, 0.1)) + "s"
 
 func _process(_delta: float) -> void:
-	# Manejar pantalla de pausa rápida si se pulsa Escape
+	# Detectar Q aqui: el HUDLayer tiene process_mode Always garantizado
+	if Input.is_action_just_pressed("dev_menu"):
+		dev_menu.toggle_menu()
+		return
+
 	if Input.is_action_just_pressed("ui_cancel"):
 		toggle_pause()
 
@@ -45,7 +46,6 @@ func toggle_pause() -> void:
 	else:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-# --- EVENTOS DEL JUGADOR ---
 func _on_player_health_changed(current: float, max_val: float) -> void:
 	health_bar.max_value = max_val
 	health_bar.value = current
@@ -62,7 +62,6 @@ func _on_player_died() -> void:
 	death_screen.visible = true
 	get_tree().paused = true
 
-# --- ACCIONES DE UI ---
 func _on_retry_pressed() -> void:
 	get_tree().paused = false
 	get_tree().reload_current_scene()
