@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://bwy09mvy72q6p"]
+
+[ext_resource type="PackedScene" path="res://scenes/npcs/npc_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/npc_melee.gd" id="2_melee"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_melee"]
+albedo_color = Color(1, 0.2, 0.2, 1)
+
+[node name="NpcMelee" instance=ExtResource("1_base")]
+script = ExtResource("2_melee")
+
+[node name="MeshInstance3D" parent="." index="1"]
+surface_material_override/0 = SubResource("Mat_melee")
