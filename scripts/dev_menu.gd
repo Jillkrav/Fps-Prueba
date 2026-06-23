@@ -1,17 +1,15 @@
-## Menu de desarrollo. Se activa con Q desde player.gd.
+## Menu de desarrollo. Se activa con Q desde hud.gd.
 ## Permite: ponerse invisible a los NPC y spawnear NPC configurados manualmente.
 extends Control
 
 # ─────────────────────────────────────────────────────
 # ESCENAS DE NPC DISPONIBLES
-# Para agregar un arma nueva: agregar entrada aquí + crear su escena.
 # ─────────────────────────────────────────────────────
 
 const NPC_SCENES: Dictionary = {
-	"melee":      "res://scenes/enemies/enemy_melee.tscn",
-	"pistolero":  "res://scenes/enemies/enemy_pistolero.tscn",
-	"escopetero": "res://scenes/enemies/enemy_escopetero.tscn",
-	# Futura metralleta: "metralleta": "res://scenes/enemies/enemy_metralleta.tscn",
+	"melee":      "res://scenes/npcs/npc_melee.tscn",
+	"pistolero":  "res://scenes/npcs/npc_pistolero.tscn",
+	"escopetero": "res://scenes/npcs/npc_escopetero.tscn",
 }
 
 # ─────────────────────────────────────────────────────
@@ -40,16 +38,15 @@ var is_invisible: bool = false
 # ─────────────────────────────────────────────────────
 
 func _ready() -> void:
-	# Asegurar que este nodo siempre procese aunque el juego esté pausado
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	opt_relacion.add_item("Enemigo",  EnemyBase.Relacion.ENEMIGO)
-	opt_relacion.add_item("Neutral",  EnemyBase.Relacion.NEUTRAL)
-	opt_relacion.add_item("Amigable", EnemyBase.Relacion.AMIGABLE)
+	opt_relacion.add_item("Enemigo",  NpcBase.Relacion.ENEMIGO)
+	opt_relacion.add_item("Neutral",  NpcBase.Relacion.NEUTRAL)
+	opt_relacion.add_item("Amigable", NpcBase.Relacion.AMIGABLE)
 
-	opt_experiencia.add_item("Baja",  EnemyBase.Experiencia.BAJA)
-	opt_experiencia.add_item("Media", EnemyBase.Experiencia.MEDIA)
-	opt_experiencia.add_item("Alta",  EnemyBase.Experiencia.ALTA)
+	opt_experiencia.add_item("Baja",  NpcBase.Experiencia.BAJA)
+	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
+	opt_experiencia.add_item("Alta",  NpcBase.Experiencia.ALTA)
 
 	for arma_key in NPC_SCENES.keys():
 		opt_arma.add_item(arma_key.capitalize())
@@ -64,14 +61,13 @@ func _ready() -> void:
 	btn_volver.pressed.connect(_on_volver_pressed)
 
 # ─────────────────────────────────────────────────────
-# TOGGLE DEL MENU (llamado desde player.gd)
+# TOGGLE DEL MENU
 # ─────────────────────────────────────────────────────
 
 func toggle_menu() -> void:
 	visible = !visible
 	panel_npc.visible = false
 	panel_principal.visible = true
-
 	if visible:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:
@@ -113,13 +109,13 @@ func _on_spawn_pressed() -> void:
 		push_error("DevMenu: no se pudo cargar la escena: " + scene_path)
 		return
 
-	var npc: EnemyBase = packed.instantiate() as EnemyBase
+	var npc: NpcBase = packed.instantiate() as NpcBase
 	if not npc:
-		push_error("DevMenu: la escena no es un EnemyBase: " + scene_path)
+		push_error("DevMenu: la escena no es un NpcBase: " + scene_path)
 		return
 
-	npc.relacion    = relacion_id as EnemyBase.Relacion
-	npc.experiencia = experiencia_id as EnemyBase.Experiencia
+	npc.relacion    = relacion_id as NpcBase.Relacion
+	npc.experiencia = experiencia_id as NpcBase.Experiencia
 
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if not player:
@@ -135,6 +131,7 @@ func _on_spawn_pressed() -> void:
 	world.add_child(npc)
 	npc.global_transform.origin = spawn_pos
 
-	lbl_status.text = "NPC spawneado: " + arma_key.capitalize()
+	lbl_status.text = "NPC spawneado: " + arma_key.capitalize() \
+		+ " (" + opt_relacion.get_item_text(opt_relacion.get_selected()) + ")"
 	panel_npc.visible = false
 	panel_principal.visible = true
