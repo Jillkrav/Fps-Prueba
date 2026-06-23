@@ -141,37 +141,44 @@ func _apply_team_color() -> void:
 
 ## Devuelve true si este NPC es enemigo del nodo indicado.
 func es_enemigo_de(nodo: Node) -> bool:
-	# El jugador siempre es Equipo UNO
 	if nodo.is_in_group("player"):
 		return equipo == Equipo.DOS
-	# Contra otro NPC, son enemigos si son de distinto equipo
 	if nodo is NpcBase:
 		return equipo != nodo.equipo
 	return false
 
 func _pick_target() -> void:
 	target = null
+	var todos_npcs: Array = get_tree().get_nodes_in_group("npcs")
+
 	match equipo:
 		Equipo.DOS:
-			# Equipo enemigo: ataca al jugador primero
-			var player: Node = get_tree().get_first_node_in_group("player")
-			if player:
-				target = player as Node3D
-			# Si no hay jugador, busca NPC del equipo UNO
-			if target == null:
-				var closest_dist: float = INF
-				for node in get_tree().get_nodes_in_group("npc"):
-					if node == self:
-						continue
-					if node is NpcBase and node.equipo == Equipo.UNO and not node.is_dead:
-						var d: float = global_transform.origin.distance_to(node.global_transform.origin)
-						if d < closest_dist:
-							closest_dist = d
-							target = node as Node3D
-		Equipo.UNO:
-			# Equipo aliado: busca NPC del equipo DOS más cercano
+			# Busca el objetivo más cercano del equipo rival:
+			# puede ser el jugador o un NPC del Equipo UNO
 			var closest_dist: float = INF
-			for node in get_tree().get_nodes_in_group("npc"):
+
+			# Considerar al jugador como objetivo
+			var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+			if player and not player.get("is_dead"):
+				var d: float = global_transform.origin.distance_to(player.global_transform.origin)
+				if d < closest_dist:
+					closest_dist = d
+					target = player
+
+			# Considerar NPCs del Equipo UNO como objetivos
+			for node in todos_npcs:
+				if node == self:
+					continue
+				if node is NpcBase and node.equipo == Equipo.UNO and not node.is_dead:
+					var d: float = global_transform.origin.distance_to(node.global_transform.origin)
+					if d < closest_dist:
+						closest_dist = d
+						target = node as Node3D
+
+		Equipo.UNO:
+			# Busca el NPC del Equipo DOS más cercano
+			var closest_dist: float = INF
+			for node in todos_npcs:
 				if node == self:
 					continue
 				if node is NpcBase and node.equipo == Equipo.DOS and not node.is_dead:
