@@ -5,12 +5,12 @@ class_name NpcPistolero
 
 func _ready() -> void:
 	npc_name      = "NPC Pistolero"
-	especie       = ""              # Definir al instanciar
-	sexo          = Sexo.MASCULINO  # Definir al instanciar
+	especie       = ""
+	sexo          = Sexo.MASCULINO
 	relacion      = Relacion.ENEMIGO
 	experiencia   = Experiencia.MEDIA
-	skin_path     = ""              # Definir al instanciar
-	voz_path      = ""              # Definir al instanciar
+	skin_path     = ""
+	voz_path      = ""
 	estado        = Estado.IDLE
 
 	max_health    = 35.0
@@ -21,19 +21,23 @@ func _ready() -> void:
 	super._ready()
 
 func perform_attack() -> void:
-	if target_player and not target_player.is_dead:
-		var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
-			global_transform.origin + Vector3(0, 1.0, 0),
-			target_player.global_transform.origin + Vector3(0, 1.0, 0)
-		)
-		query.exclude = [self]
-		var result: Dictionary = space_state.intersect_ray(query)
+	if target == null or not is_instance_valid(target):
+		return
+	if target.has_method("is_dead") and target.get("is_dead"):
+		return
 
-		if result and result.get("collider") == target_player:
-			target_player.take_damage(damage)
-			draw_debug_laser(
-				global_transform.origin + Vector3(0, 1.0, 0),
-				target_player.global_transform.origin + Vector3(0, 1.0, 0),
-				Color.YELLOW
-			)
+	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
+		global_transform.origin + Vector3(0, 1.0, 0),
+		target.global_transform.origin + Vector3(0, 1.0, 0)
+	)
+	query.exclude = [self]
+	var result: Dictionary = space_state.intersect_ray(query)
+
+	if result and result.get("collider") == target:
+		target.take_damage(damage)
+		draw_debug_laser(
+			global_transform.origin + Vector3(0, 1.0, 0),
+			target.global_transform.origin + Vector3(0, 1.0, 0),
+			Color.YELLOW
+		)
