@@ -5,8 +5,8 @@ class_name NpcSpawner
 @export var spawn_count_per_cycle: int = 3
 @export var spawn_points_paths: Array[NodePath] = []
 
-# Porcentaje de NPC que serán amigables en cada wave (0.0 = ninguno, 1.0 = todos)
-@export_range(0.0, 1.0) var friendly_ratio: float = 0.0
+## Porcentaje de NPC aliados (Equipo UNO) por wave (0.0 = todos enemigos, 1.0 = todos aliados)
+@export_range(0.0, 1.0) var equipo1_ratio: float = 0.0
 
 var npc_melee_scene: PackedScene      = preload("res://scenes/npcs/npc_melee.tscn")
 var npc_pistolero_scene: PackedScene  = preload("res://scenes/npcs/npc_pistolero.tscn")
@@ -55,17 +55,14 @@ func _on_spawn_timeout() -> void:
 func spawn_wave() -> void:
 	if spawn_points.is_empty():
 		return
-
 	if not is_inside_tree() or not get_parent().is_inside_tree():
 		return
 
 	for i in range(spawn_count_per_cycle):
 		var point: Marker3D = spawn_points[randi() % spawn_points.size()]
-
 		if not point.is_inside_tree():
 			continue
 
-		# Distribución: 50% melee, 30% pistolero, 20% escopetero
 		var npc_scene: PackedScene
 		var roll: float = randf()
 		if roll < 0.5:
@@ -79,11 +76,11 @@ func spawn_wave() -> void:
 		if not npc:
 			continue
 
-		# Asignar relacion según friendly_ratio
-		if randf() < friendly_ratio:
-			npc.relacion = NpcBase.Relacion.AMIGABLE
+		# Asignar equipo ANTES de add_child para que _ready() lo reciba correctamente
+		if randf() < equipo1_ratio:
+			npc.equipo = NpcBase.Equipo.UNO
 		else:
-			npc.relacion = NpcBase.Relacion.ENEMIGO
+			npc.equipo = NpcBase.Equipo.DOS
 
 		var spawn_pos: Vector3 = point.global_transform.origin + Vector3(
 			randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0)

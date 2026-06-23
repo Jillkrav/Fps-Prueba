@@ -4,7 +4,6 @@ extends Control
 
 # ─────────────────────────────────────────────────────
 # ESCENAS DE NPC DISPONIBLES
-# Para agregar un tipo nuevo: agregar entrada aquí + crear su escena.
 # ─────────────────────────────────────────────────────
 
 const NPC_SCENES: Dictionary = {
@@ -23,7 +22,7 @@ const NPC_SCENES: Dictionary = {
 @onready var btn_generar: Button           = $PanelPrincipal/VBox/BtnGenerar
 @onready var btn_spawn: Button             = $PanelNPC/VBox/BtnSpawn
 @onready var btn_volver: Button            = $PanelNPC/VBox/BtnVolver
-@onready var opt_relacion: OptionButton    = $PanelNPC/VBox/GridAtributos/OptRelacion
+@onready var opt_equipo: OptionButton      = $PanelNPC/VBox/GridAtributos/OptRelacion
 @onready var opt_experiencia: OptionButton = $PanelNPC/VBox/GridAtributos/OptExperiencia
 @onready var opt_arma: OptionButton        = $PanelNPC/VBox/GridAtributos/OptArma
 @onready var lbl_status: Label             = $PanelPrincipal/VBox/LblStatus
@@ -41,9 +40,8 @@ var is_invisible: bool = false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	opt_relacion.add_item("Enemigo",  NpcBase.Relacion.ENEMIGO)
-	opt_relacion.add_item("Neutral",  NpcBase.Relacion.NEUTRAL)
-	opt_relacion.add_item("Amigable", NpcBase.Relacion.AMIGABLE)
+	opt_equipo.add_item("Equipo 2 (Enemigo)", NpcBase.Equipo.DOS)
+	opt_equipo.add_item("Equipo 1 (Aliado)",  NpcBase.Equipo.UNO)
 
 	opt_experiencia.add_item("Baja",  NpcBase.Experiencia.BAJA)
 	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
@@ -62,14 +60,13 @@ func _ready() -> void:
 	btn_volver.pressed.connect(_on_volver_pressed)
 
 # ─────────────────────────────────────────────────────
-# TOGGLE DEL MENU (llamado desde hud.gd)
+# TOGGLE DEL MENU
 # ─────────────────────────────────────────────────────
 
 func toggle_menu() -> void:
 	visible = !visible
 	panel_npc.visible = false
 	panel_principal.visible = true
-
 	if visible:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:
@@ -101,7 +98,7 @@ func _on_volver_pressed() -> void:
 	panel_principal.visible = true
 
 func _on_spawn_pressed() -> void:
-	var relacion_id: int    = opt_relacion.get_selected_id()
+	var equipo_id: int      = opt_equipo.get_selected_id()
 	var experiencia_id: int = opt_experiencia.get_selected_id()
 	var arma_key: String    = NPC_SCENES.keys()[opt_arma.get_selected()]
 
@@ -113,26 +110,24 @@ func _on_spawn_pressed() -> void:
 
 	var npc: NpcBase = packed.instantiate() as NpcBase
 	if not npc:
-		push_error("DevMenu: la escena no es un NpcBase: " + scene_path)
+		push_error("DevMenu: la escena no es NpcBase")
 		return
 
-	npc.relacion    = relacion_id as NpcBase.Relacion
+	npc.equipo      = equipo_id as NpcBase.Equipo
 	npc.experiencia = experiencia_id as NpcBase.Experiencia
 
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if not player:
 		push_error("DevMenu: no se encontró al jugador")
-		npc.queue_free()
+		packed = null
 		return
 
-	var spawn_pos: Vector3 = player.global_transform.origin \
-		+ player.global_transform.basis.z * -3.0
-	spawn_pos.y = player.global_transform.origin.y
+	var spawn_pos: Vector3 = player.global_transform.origin + \
+		(-player.global_transform.basis.z * 3.0)
 
-	var world: Node = player.get_parent()
+	var world: Node = get_tree().get_first_node_in_group("world")
+	if not world:
+		world = get_tree().current_scene
+
 	world.add_child(npc)
 	npc.global_transform.origin = spawn_pos
-
-	lbl_status.text = "NPC spawneado: " + arma_key.capitalize() + " (" + opt_relacion.get_item_text(opt_relacion.get_selected()) + ")"
-	panel_npc.visible = false
-	panel_principal.visible = true
