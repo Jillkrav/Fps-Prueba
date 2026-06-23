@@ -4,12 +4,20 @@ class_name EnemyPistolero
 @export var shoot_range: float = 15.0
 
 func _ready() -> void:
-	enemy_name = "Enemigo Pistolero"
-	max_health = 35.0
-	speed = 2.5
-	damage = 8.0
-	attack_range = 12.0
-	attack_rate = 1.5
+	enemy_name    = "Enemigo Pistolero"
+	especie       = ""              # Definir al instanciar
+	sexo          = Sexo.MASCULINO  # Definir al instanciar
+	relacion      = Relacion.ENEMIGO
+	experiencia   = Experiencia.MEDIA
+	skin_path     = ""              # Definir al instanciar
+	voz_path      = ""              # Definir al instanciar
+	estado        = Estado.IDLE
+
+	max_health    = 35.0
+	speed         = 2.5
+	damage        = 8.0
+	attack_range  = 12.0
+	attack_rate   = 1.5
 	super._ready()
 
 func perform_attack() -> void:

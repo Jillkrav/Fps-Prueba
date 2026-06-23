@@ -2,12 +2,20 @@ extends EnemyBase
 class_name EnemyEscopetero
 
 func _ready() -> void:
-	enemy_name = "Enemigo Escopeta"
-	max_health = 50.0
-	speed = 3.0
-	damage = 25.0
-	attack_range = 6.0
-	attack_rate = 2.0
+	enemy_name    = "Enemigo Escopeta"
+	especie       = ""              # Definir al instanciar
+	sexo          = Sexo.MASCULINO  # Definir al instanciar
+	relacion      = Relacion.ENEMIGO
+	experiencia   = Experiencia.MEDIA
+	skin_path     = ""              # Definir al instanciar
+	voz_path      = ""              # Definir al instanciar
+	estado        = Estado.IDLE
+
+	max_health    = 50.0
+	speed         = 3.0
+	damage        = 25.0
+	attack_range  = 6.0
+	attack_rate   = 2.0
 	super._ready()
 
 func perform_attack() -> void:

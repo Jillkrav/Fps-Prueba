@@ -1,12 +1,64 @@
 extends CharacterBody3D
 class_name EnemyBase
 
+# ─────────────────────────────────────────
+# ENUMS
+# ─────────────────────────────────────────
+
+enum Sexo       { MASCULINO, FEMENINO }
+enum Relacion   { AMIGABLE, NEUTRAL, ENEMIGO }
+enum Experiencia { BAJA, MEDIA, ALTA }
+enum Estado {
+	IDLE,
+	GUARDIA,
+	ALERTA,
+	BUSCANDO,
+	ESCONDIENDO,
+	SIGUIENDO,
+	ATACANDO
+}
+
+# ─────────────────────────────────────────
+# IDENTIDAD
+# ─────────────────────────────────────────
+
+## Nombre visible del NPC
 @export var enemy_name: String = "Enemigo"
+
+## Especie del NPC. Afectará altura máxima, velocidad base, gravedad y rango de visión.
+@export var especie: String = ""
+
+## Sexo. Determina qué carpeta de voces se usa.
+@export var sexo: Sexo = Sexo.MASCULINO
+
+## Relación con el jugador: amigable, neutral o enemigo.
+@export var relacion: Relacion = Relacion.ENEMIGO
+
+## Nivel de experiencia. Afectará precisión, frecuencia de disparo y multiplicador de daño.
+@export var experiencia: Experiencia = Experiencia.MEDIA
+
+## Ruta del skin visual del NPC (ej: res://skins/gatos/soldados/enemigos/Macho02)
+@export var skin_path: String = ""
+
+## Ruta del audio de voz del NPC (ej: res://sonidos/machos/Macho01)
+@export var voz_path: String = ""
+
+## Estado actual del NPC. Empieza en IDLE para todos.
+@export var estado: Estado = Estado.IDLE
+
+# ─────────────────────────────────────────
+# COMBATE
+# ─────────────────────────────────────────
+
 @export var max_health: float = 30.0
 @export var speed: float = 3.0
 @export var damage: float = 10.0
 @export var attack_range: float = 2.0
 @export var attack_rate: float = 1.0
+
+# ─────────────────────────────────────────
+# VARIABLES INTERNAS
+# ─────────────────────────────────────────
 
 var current_health: float = 30.0
 var target_player: Player = null
@@ -16,6 +68,10 @@ var is_dead: bool = false
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
+
+# ─────────────────────────────────────────
+# CICLO DE VIDA
+# ─────────────────────────────────────────
 
 func _ready() -> void:
 	current_health = max_health
@@ -62,10 +118,18 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+# ─────────────────────────────────────────
+# MOVIMIENTO
+# ─────────────────────────────────────────
+
 func look_at_target_flat(target_pos: Vector3) -> void:
 	var flat_pos: Vector3 = Vector3(target_pos.x, global_transform.origin.y, target_pos.z)
 	if flat_pos.distance_to(global_transform.origin) > 0.1:
 		look_at(flat_pos, Vector3.UP)
+
+# ─────────────────────────────────────────
+# COMBATE
+# ─────────────────────────────────────────
 
 func attempt_attack() -> void:
 	var current_time: int = Time.get_ticks_msec()
@@ -74,7 +138,7 @@ func attempt_attack() -> void:
 		last_attack_time = current_time
 		perform_attack()
 
-# Sobreescribir en clases hijas
+## Sobreescribir en clases hijas para definir el ataque específico de cada NPC.
 func perform_attack() -> void:
 	if target_player and target_player.has_method("take_damage"):
 		target_player.take_damage(damage)
@@ -98,7 +162,15 @@ func flash_red() -> void:
 			var timer: SceneTreeTimer = get_tree().create_timer(0.1)
 			timer.timeout.connect(func() -> void: mat.albedo_color = orig_color)
 
-# Laser de debug compartido — color por parametro para diferenciarlo por tipo de NPC
+func die() -> void:
+	is_dead = true
+	queue_free()
+
+# ─────────────────────────────────────────
+# DEBUG
+# ─────────────────────────────────────────
+
+## Dibuja un laser de debug temporal. Compartido por todos los NPC de rango.
 func draw_debug_laser(start: Vector3, end: Vector3, color: Color = Color.WHITE) -> void:
 	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 	var immediate_mesh: ImmediateMesh = ImmediateMesh.new()
@@ -118,7 +190,3 @@ func draw_debug_laser(start: Vector3, end: Vector3, color: Color = Color.WHITE) 
 
 	var timer: SceneTreeTimer = get_tree().create_timer(0.08)
 	timer.timeout.connect(func() -> void: mesh_instance.queue_free())
-
-func die() -> void:
-	is_dead = true
-	queue_free()
