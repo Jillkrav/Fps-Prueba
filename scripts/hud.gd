@@ -96,9 +96,10 @@ func _toggle_pause() -> void:
 	if pause_screen.visible:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		get_tree().paused = true
-		pause_mode = Node.PAUSE_MODE_PROCESS
+		process_mode = Node.PROCESS_MODE_ALWAYS
 	else:
 		get_tree().paused = false
+		process_mode = Node.PROCESS_MODE_INHERIT
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _esta_una_ui_abierta() -> bool:
@@ -231,6 +232,7 @@ func _on_btn_continuar_pressed() -> void:
 		pause_screen.visible = false
 		get_tree().paused = false
 		_menu_abierto = false
+		process_mode = Node.PROCESS_MODE_INHERIT
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _on_btn_menu_pressed() -> void:
