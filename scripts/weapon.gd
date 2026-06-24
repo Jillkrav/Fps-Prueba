@@ -31,7 +31,7 @@ func _ready() -> void:
 	if muzzle_flash_light:
 		muzzle_flash_light.visible = false
 
-# ── Inicializar el arma desde ConfigManager por nombre exacto del JSON ──
+# ── Inicializar desde ConfigManager por nombre exacto del JSON ──
 func initialize_from_name(nombre_arma: String) -> void:
 	var cfg: Dictionary = ConfigManager.get_arma(nombre_arma)
 	if cfg.is_empty():
@@ -40,15 +40,15 @@ func initialize_from_name(nombre_arma: String) -> void:
 		reserve_ammo = max_ammo
 		return
 
-	weapon_name        = nombre_arma
-	# Las claves coinciden EXACTAMENTE con el JSON (con tildes y NN)
-	damage_vs_player   = float(cfg.get("Da\u00f1oAlJugador",       damage_vs_player))
-	damage_vs_npc      = float(cfg.get("Da\u00f1oAlNPC",           damage_vs_npc))
-	segundos_por_bala  = float(cfg.get("SegundosPorBala",         segundos_por_bala))
-	clip_size          = int(cfg.get("Tama\u00f1oCargador",        clip_size))
-	max_ammo           = int(cfg.get("ReservaMunicionMaxima",     max_ammo))
-	reload_time        = float(cfg.get("TiempoRecargaSegundos",   reload_time))
-	tipo_recarga       = str(cfg.get("TipoRecarga",               tipo_recarga))
+	weapon_name       = nombre_arma
+	# Claves exactas del JSON: DanioAlJugador, DanioAlNPC, TamanoCargador
+	damage_vs_player  = float(cfg.get("DanioAlJugador",        damage_vs_player))
+	damage_vs_npc     = float(cfg.get("DanioAlNPC",            damage_vs_npc))
+	segundos_por_bala = float(cfg.get("SegundosPorBala",        segundos_por_bala))
+	clip_size         = int(cfg.get("TamanoCargador",           clip_size))
+	max_ammo          = int(cfg.get("ReservaMunicionMaxima",    max_ammo))
+	reload_time       = float(cfg.get("TiempoRecargaSegundos",  reload_time))
+	tipo_recarga      = str(cfg.get("TipoRecarga",              tipo_recarga))
 
 	ammo_in_mag  = clip_size
 	reserve_ammo = max_ammo
