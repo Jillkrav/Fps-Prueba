@@ -31,26 +31,30 @@ enum Estado {
 @export var voz_path: String = ""
 @export var estado: Estado = Estado.IDLE
 
+# Nombre del arma tal como aparece en skill.cfg.json
+# Las subclases pueden sobreescribir este valor antes de _ready()
+@export var weapon_name_cfg: String = "USP"
+
 # ─────────────────────────────────────────
-# COMBATE
+# COMBATE — sobreescritos por ConfigManager en _ready()
 # ─────────────────────────────────────────
 
-@export var max_health: float = 30.0
+@export var max_health: float = 100.0
 @export var speed: float = 3.0
-@export var damage: float = 10.0
-@export var attack_range: float = 2.0
-@export var attack_rate: float = 1.0
+@export var attack_range: float = 15.0
+@export var attack_rate: float = 1.0          # segundos entre ataques (fallback)
 @export var headshot_multiplier: float = 2.5
 
 # ─────────────────────────────────────────
 # VARIABLES INTERNAS
 # ─────────────────────────────────────────
 
-var current_health: float = 30.0
+var current_health: float = 100.0
 var target: Node3D = null
 var last_attack_time: int = 0
 var is_dead: bool = false
 var _base_color: Color = Color.WHITE
+var _weapon_cfg: Dictionary = {}   # datos del arma leídos de ConfigManager
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -87,7 +91,16 @@ func es_enemigo_de(nodo: Node) -> bool:
 # ─────────────────────────────────────────
 
 func _ready() -> void:
+	# ── Vida desde ConfigManager según equipo ──────────────────────
+	var tipo_npc: String = "Aliado" if equipo == Equipo.UNO else "Enemigo"
+	max_health     = ConfigManager.get_vida_npc(tipo_npc)
 	current_health = max_health
+	# ───────────────────────────────────────────────────────────────
+
+	# ── Inicializar configuración de arma ──────────────────────────
+	_init_weapon(weapon_name_cfg)
+	# ───────────────────────────────────────────────────────────────
+
 	_apply_team_color()
 	_pick_target()
 
@@ -134,6 +147,27 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0, speed)
 
 	move_and_slide()
+
+# ─────────────────────────────────────────
+# ARMA DESDE CONFIGMANAGER
+# ─────────────────────────────────────────
+
+## Carga la configuración del arma desde skill.cfg.json y ajusta attack_rate.
+func _init_weapon(nombre: String) -> void:
+	_weapon_cfg = ConfigManager.get_arma(nombre)
+	if _weapon_cfg.is_empty():
+		push_warning("NpcBase: arma '%s' no encontrada en ConfigManager, usando defaults." % nombre)
+		return
+	weapon_name_cfg = nombre
+	# El NPC dispara al ritmo del arma: SegundosPorBala
+	attack_rate = float(_weapon_cfg.get("SegundosPorBala", attack_rate))
+
+## Ejecuta el disparo usando el daño DañoAlNPC del arma cargada.
+func _npc_fire_weapon() -> void:
+	if not target or not target.has_method("take_damage"):
+		return
+	var damage_to_apply: float = float(_weapon_cfg.get("DañoAlNPC", 10.0))
+	target.take_damage(damage_to_apply)
 
 # ─────────────────────────────────────────
 # EQUIPO: COLOR Y OBJETIVO
@@ -203,17 +237,24 @@ func attempt_attack() -> void:
 		perform_attack()
 
 func perform_attack() -> void:
-	if target and target.has_method("take_damage"):
-		target.take_damage(damage)
+	# Si el NPC tiene arma configurada, usa el daño del JSON
+	if not _weapon_cfg.is_empty():
+		_npc_fire_weapon()
+	elif target and target.has_method("take_damage"):
+		target.take_damage(10.0)
 
-## Recibe daño. Si is_headshot=true aplica el multiplicador.
-func take_damage(amount: float, is_headshot: bool = false) -> void:
+## Recibe daño. zona puede ser "Cabeza" o "Torso".
+func take_damage(amount: float, zona: String = "Torso") -> void:
 	if is_dead:
 		return
-	var final_damage: float = amount * (headshot_multiplier if is_headshot else 1.0)
+	var mult: float = 1.0
+	match zona:
+		"Cabeza": mult = ConfigManager.mult_cabeza
+		"Torso":  mult = ConfigManager.mult_torso
+	var final_damage: float = amount * mult
 	current_health -= final_damage
 	current_health = clamp(current_health, 0, max_health)
-	flash_hit(is_headshot)
+	flash_hit(zona == "Cabeza")
 	if current_health <= 0:
 		die()
 
@@ -223,7 +264,7 @@ func flash_hit(headshot: bool = false) -> void:
 	if mesh:
 		var mat: StandardMaterial3D = mesh.get_surface_override_material(0) as StandardMaterial3D
 		if mat:
-			mat.albedo_color = Color.WHITE if headshot else Color.WHITE
+			mat.albedo_color = Color.WHITE
 			var t: SceneTreeTimer = get_tree().create_timer(0.1)
 			t.timeout.connect(func() -> void:
 				if is_instance_valid(mat):
