@@ -70,8 +70,6 @@ func _player_is_invisible() -> bool:
 	return player != null and player.is_in_group("invisible_to_npc")
 
 ## Devuelve el equipo del jugador según GameState.
-## "azul" = Equipo.UNO (aliado), "rojo" = Equipo.DOS (enemigo).
-## Si no hay equipo seteado, se asume Equipo.UNO.
 func _get_player_team() -> Equipo:
 	var gs: Node = get_node_or_null("/root/GameState")
 	if gs:
@@ -168,10 +166,17 @@ func _init_weapon(nombre: String) -> void:
 	weapon_name_cfg = nombre
 	attack_rate = float(_weapon_cfg.get("SegundosPorBala", attack_rate))
 
+# FIX: NPC dispara al jugador → usa DañoAlJugador (no DañoAlNPC)
 func _npc_fire_weapon() -> void:
 	if not target or not target.has_method("take_damage"):
 		return
-	var damage_to_apply: float = float(_weapon_cfg.get("DañoAlNPC", 10.0))
+	var damage_to_apply: float
+	if target.is_in_group("player"):
+		# Daño que este NPC hace al jugador
+		damage_to_apply = float(_weapon_cfg.get("DañoAlJugador", 10.0))
+	else:
+		# Daño entre NPCs
+		damage_to_apply = float(_weapon_cfg.get("DañoAlNPC", 10.0))
 	target.take_damage(damage_to_apply)
 
 # ─────────────────────────────────────────
@@ -185,14 +190,14 @@ func _apply_team_color() -> void:
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
 	match equipo:
 		Equipo.DOS:
-			mat.albedo_color = Color(0.85, 0.15, 0.15)  # Rojo = enemigo
+			mat.albedo_color = Color(0.85, 0.15, 0.15)
 		Equipo.UNO:
 			var opciones: Array[Color] = [
 				Color(0.1, 0.4, 0.9),
 				Color(0.1, 0.75, 0.95),
 				Color(0.15, 0.8, 0.3),
 			]
-			mat.albedo_color = opciones[randi() % opciones.size()]  # Azul/verde = aliado
+			mat.albedo_color = opciones[randi() % opciones.size()]
 	_base_color = mat.albedo_color
 	mesh.set_surface_override_material(0, mat)
 
@@ -202,7 +207,6 @@ func _pick_target() -> void:
 	var jugador_invisible: bool = _player_is_invisible()
 	var closest_dist: float = INF
 
-	# ── Intentar atacar al jugador si es enemigo ───────────────────────
 	var atacar_jugador: bool = (equipo != player_team) and not jugador_invisible
 	if atacar_jugador:
 		var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
@@ -214,7 +218,6 @@ func _pick_target() -> void:
 					closest_dist = d
 					target = player
 
-	# ── Intentar atacar a NPC del equipo contrario ────────────────────
 	var todos_npcs: Array = get_tree().get_nodes_in_group("npcs")
 	for node in todos_npcs:
 		if node == self:

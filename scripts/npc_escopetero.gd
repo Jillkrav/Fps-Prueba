@@ -27,8 +27,9 @@ func perform_attack() -> void:
 
 	if result and result.get("collider") == target:
 		_npc_fire_weapon()
-		# Dibujar perdigones: cantidad desde el arma cargada en _weapon_cfg
-		var num_pellets: int = int(_weapon_cfg.get("CantidadPerdigones", 4))
+		# FIX: CantidadPerdigones no existe en el JSON actual.
+		# Se usa 4 como valor por defecto fijo hasta que se agregue al JSON.
+		var num_pellets: int = 4
 		for _i in range(num_pellets):
 			draw_debug_laser(
 				global_transform.origin + Vector3(0, 1.0, 0),

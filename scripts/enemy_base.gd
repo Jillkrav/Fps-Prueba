@@ -67,11 +67,9 @@ func _ready() -> void:
 	# ── Vida desde ConfigManager ───────────────────────────────────
 	max_health     = ConfigManager.get_vida_npc("Enemigo")
 	current_health = max_health
-	# ───────────────────────────────────────────────────────────────
 
 	# ── Inicializar arma desde ConfigManager ───────────────────────
 	_init_weapon(weapon_name_cfg)
-	# ───────────────────────────────────────────────────────────────
 
 	var players: Array = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
@@ -134,6 +132,7 @@ func _init_weapon(nombre: String) -> void:
 	weapon_name_cfg = nombre
 	attack_rate = float(_weapon_cfg.get("SegundosPorBala", attack_rate))
 
+# FIX: EnemyBase dispara siempre al jugador → usa DañoAlJugador
 func _npc_fire_weapon() -> void:
 	if not target_player or not target_player.has_method("take_damage"):
 		return
