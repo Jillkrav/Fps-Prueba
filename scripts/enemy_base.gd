@@ -40,6 +40,7 @@ enum Estado {
 @export var damage: float = 10.0
 @export var attack_range: float = 2.0
 @export var attack_rate: float = 1.0
+@export var headshot_multiplier: float = 2.5
 
 # ─────────────────────────────────────────
 # VARIABLES INTERNAS
@@ -53,6 +54,7 @@ var is_dead: bool = false
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
+@onready var head_hitbox: Area3D = get_node_or_null("Head/HeadHitbox")
 
 # ─────────────────────────────────────────
 # CICLO DE VIDA
@@ -134,24 +136,41 @@ func perform_attack() -> void:
 	if target_player and target_player.has_method("take_damage"):
 		target_player.take_damage(damage)
 
-func take_damage(amount: float) -> void:
+## Recibe daño. Si is_headshot=true aplica el multiplicador.
+func take_damage(amount: float, is_headshot: bool = false) -> void:
 	if is_dead:
 		return
-	current_health -= amount
+	var final_damage: float = amount * (headshot_multiplier if is_headshot else 1.0)
+	current_health -= final_damage
 	current_health = clamp(current_health, 0, max_health)
-	flash_red()
+	flash_red(is_headshot)
 	if current_health <= 0:
 		die()
 
-func flash_red() -> void:
+## Verifica si la posición del impacto cayó dentro del HeadHitbox.
+func is_hit_headshot(hit_position: Vector3) -> bool:
+	if head_hitbox == null:
+		return false
+	var head_pos: Vector3 = head_hitbox.global_transform.origin
+	return head_pos.distance_to(hit_position) <= 0.32
+
+func flash_red(headshot: bool = false) -> void:
 	var mesh: MeshInstance3D = get_node_or_null("MeshInstance3D")
+	var head_mesh: MeshInstance3D = get_node_or_null("Head/HeadMesh")
 	if mesh:
 		var mat: Material = mesh.get_surface_override_material(0)
 		if mat is StandardMaterial3D:
 			var orig_color: Color = mat.albedo_color
-			mat.albedo_color = Color.RED
+			mat.albedo_color = Color.WHITE if headshot else Color.RED
 			var timer: SceneTreeTimer = get_tree().create_timer(0.1)
 			timer.timeout.connect(func() -> void: mat.albedo_color = orig_color)
+	if head_mesh and headshot:
+		var hmat: Material = head_mesh.get_surface_override_material(0)
+		if hmat is StandardMaterial3D:
+			var orig: Color = hmat.albedo_color
+			hmat.albedo_color = Color.YELLOW
+			var t2: SceneTreeTimer = get_tree().create_timer(0.15)
+			t2.timeout.connect(func() -> void: hmat.albedo_color = orig)
 
 func die() -> void:
 	is_dead = true
