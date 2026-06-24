@@ -40,6 +40,7 @@ enum Estado {
 @export var damage: float = 10.0
 @export var attack_range: float = 2.0
 @export var attack_rate: float = 1.0
+@export var headshot_multiplier: float = 2.5
 
 # ─────────────────────────────────────────
 # VARIABLES INTERNAS
@@ -54,17 +55,16 @@ var _base_color: Color = Color.WHITE
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
+@onready var head_hitbox: Area3D = get_node_or_null("Head/HeadHitbox")
 
 # ─────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────
 
-## Devuelve true si el jugador está invisible para los NPCs.
 func _player_is_invisible() -> bool:
 	var player: Node = get_tree().get_first_node_in_group("player")
 	return player != null and player.is_in_group("invisible_to_npc")
 
-## Devuelve el equipo del jugador según GameState ("rojo" → DOS, "azul" → UNO, "" → ninguno/enemigo de todos).
 func _get_player_team() -> Equipo:
 	var gs: Node = get_node_or_null("/root/GameState")
 	if gs:
@@ -73,13 +73,10 @@ func _get_player_team() -> Equipo:
 				return Equipo.DOS
 			"azul":
 				return Equipo.UNO
-	# Por defecto si no eligió equipo, se considera equipo UNO
 	return Equipo.UNO
 
-## Devuelve true si este NPC es enemigo del nodo indicado.
 func es_enemigo_de(nodo: Node) -> bool:
 	if nodo.is_in_group("player"):
-		# El NPC ataca al jugador solo si son de equipos distintos
 		return equipo != _get_player_team()
 	if nodo is NpcBase:
 		return equipo != nodo.equipo
@@ -98,7 +95,6 @@ func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
 
-	# Refrescar objetivo si murió, es inválido, o el jugador cambió de visibilidad
 	if target == null or not is_instance_valid(target) \
 		or (target.has_method("is_dead") and target.get("is_dead") == true) \
 		or (target.is_in_group("player") and _player_is_invisible()):
@@ -166,12 +162,9 @@ func _pick_target() -> void:
 	var todos_npcs: Array = get_tree().get_nodes_in_group("npcs")
 	var jugador_invisible: bool = _player_is_invisible()
 	var player_team: Equipo = _get_player_team()
-
 	var closest_dist: float = INF
 
-	# ¿Este NPC es enemigo del jugador?
 	var atacar_jugador: bool = (equipo != player_team) and not jugador_invisible
-
 	if atacar_jugador:
 		var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 		if player and not player.get("is_dead"):
@@ -180,7 +173,6 @@ func _pick_target() -> void:
 				closest_dist = d
 				target = player
 
-	# Siempre busca NPCs del equipo contrario
 	for node in todos_npcs:
 		if node == self:
 			continue
@@ -214,25 +206,38 @@ func perform_attack() -> void:
 	if target and target.has_method("take_damage"):
 		target.take_damage(damage)
 
-func take_damage(amount: float) -> void:
+## Recibe daño. Si is_headshot=true aplica el multiplicador.
+func take_damage(amount: float, is_headshot: bool = false) -> void:
 	if is_dead:
 		return
-	current_health -= amount
+	var final_damage: float = amount * (headshot_multiplier if is_headshot else 1.0)
+	current_health -= final_damage
 	current_health = clamp(current_health, 0, max_health)
-	flash_hit()
+	flash_hit(is_headshot)
 	if current_health <= 0:
 		die()
 
-func flash_hit() -> void:
+func flash_hit(headshot: bool = false) -> void:
 	var mesh: MeshInstance3D = get_node_or_null("MeshInstance3D")
+	var head_mesh: MeshInstance3D = get_node_or_null("Head/HeadMesh")
 	if mesh:
 		var mat: StandardMaterial3D = mesh.get_surface_override_material(0) as StandardMaterial3D
 		if mat:
-			mat.albedo_color = Color.WHITE
+			mat.albedo_color = Color.WHITE if headshot else Color.WHITE
 			var t: SceneTreeTimer = get_tree().create_timer(0.1)
 			t.timeout.connect(func() -> void:
 				if is_instance_valid(mat):
 					mat.albedo_color = _base_color
+			)
+	if head_mesh and headshot:
+		var hmat: StandardMaterial3D = head_mesh.get_surface_override_material(0) as StandardMaterial3D
+		if hmat:
+			var orig: Color = hmat.albedo_color
+			hmat.albedo_color = Color.YELLOW
+			var t2: SceneTreeTimer = get_tree().create_timer(0.15)
+			t2.timeout.connect(func() -> void:
+				if is_instance_valid(hmat):
+					hmat.albedo_color = orig
 			)
 
 func die() -> void:

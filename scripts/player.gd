@@ -112,8 +112,15 @@ func shoot() -> void:
 		for hit in hits:
 			var target: Node = hit["collider"]
 			var is_headshot: bool = hit.get("is_headshot", false)
+			# Llamada segura: soporta tanto take_damage(amount) como take_damage(amount, headshot)
 			if target and target.has_method("take_damage"):
-				target.take_damage(hit["damage"], is_headshot)
+				var method: Dictionary = target.get_method_list().filter(
+					func(m): return m["name"] == "take_damage"
+				).front()
+				if method and method.get("args", []).size() >= 2:
+					target.take_damage(hit["damage"], is_headshot)
+				else:
+					target.take_damage(hit["damage"])
 
 func take_damage(amount: float) -> void:
 	if is_dead:

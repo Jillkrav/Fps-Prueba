@@ -16,7 +16,6 @@ func _ready() -> void:
 	attack_range  = 1.5
 	attack_rate   = 1.0
 	# equipo se asigna ANTES de _ready() desde el spawner o inspector
-	# NO sobreescribir aqui
 	super._ready()
 
 func perform_attack() -> void:
@@ -24,4 +23,5 @@ func perform_attack() -> void:
 		return
 	if target.has_method("is_dead") and target.get("is_dead"):
 		return
+	# take_damage acepta (amount, is_headshot=false) — melee nunca hace headshot
 	target.take_damage(damage)
