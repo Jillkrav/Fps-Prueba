@@ -8,11 +8,11 @@ extends Control
 # El arma se asigna por separado desde el selector.
 # ─────────────────────────────────────────────────────
 
-const NPC_CON_ARMA:  String = "res://scenes/npcs/npc_pistolero.tscn"
-const NPC_MELEE:     String = "res://scenes/npcs/npc_melee.tscn"
+const NPC_CON_ARMA: String = "res://scenes/npcs/npc_pistolero.tscn"
+const NPC_MELEE:    String = "res://scenes/npcs/npc_melee.tscn"
 
 # ─────────────────────────────────────────────────────
-# REFERENCIAS DE NODOS
+# REFERENCIAS DE NODOS  (estructura real de hud.tscn)
 # ─────────────────────────────────────────────────────
 
 @onready var panel_principal: Panel        = $PanelPrincipal
@@ -46,6 +46,7 @@ func _ready() -> void:
 	opt_tipo_npc.clear()
 	opt_tipo_npc.add_item("Con Arma")
 	opt_tipo_npc.add_item("Melee")
+	opt_tipo_npc.item_selected.connect(_on_tipo_npc_changed)
 
 	# ── Equipo ────────────────────────────────────────────────────────
 	opt_equipo.clear()
@@ -58,17 +59,10 @@ func _ready() -> void:
 	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
 	opt_experiencia.add_item("Alta",  NpcBase.Experiencia.ALTA)
 
-	# ── Armas desde el JSON (toda la lista) ───────────────────────────
-	_poblar_armas()
+	# ── Armas desde ConfigManager ─────────────────────────────────────
+	_populate_armas()
 
-	# ── Reacciones al cambiar tipo de NPC y arma ──────────────────────
-	opt_tipo_npc.item_selected.connect(_on_tipo_npc_cambiado)
-	opt_arma.item_selected.connect(_on_arma_seleccionada)
-
-	# Disparar una vez para mostrar estado inicial correcto
-	_on_tipo_npc_cambiado(0)
-	_on_arma_seleccionada(0)
-
+	# ── Estado inicial ────────────────────────────────────────────────
 	visible = false
 	panel_principal.visible = true
 	panel_npc.visible = false
@@ -77,43 +71,25 @@ func _ready() -> void:
 	btn_generar.pressed.connect(_on_generar_pressed)
 	btn_spawn.pressed.connect(_on_spawn_pressed)
 	btn_volver.pressed.connect(_on_volver_pressed)
+	opt_arma.item_selected.connect(_on_arma_selected)
 
-# ─────────────────────────────────────────────────────
-# POBLADO DE ARMAS
-# ─────────────────────────────────────────────────────
-
-func _poblar_armas() -> void:
+# Lee las armas disponibles desde ConfigManager
+func _populate_armas() -> void:
 	_armas_lista.clear()
 	opt_arma.clear()
-	var armas_raw: Dictionary = ConfigManager._data.get("Armas", {})
-	for categoria: String in armas_raw.keys():
-		var cat_dict: Dictionary = armas_raw[categoria]
-		for nombre_arma: String in cat_dict.keys():
-			_armas_lista.append(nombre_arma)
-			opt_arma.add_item("%s  [%s]" % [nombre_arma, categoria])
-
-func _on_tipo_npc_cambiado(index: int) -> void:
-	# Si es Melee, desactivar el selector de arma (no la necesita)
-	var es_melee: bool = (index == 1)
-	opt_arma.disabled = es_melee
-	if lbl_arma_detalle:
-		lbl_arma_detalle.text = "[Melee — sin arma]" if es_melee else ""
-
-func _on_arma_seleccionada(index: int) -> void:
-	if lbl_arma_detalle == null or index < 0 or index >= _armas_lista.size():
-		return
-	var nombre: String = _armas_lista[index]
-	var cfg: Dictionary = ConfigManager.get_arma(nombre)
-	if cfg.is_empty():
-		return
-	lbl_arma_detalle.text = (
-		"%s — Daño jugador: %s | Daño NPC: %s | Cadencia: %ss" % [
-			nombre,
-			str(cfg.get("DañoAlJugador", "—")),
-			str(cfg.get("DañoAlNPC", "—")),
-			str(cfg.get("SegundosPorBala", "—")),
-		]
-	)
+	# Obtener todas las categorías y armas del JSON
+	var armas_cfg: Dictionary = {}
+	if ConfigManager and ConfigManager._data.has("Armas"):
+		armas_cfg = ConfigManager._data["Armas"]
+	for categoria in armas_cfg.values():
+		for nombre in categoria.keys():
+			_armas_lista.append(nombre)
+			opt_arma.add_item(nombre)
+	# Fallback si no hay config cargada
+	if _armas_lista.is_empty():
+		_armas_lista = ["USP"]
+		opt_arma.add_item("USP")
+	opt_arma.disabled = false
 
 # ─────────────────────────────────────────────────────
 # TOGGLE DEL MENU
@@ -148,58 +124,81 @@ func _on_invisible_pressed() -> void:
 func _on_generar_pressed() -> void:
 	panel_principal.visible = false
 	panel_npc.visible = true
+	# Refrescar armas al abrir el panel
+	_populate_armas()
 
 func _on_volver_pressed() -> void:
 	panel_npc.visible = false
 	panel_principal.visible = true
 
+func _on_tipo_npc_changed(index: int) -> void:
+	# Si es Melee, deshabilitar selector de arma
+	var es_melee: bool = (index == 1)
+	opt_arma.disabled = es_melee
+	if lbl_arma_detalle:
+		lbl_arma_detalle.text = ""
+
+func _on_arma_selected(index: int) -> void:
+	if lbl_arma_detalle == null:
+		return
+	if index < 0 or index >= _armas_lista.size():
+		return
+	var nombre: String = _armas_lista[index]
+	var cfg: Dictionary = ConfigManager.get_arma(nombre)
+	if cfg.is_empty():
+		lbl_arma_detalle.text = ""
+		return
+	lbl_arma_detalle.text = "%s  |  Daño: %s  |  Cadencia: %ss  |  Cargador: %s" % [
+		nombre,
+		str(cfg.get("DañoAlNPC", "?")),
+		str(cfg.get("SegundosPorBala", "?")),
+		str(cfg.get("TamañoCargador", "?"))
+	]
+
 func _on_spawn_pressed() -> void:
-	var equipo_id: int      = opt_equipo.get_selected_id()
-	var experiencia_id: int = opt_experiencia.get_selected_id()
-	var es_melee: bool      = (opt_tipo_npc.get_selected() == 1)
+	var es_melee: bool = (opt_tipo_npc.get_selected() == 1)
+	var escena_path: String = NPC_MELEE if es_melee else NPC_CON_ARMA
 
-	# ── Determinar arma ───────────────────────────────────────────────
-	var arma_nombre: String = ""
-	if not es_melee:
-		var arma_index: int = opt_arma.get_selected()
-		if arma_index >= 0 and arma_index < _armas_lista.size():
-			arma_nombre = _armas_lista[arma_index]
-		elif not _armas_lista.is_empty():
-			arma_nombre = _armas_lista[0]
-
-	# ── Cargar escena correcta ────────────────────────────────────────
-	var scene_path: String = NPC_MELEE if es_melee else NPC_CON_ARMA
-	var packed: PackedScene = load(scene_path)
+	var packed: PackedScene = load(escena_path)
 	if not packed:
-		push_error("DevMenu: no se pudo cargar la escena: " + scene_path)
+		push_error("DevMenu: no se pudo cargar escena: " + escena_path)
 		return
 
 	var npc: NpcBase = packed.instantiate() as NpcBase
 	if not npc:
-		push_error("DevMenu: la escena '%s' no es NpcBase" % scene_path)
+		push_error("DevMenu: la escena no es un NpcBase: " + escena_path)
 		return
 
-	# ── Asignar atributos ANTES de add_child para que _ready() los lea ─
-	npc.equipo          = equipo_id as NpcBase.Equipo
-	npc.experiencia     = experiencia_id as NpcBase.Experiencia
-	npc.weapon_name_cfg = arma_nombre
+	# ── Aplicar equipo y experiencia ──────────────────────────────────
+	npc.equipo      = opt_equipo.get_selected_id() as NpcBase.Equipo
+	npc.experiencia = opt_experiencia.get_selected_id() as NpcBase.Experiencia
 
-	# ── Posición frente al jugador ─────────────────────────────────────
+	# ── Asignar arma si no es melee ───────────────────────────────────
+	if not es_melee and _armas_lista.size() > 0:
+		var idx: int = opt_arma.get_selected()
+		if idx >= 0 and idx < _armas_lista.size():
+			npc.nombre_arma = _armas_lista[idx]
+
+	# ── Spawn cerca del jugador ───────────────────────────────────────
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if not player:
 		push_error("DevMenu: no se encontró al jugador")
+		npc.queue_free()
 		return
-	var spawn_pos: Vector3 = player.global_transform.origin + \
-		(-player.global_transform.basis.z * 3.0)
 
-	# ── Agregar al mundo ──────────────────────────────────────────────
-	var world: Node = get_tree().get_first_node_in_group("world")
-	if not world:
-		world = get_tree().current_scene
+	var spawn_pos: Vector3 = player.global_transform.origin \
+		+ player.global_transform.basis.z * -3.0
+	spawn_pos.y = player.global_transform.origin.y
+
+	var world: Node = player.get_parent()
 	world.add_child(npc)
 	npc.global_transform.origin = spawn_pos
 
-	var arma_label: String = arma_nombre if not arma_nombre.is_empty() else "Melee"
-	lbl_status.text = "[SPAWNED: %s | Arma: %s | Equipo: %d]" % [
-		"Melee" if es_melee else "NPC", arma_label, equipo_id
+	var nombre_arma_txt: String = _armas_lista[opt_arma.get_selected()] if not es_melee else "Melee"
+	lbl_status.text = "NPC spawneado | %s | %s | Arma: %s" % [
+		opt_equipo.get_item_text(opt_equipo.get_selected()),
+		opt_experiencia.get_item_text(opt_experiencia.get_selected()),
+		nombre_arma_txt
 	]
+	panel_npc.visible = false
+	panel_principal.visible = true
