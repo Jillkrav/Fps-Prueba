@@ -1,16 +1,17 @@
 # scripts/spawner.gd
 # Spawner universal: usa solo npc_base.tscn y asigna armas aleatorias del config.
+# Los equipos se manejan por ID numerico (GameState.Equipo).
 extends Node3D
 class_name NpcSpawner
 
-@export var spawn_interval:         float = 20.0
-@export var spawn_count_per_cycle:  int   = 3
-@export var spawn_points_paths:     Array[NodePath] = []
+@export var spawn_interval:        float = 20.0
+@export var spawn_count_per_cycle: int   = 3
+@export var spawn_points_paths:    Array[NodePath] = []
 
 ## Porcentaje de NPC aliados (0.0 = todos enemigos, 1.0 = todos aliados)
 @export_range(0.0, 1.0) var aliado_ratio: float = 0.0
 
-## Si es true, el spawner no genera nada (util para mapas de testeo)
+## Si es true, el spawner no genera nada
 @export var disabled: bool = false
 
 var npc_scene: PackedScene = preload("res://scenes/npcs/npc_base.tscn")
@@ -79,19 +80,27 @@ func spawn_wave() -> void:
 	if not is_inside_tree() or not get_parent().is_inside_tree():
 		return
 
-	var equipo_jugador: String = "azul"
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs and "selected_team" in gs:
-		equipo_jugador = gs.selected_team
-	var equipo_enemigo: String = "rojo" if equipo_jugador == "azul" else "azul"
+	# Equipo del jugador por ID numerico
+	var equipo_jugador: int = GameState.player_team
 
-	# Obtener lista de armas disponibles del config
+	# Equipo enemigo: si el jugador es Azul -> Rojo, si es Rojo -> Azul.
+	# Si es Espectador (0), los NPCs spawnean como Rojo por defecto.
+	var equipo_enemigo: int
+	match equipo_jugador:
+		GameStateClass.Equipo.AZUL:
+			equipo_enemigo = GameStateClass.Equipo.ROJO
+		GameStateClass.Equipo.ROJO:
+			equipo_enemigo = GameStateClass.Equipo.AZUL
+		_:
+			# Espectador u otro: spawnear Rojos por defecto
+			equipo_enemigo = GameStateClass.Equipo.ROJO
+
+	# Lista de armas disponibles
 	var armas_lista: Array[String] = []
 	if ConfigManager and ConfigManager._data.has("Armas"):
 		for categoria in ConfigManager._data["Armas"].keys():
 			for nombre in ConfigManager._data["Armas"][categoria].keys():
 				armas_lista.append(nombre)
-	# Fallback si no hay config de armas
 	if armas_lista.is_empty():
 		armas_lista = [""]
 
@@ -104,17 +113,14 @@ func spawn_wave() -> void:
 		if not npc:
 			continue
 
-		# Asignar relacion y equipo ANTES de add_child
-		if randf() < aliado_ratio:
-			npc.relacion          = NpcBase.Relacion.AMIGABLE
-			npc.equipo            = equipo_jugador
-			npc._relacion_forzada = true
-		else:
-			npc.relacion          = NpcBase.Relacion.ENEMIGO
-			npc.equipo            = equipo_enemigo
-			npc._relacion_forzada = true
+		npc._relacion_forzada = true
 
-		# Asignar arma aleatoria del config
+		# Asignar equipo por ID numerico
+		if randf() < aliado_ratio:
+			npc.equipo_id = equipo_jugador
+		else:
+			npc.equipo_id = equipo_enemigo
+
 		npc.nombre_arma = armas_lista[randi() % armas_lista.size()]
 
 		var spawn_pos: Vector3 = point.global_transform.origin + Vector3(
