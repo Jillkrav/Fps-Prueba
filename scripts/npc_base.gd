@@ -27,7 +27,6 @@ enum Estado {
 @export var estado:      Estado      = Estado.IDLE
 
 ## Nombre del arma a usar (debe coincidir exactamente con la clave en skill.cfg.json).
-## Las subclases con arma asignan su default; el DevMenu puede sobreescribirlo antes de add_child.
 @export var nombre_arma: String = ""
 
 # ─────────────────────────────────────────
@@ -44,18 +43,22 @@ enum Estado {
 # VARIABLES INTERNAS
 # ─────────────────────────────────────────
 
-var current_health:   float  = 100.0
-var target:           Node3D = null
-var last_attack_time: int    = 0
-var is_dead:          bool   = false
-var _base_color:      Color  = Color.WHITE
-# Guarda la relacion que tenía el nodo ANTES de que la subclase la toque.
-# Se setea al instanciar desde DevMenu/Spawner para protegerla.
-var _relacion_forzada: bool = false
+var current_health:    float  = 100.0
+var target:            Node3D = null
+var last_attack_time:  int    = 0
+var is_dead:           bool   = false
+var _base_color:       Color  = Color.WHITE
+var _relacion_forzada: bool   = false
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
+
+# Nodos de la barra de vida flotante (se crean en _ready)
+var _healthbar_root:   Node3D    = null
+var _healthbar_bg:     MeshInstance3D = null
+var _healthbar_fill:   MeshInstance3D = null
+var _weapon_label_3d:  Label3D   = null
 
 # ─────────────────────────────────────────
 # CICLO DE VIDA
@@ -70,10 +73,17 @@ func _ready() -> void:
 	current_health = max_health
 	_apply_relation_color()
 	_pick_target()
+	_setup_healthbar()
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
+
+	# Mantener la barra de vida mirando siempre a la camara
+	if _healthbar_root and is_instance_valid(_healthbar_root):
+		var cam: Camera3D = get_viewport().get_camera_3d()
+		if cam:
+			_healthbar_root.look_at(cam.global_transform.origin, Vector3.UP)
 
 	if target == null or not is_instance_valid(target) \
 			or (target.has_method("is_dead") and target.get("is_dead") == true):
@@ -103,7 +113,7 @@ func _physics_process(delta: float) -> void:
 			direction = (target_pos - global_transform.origin).normalized()
 
 		direction.y = 0
-		direction = direction.normalized()
+		direction   = direction.normalized()
 		look_at_target_flat(target_pos)
 
 		var dist: float = global_transform.origin.distance_to(target_pos)
@@ -119,6 +129,81 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0, speed)
 
 	move_and_slide()
+
+# ─────────────────────────────────────────
+# BARRA DE VIDA FLOTANTE
+# ─────────────────────────────────────────
+
+func _setup_healthbar() -> void:
+	# Nodo raiz que rota hacia la camara
+	_healthbar_root = Node3D.new()
+	_healthbar_root.position = Vector3(0, 2.4, 0)
+	add_child(_healthbar_root)
+
+	# ── Fondo gris ──────────────────────────────────────────────────
+	_healthbar_bg = MeshInstance3D.new()
+	var bg_mesh   := QuadMesh.new()
+	bg_mesh.size  = Vector2(1.1, 0.18)
+	_healthbar_bg.mesh = bg_mesh
+	var bg_mat    := StandardMaterial3D.new()
+	bg_mat.albedo_color      = Color(0.15, 0.15, 0.15, 0.85)
+	bg_mat.shading_mode      = StandardMaterial3D.SHADING_MODE_UNSHADED
+	bg_mat.transparency      = BaseMaterial3D.TRANSPARENCY_ALPHA
+	bg_mat.billboard_mode    = BaseMaterial3D.BILLBOARD_DISABLED
+	_healthbar_bg.set_surface_override_material(0, bg_mat)
+	_healthbar_root.add_child(_healthbar_bg)
+
+	# ── Relleno (vida actual) ────────────────────────────────────────
+	_healthbar_fill = MeshInstance3D.new()
+	var fill_mesh   := QuadMesh.new()
+	fill_mesh.size  = Vector2(1.0, 0.13)
+	_healthbar_fill.mesh = fill_mesh
+	var fill_mat    := StandardMaterial3D.new()
+	fill_mat.albedo_color   = Color(0.1, 0.85, 0.1)
+	fill_mat.shading_mode   = StandardMaterial3D.SHADING_MODE_UNSHADED
+	fill_mat.transparency   = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_healthbar_fill.set_surface_override_material(0, fill_mat)
+	_healthbar_root.add_child(_healthbar_fill)
+
+	# ── Label nombre del arma ───────────────────────────────────────
+	_weapon_label_3d = Label3D.new()
+	_weapon_label_3d.position       = Vector3(0, 0.18, 0.01)
+	_weapon_label_3d.font_size      = 24
+	_weapon_label_3d.modulate       = Color.WHITE
+	_weapon_label_3d.outline_size   = 6
+	_weapon_label_3d.outline_modulate = Color(0, 0, 0, 0.8)
+	_weapon_label_3d.billboard      = BaseMaterial3D.BILLBOARD_DISABLED
+	_weapon_label_3d.double_sided   = true
+	_weapon_label_3d.text           = nombre_arma if nombre_arma != "" else "---"
+	_healthbar_root.add_child(_weapon_label_3d)
+
+	_update_healthbar()
+
+func _update_healthbar() -> void:
+	if not is_instance_valid(_healthbar_fill):
+		return
+	var ratio: float = clamp(current_health / max_health, 0.0, 1.0)
+	var full_width: float = 1.0
+	# Escala horizontal el fill segun la vida restante
+	_healthbar_fill.scale.x = ratio
+	# Desplazar para que se vacíe de derecha a izquierda
+	_healthbar_fill.position.x = (ratio - 1.0) * full_width * 0.5
+
+	# Color: verde > amarillo > rojo segun ratio
+	var fill_mat: StandardMaterial3D = _healthbar_fill.get_surface_override_material(0)
+	if fill_mat:
+		if ratio > 0.5:
+			fill_mat.albedo_color = Color(0.1, 0.85, 0.1)
+		elif ratio > 0.25:
+			fill_mat.albedo_color = Color(0.9, 0.75, 0.0)
+		else:
+			fill_mat.albedo_color = Color(0.9, 0.1, 0.1)
+
+# Llama esto despues de asignar nombre_arma para que el label se actualice
+func update_weapon_label(nombre: String) -> void:
+	nombre_arma = nombre
+	if is_instance_valid(_weapon_label_3d):
+		_weapon_label_3d.text = nombre if nombre != "" else "---"
 
 # ─────────────────────────────────────────
 # RELACION
@@ -191,7 +276,8 @@ func take_damage(amount: float) -> void:
 	if is_dead:
 		return
 	current_health -= amount
-	current_health = clamp(current_health, 0, max_health)
+	current_health  = clamp(current_health, 0, max_health)
+	_update_healthbar()
 	flash_hit()
 	if current_health <= 0:
 		die()

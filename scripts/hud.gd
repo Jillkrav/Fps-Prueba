@@ -1,19 +1,28 @@
+# scripts/hud.gd
 extends CanvasLayer
 
-@onready var health_bar: ProgressBar = $HUD/MarginContainer/VBox/HealthBar
-@onready var health_label: Label = $HUD/MarginContainer/VBox/HealthBar/Label
-@onready var ammo_label: Label = $HUD/MarginContainer/VBox/AmmoContainer/AmmoLabel
-@onready var weapon_label: Label = $HUD/MarginContainer/VBox/AmmoContainer/WeaponLabel
-@onready var next_spawn_label: Label = $HUD/MarginContainer/VBox/SpawnLabel
-@onready var crosshair: TextureRect = $HUD/Crosshair
-@onready var death_screen: Panel = $DeathScreen
-@onready var pause_screen: Panel = $PauseScreen
-@onready var dev_menu: Control = $DevMenu
+@onready var health_bar:       ProgressBar = $HUD/MarginContainer/VBox/HealthBar
+@onready var health_label:     Label       = $HUD/MarginContainer/VBox/HealthBar/Label
+@onready var ammo_label:       Label       = $HUD/MarginContainer/VBox/AmmoContainer/AmmoLabel
+@onready var weapon_label:     Label       = $HUD/MarginContainer/VBox/AmmoContainer/WeaponLabel
+@onready var next_spawn_label: Label       = $HUD/MarginContainer/VBox/SpawnLabel
+@onready var crosshair:        TextureRect = $HUD/Crosshair
+@onready var death_screen:     Panel       = $DeathScreen
+@onready var pause_screen:     Panel       = $PauseScreen
+@onready var dev_menu:         Control     = $DevMenu
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	death_screen.visible = false
-	pause_screen.visible = false
+	death_screen.visible  = false
+	pause_screen.visible  = false
+
+	# Registrar la accion toggle_cursor por codigo para no depender del InputMap del proyecto
+	if not InputMap.has_action("toggle_cursor"):
+		InputMap.add_action("toggle_cursor")
+		var ev := InputEventKey.new()
+		ev.keycode = KEY_F1
+		InputMap.action_add_event("toggle_cursor", ev)
+
 	# El cursor empieza VISIBLE para que el jugador pueda usar la UI de seleccion
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -31,7 +40,7 @@ func update_spawn_timer(time_left: float) -> void:
 	next_spawn_label.text = "Siguiente oleada en: " + str(snappedf(time_left, 0.1)) + "s"
 
 func _process(_delta: float) -> void:
-	# F1: toggle cursor en cualquier momento (util durante seleccion de equipo/armas)
+	# F1: toggle cursor (la accion ya existe, registrada en _ready)
 	if Input.is_action_just_pressed("toggle_cursor"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -58,19 +67,19 @@ func toggle_pause() -> void:
 
 func _on_player_health_changed(current: float, max_val: float) -> void:
 	health_bar.max_value = max_val
-	health_bar.value = current
-	health_label.text = "VIDA: " + str(int(current)) + " / " + str(int(max_val))
+	health_bar.value     = current
+	health_label.text    = "VIDA: " + str(int(current)) + " / " + str(int(max_val))
 
 func _on_player_weapon_changed(w_name: String, ammo_in_mag: int, reserve_ammo: int) -> void:
 	weapon_label.text = w_name
-	ammo_label.text = str(ammo_in_mag) + " / " + str(reserve_ammo)
+	ammo_label.text   = str(ammo_in_mag) + " / " + str(reserve_ammo)
 
 func _on_player_ammo_changed(ammo_in_mag: int, reserve_ammo: int) -> void:
 	ammo_label.text = str(ammo_in_mag) + " / " + str(reserve_ammo)
 
 func _on_player_died() -> void:
 	death_screen.visible = true
-	get_tree().paused = true
+	get_tree().paused    = true
 
 func _on_retry_pressed() -> void:
 	get_tree().paused = false
@@ -81,6 +90,6 @@ func _on_menu_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 func _on_resume_pressed() -> void:
-	get_tree().paused = false
+	get_tree().paused    = false
 	pause_screen.visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode     = Input.MOUSE_MODE_CAPTURED

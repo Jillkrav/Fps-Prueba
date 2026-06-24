@@ -1,65 +1,89 @@
 # scripts/config_manager.gd
-# Autoload singleton. Registrado como "ConfigManager" en project.godot.
+# Autoload singleton. Registrar como "ConfigManager" en Project Settings > Autoload.
 extends Node
 
-const CONFIG_PATH := "res://config/skill.json"
+const CONFIG_PATH := "res://config/skill.cfg.json"
 
 var _data: Dictionary = {}
 
-# ── Accesos directos ──────────────────────────────────────────────────────────
+# ─── Accesos directos ───────────────────────────────────────────────
+
 var salud_jugador: float:
-	get: return float(_get_path("SistemaSalud/SaludEstandarJugador", 100.0))
+	get: return _get("SistemaSalud/SaludEstandarJugador", 100.0)
 
 var mult_cabeza: float:
-	get: return float(_get_path("SistemaSalud/MultiplicadoresDanio/Cabeza", 5.0))
+	get: return _get("SistemaSalud/MultiplicadoresDano/Cabeza", 5.0)
 
 var mult_torso: float:
-	get: return float(_get_path("SistemaSalud/MultiplicadoresDanio/Torso", 1.0))
+	get: return _get("SistemaSalud/MultiplicadoresDano/Torso", 1.0)
 
-# ── Ciclo de vida ─────────────────────────────────────────────────────────────
+# ─── Inicializacion ──────────────────────────────────────────────────
+
 func _ready() -> void:
 	_load_config()
 
 func _load_config() -> void:
 	if not FileAccess.file_exists(CONFIG_PATH):
-		push_error("ConfigManager: No se encontro " + CONFIG_PATH)
+		push_error("ConfigManager: No se encontro skill.cfg.json en " + CONFIG_PATH)
 		return
-	var file := FileAccess.open(CONFIG_PATH, FileAccess.READ)
-	var text  := file.get_as_text()
+
+	var file      := FileAccess.open(CONFIG_PATH, FileAccess.READ)
+	var json_text := file.get_as_text()
 	file.close()
-	var json := JSON.new()
-	if json.parse(text) != OK:
-		push_error("ConfigManager: Error JSON linea %d — %s" % [json.get_error_line(), json.get_error_message()])
+
+	var json  := JSON.new()
+	var error := json.parse(json_text)
+	if error != OK:
+		push_error("ConfigManager: Error al parsear JSON — linea %d: %s" % [json.get_error_line(), json.get_error_message()])
 		return
+
 	_data = json.get_data().get("ConfiguracionJuego", {})
-	print("ConfigManager: skill.json cargado OK")
+	print("ConfigManager: skill.cfg.json cargado OK. Claves: ", _data.keys())
 
-# ── API publica ───────────────────────────────────────────────────────────────
+# ─── Metodos publicos ────────────────────────────────────────────────
 
-## Devuelve el dict completo de un arma buscando en todas las categorias.
-## Ejemplo: ConfigManager.get_arma("USP")
+## Devuelve todos los datos de un arma por nombre exacto del JSON.
+## Busca en todas las categorias (Pistolas, Subfusiles, Rifles, etc).
+## Devuelve diccionario con claves del JSON, o {} si no existe.
 func get_arma(nombre: String) -> Dictionary:
-	for categoria in _data.get("Armas", {}).values():
+	var armas: Dictionary = _data.get("Armas", {})
+	for categoria in armas.values():
 		if categoria.has(nombre):
 			return categoria[nombre]
-	push_warning("ConfigManager: Arma '%s' no encontrada en skill.json" % nombre)
+	push_warning("ConfigManager: Arma '%s' no encontrada en skill.cfg.json" % nombre)
 	return {}
 
 ## Devuelve la vida de un NPC por tipo ("Enemigo" o "Aliado").
 func get_vida_npc(tipo: String) -> float:
 	return float(_data.get("NPCs", {}).get(tipo, {}).get("Vida", 100.0))
 
-## Devuelve la curacion de un botiquin ("BotiquinPequeno", "BotiquinMediano", "BotiquinGrande").
+## Devuelve la curacion de un botiquin por nombre ("BotiquinPequeno", etc).
 func get_curacion_botiquin(nombre: String) -> float:
 	return float(_data.get("Objetos", {}).get(nombre, {}).get("CantidadCuracion", 25.0))
 
-# ── Acceso interno por ruta "Seccion/Clave/SubClave" ──────────────────────────
-func _get_path(path: String, default_val: Variant) -> Variant:
-	var keys   := path.split("/")
+## Devuelve lista de nombres de armas de una categoria ("Pistolas", "Rifles", etc).
+## Si categoria es "", devuelve todas las armas de todas las categorias.
+func get_nombres_armas(categoria: String = "") -> Array[String]:
+	var result: Array[String] = []
+	var armas: Dictionary = _data.get("Armas", {})
+	if categoria != "" and armas.has(categoria):
+		result.assign(armas[categoria].keys())
+	else:
+		for cat in armas.values():
+			for nombre in cat.keys():
+				result.append(nombre)
+	return result
+
+# ─── Acceso generico por ruta ────────────────────────────────────────
+
+## Acceso generico. Separa claves con "/".
+## Ejemplo: _get("SistemaSalud/SaludEstandarJugador", 100.0)
+func _get(path: String, default_value: Variant) -> Variant:
+	var keys    := path.split("/")
 	var current: Variant = _data
 	for key in keys:
 		if current is Dictionary and current.has(key):
 			current = current[key]
 		else:
-			return default_val
+			return default_value
 	return current
