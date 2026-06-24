@@ -13,7 +13,6 @@ extends CanvasLayer
 @onready var btn_volver:      Button        = $WeaponPanel/BtnVolver
 @onready var weapon_title:    Label         = $WeaponPanel/Title
 
-# Lista de armas disponibles (del JSON), se rellena dinámicamente
 var _armas_lista: Array[String] = []
 var _armas_buttons: Array[Button] = []
 var _selected_team: String = "azul"
@@ -21,13 +20,10 @@ var _selected_team: String = "azul"
 func _ready() -> void:
 	team_panel.visible   = true
 	weapon_panel.visible = false
-	# Señales de equipo ya conectadas en la escena
-	# Poblar botones de armas dinámicamente desde ConfigManager
 	_poblar_armas()
 
 func _poblar_armas() -> void:
 	_armas_lista.clear()
-	# Eliminar botones dinámicos previos (mantener BtnVolver)
 	for btn in _armas_buttons:
 		btn.queue_free()
 	_armas_buttons.clear()
@@ -36,7 +32,6 @@ func _poblar_armas() -> void:
 	if ConfigManager and ConfigManager._data.has("Armas"):
 		armas_raw = ConfigManager._data["Armas"]
 
-	# Ocultar botones hardcodeados de la escena (Metralleta/Escopeta) si hay config
 	if not armas_raw.is_empty():
 		btn_metralleta.visible = false
 		btn_escopeta.visible   = false
@@ -47,11 +42,10 @@ func _poblar_armas() -> void:
 				var btn := Button.new()
 				btn.text = nombre_arma
 				btn.custom_minimum_size = Vector2(160, 80)
-				btn.theme_override_font_sizes["font_size"] = 18
+				btn.add_theme_font_size_override("font_size", 18)
 				btn.pressed.connect(_on_weapon_pressed.bind(nombre_arma))
 				row.add_child(btn)
 				_armas_buttons.append(btn)
-	# Fallback: si no hay config usar los botones hardcodeados
 	else:
 		btn_metralleta.visible = true
 		btn_escopeta.visible   = true
