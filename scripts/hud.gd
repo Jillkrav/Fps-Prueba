@@ -29,9 +29,9 @@ func update_spawn_timer(time_left: float) -> void:
 	next_spawn_label.text = "Siguiente oleada en: " + str(snappedf(time_left, 0.1)) + "s"
 
 func _process(_delta: float) -> void:
-	# Detectar Q aqui: el HUDLayer tiene process_mode Always garantizado
 	if Input.is_action_just_pressed("dev_menu"):
-		dev_menu.toggle_menu()
+		if dev_menu and dev_menu.has_method("toggle_menu"):
+			dev_menu.toggle_menu()
 		return
 
 	if Input.is_action_just_pressed("ui_cancel"):

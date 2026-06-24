@@ -1,5 +1,5 @@
 ## Menu de desarrollo. Se activa con Q desde hud.gd.
-## Nodo DevMenu en hud.tscn es tipo Control → extends Control.
+## Nodo DevMenu en hud.tscn es tipo Control -> extends Control.
 extends Control
 
 # ─────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ const NPC_MELEE:    String = "res://scenes/npcs/npc_melee.tscn"
 #   └── PanelNPC/VBox/
 #         ├── GridAtributos/OptRelacion
 #         ├── GridAtributos/OptExperiencia
-#         ├── GridAtributos/OptArma   ← selector de TIPO (Con Arma / Melee)
+#         ├── GridAtributos/OptArma   <- selector de TIPO (Con Arma / Melee)
 #         ├── BtnSpawn
 #         └── BtnVolver
 # ─────────────────────────────────────────────────────
@@ -29,12 +29,12 @@ const NPC_MELEE:    String = "res://scenes/npcs/npc_melee.tscn"
 @onready var btn_generar: Button           = $PanelPrincipal/VBox/BtnGenerar
 @onready var btn_spawn: Button             = $PanelNPC/VBox/BtnSpawn
 @onready var btn_volver: Button            = $PanelNPC/VBox/BtnVolver
-@onready var opt_equipo: OptionButton      = $PanelNPC/VBox/GridAtributos/OptRelacion
+@onready var opt_relacion: OptionButton    = $PanelNPC/VBox/GridAtributos/OptRelacion
 @onready var opt_experiencia: OptionButton = $PanelNPC/VBox/GridAtributos/OptExperiencia
 @onready var opt_tipo_npc: OptionButton    = $PanelNPC/VBox/GridAtributos/OptArma
 @onready var lbl_status: Label             = $PanelPrincipal/VBox/LblStatus
 
-# Selector de arma creado dinámicamente (no existe como nodo fijo en la escena)
+# Selector de arma creado dinamicamente (no existe como nodo fijo en la escena)
 var opt_arma_dinamico: OptionButton = null
 var _armas_lista: Array[String] = []
 var is_invisible: bool = false
@@ -46,27 +46,28 @@ var is_invisible: bool = false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	# ── Tipo de NPC ───────────────────────────────────────────────────
+	# -- Tipo de NPC ----------------------------------------------------------
 	opt_tipo_npc.clear()
 	opt_tipo_npc.add_item("Con Arma")
 	opt_tipo_npc.add_item("Melee")
 	opt_tipo_npc.item_selected.connect(_on_tipo_npc_changed)
 
-	# ── Equipo ────────────────────────────────────────────────────────
-	opt_equipo.clear()
-	opt_equipo.add_item("Equipo 2 (Enemigo)", NpcBase.Equipo.DOS)
-	opt_equipo.add_item("Equipo 1 (Aliado)",  NpcBase.Equipo.UNO)
+	# -- Relacion (antes Equipo) -----------------------------------------------
+	opt_relacion.clear()
+	opt_relacion.add_item("Enemigo",  NpcBase.Relacion.ENEMIGO)
+	opt_relacion.add_item("Aliado",   NpcBase.Relacion.AMIGABLE)
+	opt_relacion.add_item("Neutral",  NpcBase.Relacion.NEUTRAL)
 
-	# ── Experiencia ───────────────────────────────────────────────────
+	# -- Experiencia ----------------------------------------------------------
 	opt_experiencia.clear()
 	opt_experiencia.add_item("Baja",  NpcBase.Experiencia.BAJA)
 	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
 	opt_experiencia.add_item("Alta",  NpcBase.Experiencia.ALTA)
 
-	# ── Crear selector de arma dinámico ───────────────────────────────
+	# -- Crear selector de arma dinamico --------------------------------------
 	_crear_selector_arma()
 
-	# ── Estado inicial ────────────────────────────────────────────────
+	# -- Estado inicial -------------------------------------------------------
 	visible = false
 	panel_principal.visible = true
 	panel_npc.visible = false
@@ -76,16 +77,14 @@ func _ready() -> void:
 	btn_spawn.pressed.connect(_on_spawn_pressed)
 	btn_volver.pressed.connect(_on_volver_pressed)
 
-# Crea un OptionButton dinámico para armas debajo del GridAtributos
+# Crea un OptionButton dinamico para armas debajo del GridAtributos
 func _crear_selector_arma() -> void:
 	if opt_arma_dinamico != null:
 		opt_arma_dinamico.queue_free()
 
 	opt_arma_dinamico = OptionButton.new()
-	# En Godot 4 los nodos creados por código usan add_theme_*_override()
 	opt_arma_dinamico.add_theme_font_size_override("font_size", 14)
 	$PanelNPC/VBox.add_child(opt_arma_dinamico)
-	# Mover antes del BtnSpawn
 	$PanelNPC/VBox.move_child(opt_arma_dinamico, btn_spawn.get_index())
 
 	_poblar_armas()
@@ -167,7 +166,7 @@ func _on_spawn_pressed() -> void:
 		push_error("DevMenu: la escena no es un NpcBase: " + escena_path)
 		return
 
-	npc.equipo      = opt_equipo.get_selected_id() as NpcBase.Equipo
+	npc.relacion    = opt_relacion.get_selected_id() as NpcBase.Relacion
 	npc.experiencia = opt_experiencia.get_selected_id() as NpcBase.Experiencia
 
 	if not es_melee and opt_arma_dinamico != null:
@@ -177,7 +176,7 @@ func _on_spawn_pressed() -> void:
 
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if not player:
-		push_error("DevMenu: no se encontró al jugador")
+		push_error("DevMenu: no se encontro al jugador")
 		npc.queue_free()
 		return
 
@@ -196,7 +195,7 @@ func _on_spawn_pressed() -> void:
 			arma_txt = _armas_lista[idx]
 
 	lbl_status.text = "NPC: %s | %s | Arma: %s" % [
-		opt_equipo.get_item_text(opt_equipo.get_selected()),
+		opt_relacion.get_item_text(opt_relacion.get_selected()),
 		opt_experiencia.get_item_text(opt_experiencia.get_selected()),
 		arma_txt
 	]

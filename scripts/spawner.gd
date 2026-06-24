@@ -5,8 +5,8 @@ class_name NpcSpawner
 @export var spawn_count_per_cycle: int = 3
 @export var spawn_points_paths: Array[NodePath] = []
 
-## Porcentaje de NPC aliados (Equipo UNO) por wave (0.0 = todos enemigos, 1.0 = todos aliados)
-@export_range(0.0, 1.0) var equipo1_ratio: float = 0.0
+## Porcentaje de NPC aliados (Relacion.AMIGABLE) por wave (0.0 = todos enemigos, 1.0 = todos aliados)
+@export_range(0.0, 1.0) var aliado_ratio: float = 0.0
 
 var npc_melee_scene: PackedScene      = preload("res://scenes/npcs/npc_melee.tscn")
 var npc_pistolero_scene: PackedScene  = preload("res://scenes/npcs/npc_pistolero.tscn")
@@ -76,11 +76,11 @@ func spawn_wave() -> void:
 		if not npc:
 			continue
 
-		# Asignar equipo ANTES de add_child para que _ready() lo reciba correctamente
-		if randf() < equipo1_ratio:
-			npc.equipo = NpcBase.Equipo.UNO
+		# Asignar relacion ANTES de add_child para que _ready() la reciba correctamente
+		if randf() < aliado_ratio:
+			npc.relacion = NpcBase.Relacion.AMIGABLE
 		else:
-			npc.equipo = NpcBase.Equipo.DOS
+			npc.relacion = NpcBase.Relacion.ENEMIGO
 
 		var spawn_pos: Vector3 = point.global_transform.origin + Vector3(
 			randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0)
