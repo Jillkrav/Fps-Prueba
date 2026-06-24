@@ -1,11 +1,9 @@
 ## Menu de desarrollo. Se activa con Q desde hud.gd.
-## Permite: ponerse invisible a los NPC y spawnear cualquier NPC con cualquier arma del JSON.
+## Nodo DevMenu en hud.tscn es tipo Control → extends Control.
 extends Control
 
 # ─────────────────────────────────────────────────────
 # ESCENAS DE NPC BASE DISPONIBLES
-# Solo 2 tipos: con arma (pistolero) y melee.
-# El arma se asigna por separado desde el selector.
 # ─────────────────────────────────────────────────────
 
 const NPC_CON_ARMA: String = "res://scenes/npcs/npc_pistolero.tscn"
@@ -13,6 +11,16 @@ const NPC_MELEE:    String = "res://scenes/npcs/npc_melee.tscn"
 
 # ─────────────────────────────────────────────────────
 # REFERENCIAS DE NODOS  (estructura real de hud.tscn)
+# DevMenu
+#   ├── PanelPrincipal/VBox/BtnInvisible
+#   ├── PanelPrincipal/VBox/BtnGenerar
+#   ├── PanelPrincipal/VBox/LblStatus
+#   └── PanelNPC/VBox/
+#         ├── GridAtributos/OptRelacion
+#         ├── GridAtributos/OptExperiencia
+#         ├── GridAtributos/OptArma   ← selector de TIPO (Con Arma / Melee)
+#         ├── BtnSpawn
+#         └── BtnVolver
 # ─────────────────────────────────────────────────────
 
 @onready var panel_principal: Panel        = $PanelPrincipal
@@ -24,16 +32,12 @@ const NPC_MELEE:    String = "res://scenes/npcs/npc_melee.tscn"
 @onready var opt_equipo: OptionButton      = $PanelNPC/VBox/GridAtributos/OptRelacion
 @onready var opt_experiencia: OptionButton = $PanelNPC/VBox/GridAtributos/OptExperiencia
 @onready var opt_tipo_npc: OptionButton    = $PanelNPC/VBox/GridAtributos/OptArma
-@onready var opt_arma: OptionButton        = $PanelNPC/VBox/GridAtributos/OptArmaCfg
 @onready var lbl_status: Label             = $PanelPrincipal/VBox/LblStatus
-@onready var lbl_arma_detalle: Label       = get_node_or_null("PanelNPC/VBox/LblArmaDetalle")
 
-# ─────────────────────────────────────────────────────
-# ESTADO INTERNO
-# ─────────────────────────────────────────────────────
-
-var is_invisible: bool = false
+# Selector de arma creado dinámicamente (no existe como nodo fijo en la escena)
+var opt_arma_dinamico: OptionButton = null
 var _armas_lista: Array[String] = []
+var is_invisible: bool = false
 
 # ─────────────────────────────────────────────────────
 # CICLO DE VIDA
@@ -42,7 +46,7 @@ var _armas_lista: Array[String] = []
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	# ── Tipo de NPC: Con Arma o Melee ─────────────────────────────────
+	# ── Tipo de NPC ───────────────────────────────────────────────────
 	opt_tipo_npc.clear()
 	opt_tipo_npc.add_item("Con Arma")
 	opt_tipo_npc.add_item("Melee")
@@ -59,8 +63,8 @@ func _ready() -> void:
 	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
 	opt_experiencia.add_item("Alta",  NpcBase.Experiencia.ALTA)
 
-	# ── Armas desde ConfigManager ─────────────────────────────────────
-	_populate_armas()
+	# ── Crear selector de arma dinámico ───────────────────────────────
+	_crear_selector_arma()
 
 	# ── Estado inicial ────────────────────────────────────────────────
 	visible = false
@@ -71,25 +75,39 @@ func _ready() -> void:
 	btn_generar.pressed.connect(_on_generar_pressed)
 	btn_spawn.pressed.connect(_on_spawn_pressed)
 	btn_volver.pressed.connect(_on_volver_pressed)
-	opt_arma.item_selected.connect(_on_arma_selected)
 
-# Lee las armas disponibles desde ConfigManager
-func _populate_armas() -> void:
+# Crea un OptionButton dinámico para armas debajo del GridAtributos
+func _crear_selector_arma() -> void:
+	if opt_arma_dinamico != null:
+		opt_arma_dinamico.queue_free()
+
+	opt_arma_dinamico = OptionButton.new()
+	opt_arma_dinamico.theme_override_font_sizes["font_size"] = 14
+	$PanelNPC/VBox.add_child(opt_arma_dinamico)
+	# Mover antes del BtnSpawn
+	$PanelNPC/VBox.move_child(opt_arma_dinamico, btn_spawn.get_index())
+
+	_poblar_armas()
+
+func _poblar_armas() -> void:
+	if opt_arma_dinamico == null:
+		return
 	_armas_lista.clear()
-	opt_arma.clear()
-	# Obtener todas las categorías y armas del JSON
-	var armas_cfg: Dictionary = {}
+	opt_arma_dinamico.clear()
+
+	var armas_raw: Dictionary = {}
 	if ConfigManager and ConfigManager._data.has("Armas"):
-		armas_cfg = ConfigManager._data["Armas"]
-	for categoria in armas_cfg.values():
-		for nombre in categoria.keys():
+		armas_raw = ConfigManager._data["Armas"]
+
+	for categoria in armas_raw.keys():
+		for nombre in armas_raw[categoria].keys():
 			_armas_lista.append(nombre)
-			opt_arma.add_item(nombre)
-	# Fallback si no hay config cargada
+			opt_arma_dinamico.add_item("%s [%s]" % [nombre, categoria])
+
 	if _armas_lista.is_empty():
 		_armas_lista = ["USP"]
-		opt_arma.add_item("USP")
-	opt_arma.disabled = false
+		opt_arma_dinamico.add_item("USP [Pistolas]")
+		push_warning("DevMenu: sin armas en ConfigManager, usando USP como fallback")
 
 # ─────────────────────────────────────────────────────
 # TOGGLE DEL MENU
@@ -124,36 +142,15 @@ func _on_invisible_pressed() -> void:
 func _on_generar_pressed() -> void:
 	panel_principal.visible = false
 	panel_npc.visible = true
-	# Refrescar armas al abrir el panel
-	_populate_armas()
 
 func _on_volver_pressed() -> void:
 	panel_npc.visible = false
 	panel_principal.visible = true
 
 func _on_tipo_npc_changed(index: int) -> void:
-	# Si es Melee, deshabilitar selector de arma
 	var es_melee: bool = (index == 1)
-	opt_arma.disabled = es_melee
-	if lbl_arma_detalle:
-		lbl_arma_detalle.text = ""
-
-func _on_arma_selected(index: int) -> void:
-	if lbl_arma_detalle == null:
-		return
-	if index < 0 or index >= _armas_lista.size():
-		return
-	var nombre: String = _armas_lista[index]
-	var cfg: Dictionary = ConfigManager.get_arma(nombre)
-	if cfg.is_empty():
-		lbl_arma_detalle.text = ""
-		return
-	lbl_arma_detalle.text = "%s  |  Daño: %s  |  Cadencia: %ss  |  Cargador: %s" % [
-		nombre,
-		str(cfg.get("DañoAlNPC", "?")),
-		str(cfg.get("SegundosPorBala", "?")),
-		str(cfg.get("TamañoCargador", "?"))
-	]
+	if opt_arma_dinamico != null:
+		opt_arma_dinamico.disabled = es_melee
 
 func _on_spawn_pressed() -> void:
 	var es_melee: bool = (opt_tipo_npc.get_selected() == 1)
@@ -169,17 +166,14 @@ func _on_spawn_pressed() -> void:
 		push_error("DevMenu: la escena no es un NpcBase: " + escena_path)
 		return
 
-	# ── Aplicar equipo y experiencia ──────────────────────────────────
 	npc.equipo      = opt_equipo.get_selected_id() as NpcBase.Equipo
 	npc.experiencia = opt_experiencia.get_selected_id() as NpcBase.Experiencia
 
-	# ── Asignar arma si no es melee ───────────────────────────────────
-	if not es_melee and _armas_lista.size() > 0:
-		var idx: int = opt_arma.get_selected()
+	if not es_melee and opt_arma_dinamico != null:
+		var idx: int = opt_arma_dinamico.get_selected()
 		if idx >= 0 and idx < _armas_lista.size():
 			npc.nombre_arma = _armas_lista[idx]
 
-	# ── Spawn cerca del jugador ───────────────────────────────────────
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if not player:
 		push_error("DevMenu: no se encontró al jugador")
@@ -194,11 +188,16 @@ func _on_spawn_pressed() -> void:
 	world.add_child(npc)
 	npc.global_transform.origin = spawn_pos
 
-	var nombre_arma_txt: String = _armas_lista[opt_arma.get_selected()] if not es_melee else "Melee"
-	lbl_status.text = "NPC spawneado | %s | %s | Arma: %s" % [
+	var arma_txt: String = "Melee"
+	if not es_melee and opt_arma_dinamico != null:
+		var idx: int = opt_arma_dinamico.get_selected()
+		if idx >= 0 and idx < _armas_lista.size():
+			arma_txt = _armas_lista[idx]
+
+	lbl_status.text = "NPC: %s | %s | Arma: %s" % [
 		opt_equipo.get_item_text(opt_equipo.get_selected()),
 		opt_experiencia.get_item_text(opt_experiencia.get_selected()),
-		nombre_arma_txt
+		arma_txt
 	]
 	panel_npc.visible = false
 	panel_principal.visible = true

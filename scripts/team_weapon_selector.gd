@@ -1,79 +1,89 @@
 # scripts/team_weapon_selector.gd
 # Pantalla de selección de equipo y arma antes de entrar al mapa.
-# Rellena los OptionButton con los datos reales de skill.cfg.json.
-extends Control
+# Nodo raíz de la escena es CanvasLayer → extends CanvasLayer.
+extends CanvasLayer
 
-@onready var opt_equipo:  OptionButton = $VBox/OptEquipo
-@onready var opt_arma:    OptionButton = $VBox/OptArma
-@onready var btn_jugar:   Button       = $VBox/BtnJugar
-@onready var lbl_detalle: Label        = $VBox/LblDetalle
+# Referencias reales de team_weapon_selector.tscn
+@onready var team_panel:      VBoxContainer = $TeamPanel
+@onready var weapon_panel:    VBoxContainer = $WeaponPanel
+@onready var btn_rojo:        Button        = $TeamPanel/BtnRojo
+@onready var btn_azul:        Button        = $TeamPanel/BtnAzul
+@onready var btn_metralleta:  Button        = $WeaponPanel/WeaponsRow/BtnMetralleta
+@onready var btn_escopeta:    Button        = $WeaponPanel/WeaponsRow/BtnEscopeta
+@onready var btn_volver:      Button        = $WeaponPanel/BtnVolver
+@onready var weapon_title:    Label         = $WeaponPanel/Title
 
-# Lista paralela para recuperar el nombre de arma por índice
+# Lista de armas disponibles (del JSON), se rellena dinámicamente
 var _armas_lista: Array[String] = []
+var _armas_buttons: Array[Button] = []
+var _selected_team: String = "azul"
 
 func _ready() -> void:
-	# ── Equipos ──────────────────────────────────────────────────────
-	opt_equipo.clear()
-	opt_equipo.add_item("Equipo Azul (Aliado)",   0)
-	opt_equipo.add_item("Equipo Rojo (Enemigo)",  1)
-	# Por defecto: azul
-	opt_equipo.select(0)
-
-	# ── Armas desde ConfigManager ────────────────────────────────────
+	team_panel.visible   = true
+	weapon_panel.visible = false
+	# Señales de equipo ya conectadas en la escena
+	# Poblar botones de armas dinámicamente desde ConfigManager
 	_poblar_armas()
-
-	# Mostrar detalle del arma seleccionada al inicio
-	_on_arma_seleccionada(0)
-
-	opt_arma.item_selected.connect(_on_arma_seleccionada)
-	btn_jugar.pressed.connect(_on_jugar_pressed)
 
 func _poblar_armas() -> void:
 	_armas_lista.clear()
-	opt_arma.clear()
-	var armas_raw: Dictionary = ConfigManager._data.get("Armas", {})
-	for categoria: String in armas_raw.keys():
-		var cat_dict: Dictionary = armas_raw[categoria]
-		for nombre_arma: String in cat_dict.keys():
-			_armas_lista.append(nombre_arma)
-			opt_arma.add_item("%s  [%s]" % [nombre_arma, categoria])
+	# Eliminar botones dinámicos previos (mantener BtnVolver)
+	for btn in _armas_buttons:
+		btn.queue_free()
+	_armas_buttons.clear()
 
-	if _armas_lista.is_empty():
-		push_error("TeamWeaponSelector: No se encontraron armas en skill.cfg.json")
+	var armas_raw: Dictionary = {}
+	if ConfigManager and ConfigManager._data.has("Armas"):
+		armas_raw = ConfigManager._data["Armas"]
 
-func _on_arma_seleccionada(index: int) -> void:
-	if index < 0 or index >= _armas_lista.size():
-		return
-	var nombre: String = _armas_lista[index]
-	var cfg: Dictionary = ConfigManager.get_arma(nombre)
-	if cfg.is_empty():
-		lbl_detalle.text = ""
-		return
-	lbl_detalle.text = (
-		"%s\nDaño al jugador: %s  |  Daño al NPC: %s\nCargador: %s  |  Reserva: %s\nCadencia: %ss/bala  |  Recarga: %ss" % [
-			nombre,
-			str(cfg.get("DañoAlJugador", "—")),
-			str(cfg.get("DañoAlNPC", "—")),
-			str(cfg.get("TamañoCargador", "—")),
-			str(cfg.get("ReservaMunicionMaxima", "—")),
-			str(cfg.get("SegundosPorBala", "—")),
-			str(cfg.get("TiempoRecargaSegundos", "—")),
-		]
-	)
+	# Ocultar botones hardcodeados de la escena (Metralleta/Escopeta) si hay config
+	if not armas_raw.is_empty():
+		btn_metralleta.visible = false
+		btn_escopeta.visible   = false
+		var row: HBoxContainer = $WeaponPanel/WeaponsRow
+		for categoria in armas_raw.keys():
+			for nombre_arma in armas_raw[categoria].keys():
+				_armas_lista.append(nombre_arma)
+				var btn := Button.new()
+				btn.text = nombre_arma
+				btn.custom_minimum_size = Vector2(160, 80)
+				btn.theme_override_font_sizes["font_size"] = 18
+				btn.pressed.connect(_on_weapon_pressed.bind(nombre_arma))
+				row.add_child(btn)
+				_armas_buttons.append(btn)
+	# Fallback: si no hay config usar los botones hardcodeados
+	else:
+		btn_metralleta.visible = true
+		btn_escopeta.visible   = true
 
-func _on_jugar_pressed() -> void:
-	if _armas_lista.is_empty():
-		return
+func _on_team_rojo_pressed() -> void:
+	_selected_team = "rojo"
+	team_panel.visible   = false
+	weapon_panel.visible = true
 
-	# ── Guardar equipo ────────────────────────────────────────────────
-	match opt_equipo.get_selected_id():
-		0: GameState.selected_team = "azul"
-		1: GameState.selected_team = "rojo"
+func _on_team_azul_pressed() -> void:
+	_selected_team = "azul"
+	team_panel.visible   = false
+	weapon_panel.visible = true
 
-	# ── Guardar arma ─────────────────────────────────────────────────
-	var arma_idx: int = opt_arma.get_selected()
-	if arma_idx >= 0 and arma_idx < _armas_lista.size():
-		GameState.selected_weapon = _armas_lista[arma_idx]
+func _on_weapon_pressed(nombre_arma: String) -> void:
+	_confirmar_seleccion(nombre_arma)
 
-	# ── Cargar mapa ───────────────────────────────────────────────────
-	get_tree().change_scene_to_file(GameState.selected_map)
+func _on_weapon_metralleta_pressed() -> void:
+	_confirmar_seleccion("MP7")
+
+func _on_weapon_escopeta_pressed() -> void:
+	_confirmar_seleccion("M3")
+
+func _on_weapon_back_pressed() -> void:
+	weapon_panel.visible = false
+	team_panel.visible   = true
+
+func _confirmar_seleccion(nombre_arma: String) -> void:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs:
+		if "selected_weapon" in gs:
+			gs.selected_weapon = nombre_arma
+		if "selected_team" in gs:
+			gs.selected_team = _selected_team
+	queue_free()
