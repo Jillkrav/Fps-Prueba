@@ -64,6 +64,27 @@ func _player_is_invisible() -> bool:
 	var player: Node = get_tree().get_first_node_in_group("player")
 	return player != null and player.is_in_group("invisible_to_npc")
 
+## Devuelve el equipo del jugador según GameState ("rojo" → DOS, "azul" → UNO, "" → ninguno/enemigo de todos).
+func _get_player_team() -> Equipo:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs:
+		match gs.selected_team:
+			"rojo":
+				return Equipo.DOS
+			"azul":
+				return Equipo.UNO
+	# Por defecto si no eligió equipo, se considera equipo UNO
+	return Equipo.UNO
+
+## Devuelve true si este NPC es enemigo del nodo indicado.
+func es_enemigo_de(nodo: Node) -> bool:
+	if nodo.is_in_group("player"):
+		# El NPC ataca al jugador solo si son de equipos distintos
+		return equipo != _get_player_team()
+	if nodo is NpcBase:
+		return equipo != nodo.equipo
+	return false
+
 # ─────────────────────────────────────────
 # CICLO DE VIDA
 # ─────────────────────────────────────────
@@ -140,54 +161,34 @@ func _apply_team_color() -> void:
 	_base_color = mat.albedo_color
 	mesh.set_surface_override_material(0, mat)
 
-## Devuelve true si este NPC es enemigo del nodo indicado.
-func es_enemigo_de(nodo: Node) -> bool:
-	if nodo.is_in_group("player"):
-		return equipo == Equipo.DOS
-	if nodo is NpcBase:
-		return equipo != nodo.equipo
-	return false
-
 func _pick_target() -> void:
 	target = null
 	var todos_npcs: Array = get_tree().get_nodes_in_group("npcs")
 	var jugador_invisible: bool = _player_is_invisible()
+	var player_team: Equipo = _get_player_team()
 
-	match equipo:
-		Equipo.DOS:
-			var closest_dist: float = INF
+	var closest_dist: float = INF
 
-			# Solo considera al jugador si NO está invisible
-			if not jugador_invisible:
-				var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
-				if player and not player.get("is_dead"):
-					var d: float = global_transform.origin.distance_to(player.global_transform.origin)
-					if d < closest_dist:
-						closest_dist = d
-						target = player
+	# ¿Este NPC es enemigo del jugador?
+	var atacar_jugador: bool = (equipo != player_team) and not jugador_invisible
 
-			# Siempre considera NPCs del Equipo UNO
-			for node in todos_npcs:
-				if node == self:
-					continue
-				if node is NpcBase and node.equipo == Equipo.UNO and not node.is_dead:
-					var d: float = global_transform.origin.distance_to(node.global_transform.origin)
-					if d < closest_dist:
-						closest_dist = d
-						target = node as Node3D
+	if atacar_jugador:
+		var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+		if player and not player.get("is_dead"):
+			var d: float = global_transform.origin.distance_to(player.global_transform.origin)
+			if d < closest_dist:
+				closest_dist = d
+				target = player
 
-		Equipo.UNO:
-			# Busca el NPC del Equipo DOS más cercano
-			# (los aliados no atacan al jugador, solo defienden contra enemigos)
-			var closest_dist: float = INF
-			for node in todos_npcs:
-				if node == self:
-					continue
-				if node is NpcBase and node.equipo == Equipo.DOS and not node.is_dead:
-					var d: float = global_transform.origin.distance_to(node.global_transform.origin)
-					if d < closest_dist:
-						closest_dist = d
-						target = node as Node3D
+	# Siempre busca NPCs del equipo contrario
+	for node in todos_npcs:
+		if node == self:
+			continue
+		if node is NpcBase and node.equipo != equipo and not node.is_dead:
+			var d: float = global_transform.origin.distance_to(node.global_transform.origin)
+			if d < closest_dist:
+				closest_dist = d
+				target = node as Node3D
 
 # ─────────────────────────────────────────
 # MOVIMIENTO
