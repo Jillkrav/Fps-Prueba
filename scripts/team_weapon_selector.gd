@@ -1,37 +1,30 @@
 # scripts/team_weapon_selector.gd
 # Pantalla de seleccion de equipo + arma al iniciar la partida.
 # Usa los IDs numericos de GameState.Equipo.
+# NOTA: los .connect() de botones NO van aqui, ya estan conectados en la escena .tscn.
 extends CanvasLayer
 
-@onready var team_panel:  VBoxContainer = $TeamPanel
-@onready var weapon_panel: VBoxContainer = $WeaponPanel
-@onready var btn_rojo:     Button        = $TeamPanel/BtnRojo
-@onready var btn_azul:     Button        = $TeamPanel/BtnAzul
-@onready var btn_volver:   Button        = $WeaponPanel/BtnVolver
-@onready var btn_metralleta: Button      = $WeaponPanel/WeaponsRow/BtnMetralleta
-@onready var btn_escopeta:   Button      = $WeaponPanel/WeaponsRow/BtnEscopeta
-@onready var weapon_title: Label         = $WeaponPanel/Title
+@onready var team_panel:    VBoxContainer = $TeamPanel
+@onready var weapon_panel:  VBoxContainer = $WeaponPanel
+@onready var btn_rojo:      Button        = $TeamPanel/BtnRojo
+@onready var btn_azul:      Button        = $TeamPanel/BtnAzul
+@onready var btn_volver:    Button        = $WeaponPanel/BtnVolver
+@onready var btn_metralleta: Button       = $WeaponPanel/WeaponsRow/BtnMetralleta
+@onready var btn_escopeta:   Button       = $WeaponPanel/WeaponsRow/BtnEscopeta
+@onready var weapon_title:  Label         = $WeaponPanel/Title
 
-var _armas_lista: Array[String]  = []
+var _armas_lista: Array[String]   = []
 var _armas_buttons: Array[Button] = []
-var _selected_team_id: int = GameStateClass.Equipo.ESPECTADOR
-var _scroll: ScrollContainer = null
-var _list:   VBoxContainer   = null
+var _selected_team_id: int        = GameStateClass.Equipo.ESPECTADOR
+var _scroll: ScrollContainer      = null
+var _list:   VBoxContainer        = null
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	team_panel.visible  = true
+	team_panel.visible   = true
 	weapon_panel.visible = false
 	_construir_lista()
 	_poblar_armas()
-	# Conectar botones de equipo
-	btn_rojo.pressed.connect(_on_team_rojo_pressed)
-	btn_azul.pressed.connect(_on_team_azul_pressed)
-	btn_volver.pressed.connect(_on_weapon_back_pressed)
-	if is_instance_valid(btn_metralleta):
-		btn_metralleta.pressed.connect(_on_weapon_metralleta_pressed)
-	if is_instance_valid(btn_escopeta):
-		btn_escopeta.pressed.connect(_on_weapon_escopeta_pressed)
 
 func _construir_lista() -> void:
 	var row: Node = get_node_or_null("WeaponPanel/WeaponsRow")
@@ -82,9 +75,11 @@ func _poblar_armas() -> void:
 		if is_instance_valid(btn_metralleta): btn_metralleta.visible = true
 		if is_instance_valid(btn_escopeta):   btn_escopeta.visible   = true
 
+# --- Llamados desde la escena (conectados en el editor) ---
+
 func _on_team_rojo_pressed() -> void:
 	_selected_team_id = GameStateClass.Equipo.ROJO
-	team_panel.visible  = false
+	team_panel.visible   = false
 	weapon_panel.visible = true
 	if is_instance_valid(weapon_title):
 		weapon_title.text = "Equipo Rojo - Elige tu arma"
@@ -92,7 +87,7 @@ func _on_team_rojo_pressed() -> void:
 
 func _on_team_azul_pressed() -> void:
 	_selected_team_id = GameStateClass.Equipo.AZUL
-	team_panel.visible  = false
+	team_panel.visible   = false
 	weapon_panel.visible = true
 	if is_instance_valid(weapon_title):
 		weapon_title.text = "Equipo Azul - Elige tu arma"
@@ -113,8 +108,7 @@ func _on_weapon_back_pressed() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _confirmar_seleccion(nombre_arma: String) -> void:
-	# Guardar equipo como ID numerico en GameState
-	GameState.player_team    = _selected_team_id
+	GameState.player_team     = _selected_team_id
 	GameState.selected_weapon = nombre_arma
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	queue_free()
