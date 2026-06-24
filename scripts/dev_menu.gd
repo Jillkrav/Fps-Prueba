@@ -82,7 +82,8 @@ func _crear_selector_arma() -> void:
 		opt_arma_dinamico.queue_free()
 
 	opt_arma_dinamico = OptionButton.new()
-	opt_arma_dinamico.theme_override_font_sizes["font_size"] = 14
+	# En Godot 4 los nodos creados por código usan add_theme_*_override()
+	opt_arma_dinamico.add_theme_font_size_override("font_size", 14)
 	$PanelNPC/VBox.add_child(opt_arma_dinamico)
 	# Mover antes del BtnSpawn
 	$PanelNPC/VBox.move_child(opt_arma_dinamico, btn_spawn.get_index())
