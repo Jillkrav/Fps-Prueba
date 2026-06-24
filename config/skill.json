@@ -1,0 +1,46 @@
+{
+  "ConfiguracionJuego": {
+    "SistemaSalud": {
+      "SaludEstandarJugador": 100,
+      "MultiplicadoresDanio": {
+        "Cabeza": 5.0,
+        "Torso": 1.0
+      }
+    },
+    "Objetos": {
+      "BotiquinPequeno": { "CantidadCuracion": 25 },
+      "BotiquinMediano": { "CantidadCuracion": 50 },
+      "BotiquinGrande":  { "CantidadCuracion": 100 }
+    },
+    "NPCs": {
+      "Aliado":  { "Vida": 150 },
+      "Enemigo": { "Vida": 100 }
+    },
+    "Armas": {
+      "Pistolas": {
+        "USP":    { "DanioAlJugador": 25,  "DanioAlNPC": 30,  "SegundosPorBala": 0.12,  "TamanoCargador": 12, "ReservaMunicionMaxima": 60,  "TiempoRecargaSegundos": 1.8, "TipoRecarga": "Cargador"     },
+        "Glock":  { "DanioAlJugador": 20,  "DanioAlNPC": 25,  "SegundosPorBala": 0.10,  "TamanoCargador": 20, "ReservaMunicionMaxima": 100, "TiempoRecargaSegundos": 2.2, "TipoRecarga": "Cargador"     },
+        "Deagle": { "DanioAlJugador": 55,  "DanioAlNPC": 66,  "SegundosPorBala": 0.25,  "TamanoCargador": 7,  "ReservaMunicionMaxima": 35,  "TiempoRecargaSegundos": 2.5, "TipoRecarga": "Cargador"     }
+      },
+      "Escopetas": {
+        "M3":                { "DanioAlJugador": 110, "DanioAlNPC": 132, "SegundosPorBala": 0.92,  "TamanoCargador": 8,  "ReservaMunicionMaxima": 32,  "TiempoRecargaSegundos": 0.5, "TipoRecarga": "PorCartucho"  },
+        "Spas12":            { "DanioAlJugador": 85,  "DanioAlNPC": 102, "SegundosPorBala": 0.40,  "TamanoCargador": 8,  "ReservaMunicionMaxima": 40,  "TiempoRecargaSegundos": 0.5, "TipoRecarga": "PorCartucho"  },
+        "Recortada":         { "DanioAlJugador": 140, "DanioAlNPC": 168, "SegundosPorBala": 0.20,  "TamanoCargador": 2,  "ReservaMunicionMaxima": 24,  "TiempoRecargaSegundos": 2.0, "TipoRecarga": "Cargador"     },
+        "EscopetaAutomatica":{ "DanioAlJugador": 60,  "DanioAlNPC": 72,  "SegundosPorBala": 0.20,  "TamanoCargador": 10, "ReservaMunicionMaxima": 50,  "TiempoRecargaSegundos": 2.8, "TipoRecarga": "Cargador"     }
+      },
+      "Subfusiles": {
+        "MP7": { "DanioAlJugador": 15, "DanioAlNPC": 18, "SegundosPorBala": 0.063, "TamanoCargador": 40, "ReservaMunicionMaxima": 160, "TiempoRecargaSegundos": 2.1, "TipoRecarga": "Cargador" },
+        "MP5": { "DanioAlJugador": 18, "DanioAlNPC": 22, "SegundosPorBala": 0.075, "TamanoCargador": 30, "ReservaMunicionMaxima": 120, "TiempoRecargaSegundos": 2.4, "TipoRecarga": "Cargador" }
+      },
+      "Rifles": {
+        "AUG": { "DanioAlJugador": 32, "DanioAlNPC": 39, "SegundosPorBala": 0.092, "TamanoCargador": 30, "ReservaMunicionMaxima": 90, "TiempoRecargaSegundos": 3.3, "TipoRecarga": "Cargador" },
+        "M4":  { "DanioAlJugador": 30, "DanioAlNPC": 36, "SegundosPorBala": 0.085, "TamanoCargador": 30, "ReservaMunicionMaxima": 90, "TiempoRecargaSegundos": 2.7, "TipoRecarga": "Cargador" },
+        "G36": { "DanioAlJugador": 28, "DanioAlNPC": 34, "SegundosPorBala": 0.08,  "TamanoCargador": 30, "ReservaMunicionMaxima": 90, "TiempoRecargaSegundos": 2.9, "TipoRecarga": "Cargador" }
+      },
+      "Francotiradores": {
+        "Scout": { "DanioAlJugador": 75,  "DanioAlNPC": 90,  "SegundosPorBala": 1.33, "TamanoCargador": 10, "ReservaMunicionMaxima": 30, "TiempoRecargaSegundos": 2.8, "TipoRecarga": "Cargador" },
+        "AWP":   { "DanioAlJugador": 115, "DanioAlNPC": 150, "SegundosPorBala": 1.71, "TamanoCargador": 5,  "ReservaMunicionMaxima": 15, "TiempoRecargaSegundos": 3.5, "TipoRecarga": "Cargador" }
+      }
+    }
+  }
+}
