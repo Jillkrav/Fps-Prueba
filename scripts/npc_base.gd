@@ -43,6 +43,10 @@ var _healthbar_bg: MeshInstance3D = null
 var _healthbar_fill: MeshInstance3D = null
 var _weapon_label_3d: Label3D = null
 
+# Temporizador para refrescar objetivo periodicamente
+var _retarget_timer: float = 0.0
+const RETARGET_INTERVAL: float = 2.0
+
 func _ready() -> void:
 	add_to_group("npcs")
 	if max_health == 100.0:
@@ -51,8 +55,17 @@ func _ready() -> void:
 		else:
 			max_health = ConfigManager.get_vida_npc("Enemigo")
 	current_health = max_health
-	if not _relacion_forzada and relacion == Relacion.ENEMIGO:
-		equipo = "rojo"
+
+	# --- FIX 1: asignar equipo segun relacion siempre, no solo para ENEMIGO ---
+	if not _relacion_forzada:
+		if relacion == Relacion.ENEMIGO:
+			equipo = "rojo"
+		elif relacion == Relacion.AMIGABLE:
+			equipo = _equipo_jugador_actual()
+		else:
+			equipo = "neutral"
+	# Si _relacion_forzada == true, el equipo lo asigna quien instancia el NPC
+
 	_configurar_arma()
 	_apply_relation_color()
 	_pick_target()
@@ -77,7 +90,7 @@ func _configurar_arma() -> void:
 	_es_ranged = rango_cfg > 1.8
 	var categoria: String = str(cfg.get("Categoria", "")).to_lower()
 	_es_escopeta = categoria.contains("escopeta") or nombre_arma.to_lower().contains("shotgun")
-	var danno_raw = cfg.get("DannoAlNPC", cfg.get("DaNNOAlNPC", cfg.get("DaNNÃ±oAlNPC", cfg.get("DañoAlNPC", 0.0))))
+	var danno_raw = cfg.get("DannoAlNPC", cfg.get("DaNNOAlNPC", cfg.get("DaNNÃ±oAlNPC", cfg.get("DaNNioAlNPC", 0.0))))
 	var danno_val: float = float(danno_raw)
 	if danno_val <= 0.0:
 		danno_val = float(cfg.get("Danno", cfg.get("Dano", 20.0)))
@@ -96,19 +109,30 @@ func _physics_process(delta: float) -> void:
 		var cam: Camera3D = get_viewport().get_camera_3d()
 		if cam:
 			_healthbar_root.look_at(cam.global_transform.origin, Vector3.UP)
+
+	# --- FIX 2: retargeteo periodico para que NPCs se ataquen entre si ---
+	_retarget_timer += delta
+	if _retarget_timer >= RETARGET_INTERVAL:
+		_retarget_timer = 0.0
+		if target == null or not is_instance_valid(target) or (target.has_method("is_dead") and target.get("is_dead") == true):
+			_pick_target()
+
 	if target == null or not is_instance_valid(target) or (target.has_method("is_dead") and target.get("is_dead") == true):
 		_pick_target()
+
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = 0.0
-	if relacion == Relacion.ENEMIGO:
-		var player: Node = get_tree().get_first_node_in_group("player")
-		if player and player.is_in_group("invisible_to_npc") and _es_enemigo_de(player):
-			velocity.x = move_toward(velocity.x, 0, speed)
-			velocity.z = move_toward(velocity.z, 0, speed)
-			move_and_slide()
-			return
+
+	# --- FIX 3: invisibilidad usa _es_enemigo_de, sin depender de relacion==ENEMIGO ---
+	var player: Node = get_tree().get_first_node_in_group("player")
+	if player and player.is_in_group("invisible_to_npc") and _es_enemigo_de(player):
+		velocity.x = move_toward(velocity.x, 0, speed)
+		velocity.z = move_toward(velocity.z, 0, speed)
+		move_and_slide()
+		return
+
 	if target and is_instance_valid(target):
 		var target_pos: Vector3 = target.global_transform.origin
 		var direction: Vector3 = Vector3.ZERO
@@ -195,13 +219,12 @@ func _apply_relation_color() -> void:
 	if not mesh:
 		return
 	var mat := StandardMaterial3D.new()
-	match relacion:
-		Relacion.ENEMIGO:
+	match equipo:
+		"rojo":
 			mat.albedo_color = Color(0.85, 0.15, 0.15)
-		Relacion.AMIGABLE:
-			var opciones: Array[Color] = [Color(0.1, 0.4, 0.9), Color(0.1, 0.75, 0.95), Color(0.15, 0.8, 0.3)]
-			mat.albedo_color = opciones[randi() % opciones.size()]
-		Relacion.NEUTRAL:
+		"azul":
+			mat.albedo_color = Color(0.15, 0.35, 0.9)
+		_:
 			mat.albedo_color = Color(0.7, 0.7, 0.1)
 	_base_color = mat.albedo_color
 	mesh.set_surface_override_material(0, mat)
@@ -220,7 +243,7 @@ func _es_enemigo_de(otro: Node) -> bool:
 	if otro.is_in_group("player"):
 		return equipo != _equipo_jugador_actual()
 	if otro is NpcBase:
-		return equipo != String(otro.equipo).to_lower()
+		return equipo != String(otro.equipo).strip_edges().to_lower()
 	return false
 
 func _pick_target() -> void:
@@ -228,10 +251,11 @@ func _pick_target() -> void:
 	var closest_dist: float = INF
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player and is_instance_valid(player) and _es_enemigo_de(player):
-		var d: float = global_transform.origin.distance_to((player as Node3D).global_transform.origin)
-		if d < closest_dist:
-			closest_dist = d
-			target = player as Node3D
+		if not player.is_in_group("invisible_to_npc"):
+			var d: float = global_transform.origin.distance_to((player as Node3D).global_transform.origin)
+			if d < closest_dist:
+				closest_dist = d
+				target = player as Node3D
 	for node in get_tree().get_nodes_in_group("npcs"):
 		if node == self:
 			continue
