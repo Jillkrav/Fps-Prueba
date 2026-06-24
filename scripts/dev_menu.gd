@@ -2,8 +2,8 @@
 ## Nodo DevMenu en hud.tscn es tipo Control -> extends Control.
 extends Control
 
-const NPC_CON_ARMA: String = "res://scenes/npcs/npc_pistolero.tscn"
-const NPC_MELEE:    String = "res://scenes/npcs/npc_melee.tscn"
+# Solo usa npc_base.tscn: el arma determina el comportamiento
+const NPC_SCENE: String = "res://scenes/npcs/npc_base.tscn"
 
 @onready var panel_principal: Panel        = $PanelPrincipal
 @onready var panel_npc: Panel              = $PanelNPC
@@ -23,10 +23,9 @@ var is_invisible: bool = false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
+	# opt_tipo_npc se reutiliza como selector de arma directamente
 	opt_tipo_npc.clear()
-	opt_tipo_npc.add_item("Con Arma")
-	opt_tipo_npc.add_item("Melee")
-	opt_tipo_npc.item_selected.connect(_on_tipo_npc_changed)
+	_poblar_armas_en(opt_tipo_npc)
 
 	opt_relacion.clear()
 	opt_relacion.add_item("Enemigo",  NpcBase.Relacion.ENEMIGO)
@@ -38,8 +37,6 @@ func _ready() -> void:
 	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
 	opt_experiencia.add_item("Alta",  NpcBase.Experiencia.ALTA)
 
-	_crear_selector_arma()
-
 	visible = false
 	panel_principal.visible = true
 	panel_npc.visible = false
@@ -49,31 +46,22 @@ func _ready() -> void:
 	btn_spawn.pressed.connect(_on_spawn_pressed)
 	btn_volver.pressed.connect(_on_volver_pressed)
 
-func _crear_selector_arma() -> void:
-	if opt_arma_dinamico != null:
-		opt_arma_dinamico.queue_free()
-	opt_arma_dinamico = OptionButton.new()
-	opt_arma_dinamico.add_theme_font_size_override("font_size", 14)
-	$PanelNPC/VBox.add_child(opt_arma_dinamico)
-	$PanelNPC/VBox.move_child(opt_arma_dinamico, btn_spawn.get_index())
-	_poblar_armas()
-
-func _poblar_armas() -> void:
-	if opt_arma_dinamico == null:
-		return
+func _poblar_armas_en(opt: OptionButton) -> void:
 	_armas_lista.clear()
-	opt_arma_dinamico.clear()
+	opt.clear()
 	var armas_raw: Dictionary = {}
 	if ConfigManager and ConfigManager._data.has("Armas"):
 		armas_raw = ConfigManager._data["Armas"]
 	for categoria in armas_raw.keys():
 		for nombre in armas_raw[categoria].keys():
 			_armas_lista.append(nombre)
-			opt_arma_dinamico.add_item("%s [%s]" % [nombre, categoria])
-	if _armas_lista.is_empty():
-		_armas_lista = ["USP"]
-		opt_arma_dinamico.add_item("USP [Pistolas]")
-		push_warning("DevMenu: sin armas en ConfigManager, usando USP como fallback")
+			opt.add_item("%s [%s]" % [nombre, categoria])
+	# Opcion sin arma (melee)
+	_armas_lista.append("")
+	opt.add_item("Sin arma (Melee)")
+	if _armas_lista.is_empty() or (_armas_lista.size() == 1 and _armas_lista[0] == ""):
+		_armas_lista = [""]
+		push_warning("DevMenu: sin armas en ConfigManager, solo opcion Melee disponible")
 
 func toggle_menu() -> void:
 	visible = !visible
@@ -105,33 +93,25 @@ func _on_volver_pressed() -> void:
 	panel_npc.visible = false
 	panel_principal.visible = true
 
-func _on_tipo_npc_changed(index: int) -> void:
-	if opt_arma_dinamico != null:
-		opt_arma_dinamico.disabled = (index == 1)
-
 func _on_spawn_pressed() -> void:
-	var es_melee: bool = (opt_tipo_npc.get_selected() == 1)
-	var escena_path: String = NPC_MELEE if es_melee else NPC_CON_ARMA
-
-	var packed: PackedScene = load(escena_path)
+	var packed: PackedScene = load(NPC_SCENE)
 	if not packed:
-		push_error("DevMenu: no se pudo cargar escena: " + escena_path)
+		push_error("DevMenu: no se pudo cargar escena: " + NPC_SCENE)
 		return
 
 	var npc: NpcBase = packed.instantiate() as NpcBase
 	if not npc:
-		push_error("DevMenu: la escena no es un NpcBase: " + escena_path)
+		push_error("DevMenu: la escena no instancio NpcBase")
 		return
 
-	# Marcar que la relacion fue forzada ANTES de add_child para que _ready() no la pise
+	# Asignar relacion, experiencia y arma ANTES de add_child
 	npc._relacion_forzada = true
 	npc.relacion    = opt_relacion.get_selected_id() as NpcBase.Relacion
 	npc.experiencia = opt_experiencia.get_selected_id() as NpcBase.Experiencia
 
-	if not es_melee and opt_arma_dinamico != null:
-		var idx: int = opt_arma_dinamico.get_selected()
-		if idx >= 0 and idx < _armas_lista.size():
-			npc.nombre_arma = _armas_lista[idx]
+	var idx: int = opt_tipo_npc.get_selected()
+	if idx >= 0 and idx < _armas_lista.size():
+		npc.nombre_arma = _armas_lista[idx]
 
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if not player:
@@ -147,12 +127,7 @@ func _on_spawn_pressed() -> void:
 	world.add_child(npc)
 	npc.global_transform.origin = spawn_pos
 
-	var arma_txt: String = "Melee"
-	if not es_melee and opt_arma_dinamico != null:
-		var idx: int = opt_arma_dinamico.get_selected()
-		if idx >= 0 and idx < _armas_lista.size():
-			arma_txt = _armas_lista[idx]
-
+	var arma_txt: String = npc.nombre_arma if npc.nombre_arma != "" else "Melee"
 	lbl_status.text = "NPC: %s | %s | Arma: %s" % [
 		opt_relacion.get_item_text(opt_relacion.get_selected()),
 		opt_experiencia.get_item_text(opt_experiencia.get_selected()),
