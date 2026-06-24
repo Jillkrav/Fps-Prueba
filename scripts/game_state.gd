@@ -5,6 +5,7 @@ class_name GameStateClass
 
 var selected_map: String = "res://scenes/maps/map_1.tscn"
 var selected_weapon: String = "metralleta"
+var selected_team: String = ""
 
 var player_max_health: float = 100.0
 var player_current_health: float = 100.0
