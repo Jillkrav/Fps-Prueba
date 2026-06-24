@@ -2,26 +2,8 @@
 ## Nodo DevMenu en hud.tscn es tipo Control -> extends Control.
 extends Control
 
-# ─────────────────────────────────────────────────────
-# ESCENAS DE NPC BASE DISPONIBLES
-# ─────────────────────────────────────────────────────
-
 const NPC_CON_ARMA: String = "res://scenes/npcs/npc_pistolero.tscn"
 const NPC_MELEE:    String = "res://scenes/npcs/npc_melee.tscn"
-
-# ─────────────────────────────────────────────────────
-# REFERENCIAS DE NODOS  (estructura real de hud.tscn)
-# DevMenu
-#   ├── PanelPrincipal/VBox/BtnInvisible
-#   ├── PanelPrincipal/VBox/BtnGenerar
-#   ├── PanelPrincipal/VBox/LblStatus
-#   └── PanelNPC/VBox/
-#         ├── GridAtributos/OptRelacion
-#         ├── GridAtributos/OptExperiencia
-#         ├── GridAtributos/OptArma   <- selector de TIPO (Con Arma / Melee)
-#         ├── BtnSpawn
-#         └── BtnVolver
-# ─────────────────────────────────────────────────────
 
 @onready var panel_principal: Panel        = $PanelPrincipal
 @onready var panel_npc: Panel              = $PanelNPC
@@ -34,40 +16,30 @@ const NPC_MELEE:    String = "res://scenes/npcs/npc_melee.tscn"
 @onready var opt_tipo_npc: OptionButton    = $PanelNPC/VBox/GridAtributos/OptArma
 @onready var lbl_status: Label             = $PanelPrincipal/VBox/LblStatus
 
-# Selector de arma creado dinamicamente (no existe como nodo fijo en la escena)
 var opt_arma_dinamico: OptionButton = null
 var _armas_lista: Array[String] = []
 var is_invisible: bool = false
 
-# ─────────────────────────────────────────────────────
-# CICLO DE VIDA
-# ─────────────────────────────────────────────────────
-
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	# -- Tipo de NPC ----------------------------------------------------------
 	opt_tipo_npc.clear()
 	opt_tipo_npc.add_item("Con Arma")
 	opt_tipo_npc.add_item("Melee")
 	opt_tipo_npc.item_selected.connect(_on_tipo_npc_changed)
 
-	# -- Relacion (antes Equipo) -----------------------------------------------
 	opt_relacion.clear()
 	opt_relacion.add_item("Enemigo",  NpcBase.Relacion.ENEMIGO)
 	opt_relacion.add_item("Aliado",   NpcBase.Relacion.AMIGABLE)
 	opt_relacion.add_item("Neutral",  NpcBase.Relacion.NEUTRAL)
 
-	# -- Experiencia ----------------------------------------------------------
 	opt_experiencia.clear()
 	opt_experiencia.add_item("Baja",  NpcBase.Experiencia.BAJA)
 	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
 	opt_experiencia.add_item("Alta",  NpcBase.Experiencia.ALTA)
 
-	# -- Crear selector de arma dinamico --------------------------------------
 	_crear_selector_arma()
 
-	# -- Estado inicial -------------------------------------------------------
 	visible = false
 	panel_principal.visible = true
 	panel_npc.visible = false
@@ -77,16 +49,13 @@ func _ready() -> void:
 	btn_spawn.pressed.connect(_on_spawn_pressed)
 	btn_volver.pressed.connect(_on_volver_pressed)
 
-# Crea un OptionButton dinamico para armas debajo del GridAtributos
 func _crear_selector_arma() -> void:
 	if opt_arma_dinamico != null:
 		opt_arma_dinamico.queue_free()
-
 	opt_arma_dinamico = OptionButton.new()
 	opt_arma_dinamico.add_theme_font_size_override("font_size", 14)
 	$PanelNPC/VBox.add_child(opt_arma_dinamico)
 	$PanelNPC/VBox.move_child(opt_arma_dinamico, btn_spawn.get_index())
-
 	_poblar_armas()
 
 func _poblar_armas() -> void:
@@ -94,24 +63,17 @@ func _poblar_armas() -> void:
 		return
 	_armas_lista.clear()
 	opt_arma_dinamico.clear()
-
 	var armas_raw: Dictionary = {}
 	if ConfigManager and ConfigManager._data.has("Armas"):
 		armas_raw = ConfigManager._data["Armas"]
-
 	for categoria in armas_raw.keys():
 		for nombre in armas_raw[categoria].keys():
 			_armas_lista.append(nombre)
 			opt_arma_dinamico.add_item("%s [%s]" % [nombre, categoria])
-
 	if _armas_lista.is_empty():
 		_armas_lista = ["USP"]
 		opt_arma_dinamico.add_item("USP [Pistolas]")
 		push_warning("DevMenu: sin armas en ConfigManager, usando USP como fallback")
-
-# ─────────────────────────────────────────────────────
-# TOGGLE DEL MENU
-# ─────────────────────────────────────────────────────
 
 func toggle_menu() -> void:
 	visible = !visible
@@ -121,10 +83,6 @@ func toggle_menu() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-# ─────────────────────────────────────────────────────
-# LOGICA DE BOTONES
-# ─────────────────────────────────────────────────────
 
 func _on_invisible_pressed() -> void:
 	is_invisible = !is_invisible
@@ -148,9 +106,8 @@ func _on_volver_pressed() -> void:
 	panel_principal.visible = true
 
 func _on_tipo_npc_changed(index: int) -> void:
-	var es_melee: bool = (index == 1)
 	if opt_arma_dinamico != null:
-		opt_arma_dinamico.disabled = es_melee
+		opt_arma_dinamico.disabled = (index == 1)
 
 func _on_spawn_pressed() -> void:
 	var es_melee: bool = (opt_tipo_npc.get_selected() == 1)
@@ -166,6 +123,8 @@ func _on_spawn_pressed() -> void:
 		push_error("DevMenu: la escena no es un NpcBase: " + escena_path)
 		return
 
+	# Marcar que la relacion fue forzada ANTES de add_child para que _ready() no la pise
+	npc._relacion_forzada = true
 	npc.relacion    = opt_relacion.get_selected_id() as NpcBase.Relacion
 	npc.experiencia = opt_experiencia.get_selected_id() as NpcBase.Experiencia
 

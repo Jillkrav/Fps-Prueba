@@ -14,6 +14,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	death_screen.visible = false
 	pause_screen.visible = false
+	# El cursor empieza VISIBLE para que el jugador pueda usar la UI de seleccion
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player:
@@ -29,6 +31,14 @@ func update_spawn_timer(time_left: float) -> void:
 	next_spawn_label.text = "Siguiente oleada en: " + str(snappedf(time_left, 0.1)) + "s"
 
 func _process(_delta: float) -> void:
+	# F1: toggle cursor en cualquier momento (util durante seleccion de equipo/armas)
+	if Input.is_action_just_pressed("toggle_cursor"):
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		else:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		return
+
 	if Input.is_action_just_pressed("dev_menu"):
 		if dev_menu and dev_menu.has_method("toggle_menu"):
 			dev_menu.toggle_menu()

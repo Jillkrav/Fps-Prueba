@@ -3,16 +3,23 @@ extends NpcBase
 class_name NpcPistolero
 
 func _ready() -> void:
-	npc_name     = "NPC Pistolero"
-	relacion     = Relacion.ENEMIGO
-	experiencia  = Experiencia.MEDIA
-	estado       = Estado.IDLE
-	speed        = 2.5
+	npc_name    = "NPC Pistolero"
+	experiencia = Experiencia.MEDIA
+	estado      = Estado.IDLE
+	speed       = 2.5
 	attack_range = 12.0
 	attack_rate  = 1.5
-	# damage desde el arma USP (DanioAlNPC)
-	var cfg := ConfigManager.get_arma("USP")
-	damage = float(cfg.get("DanioAlNPC", 30.0))
+
+	# Solo sobreescribe la relacion si NO fue forzada externamente
+	if not _relacion_forzada:
+		relacion = Relacion.ENEMIGO
+
+	# Arma: usa nombre_arma si fue asignado externamente, si no usa USP por defecto
+	if nombre_arma == "":
+		nombre_arma = "USP"
+	var cfg := ConfigManager.get_arma(nombre_arma)
+	damage = float(cfg.get("DañoAlNPC", 30.0))
+
 	super._ready()
 
 func perform_attack() -> void:

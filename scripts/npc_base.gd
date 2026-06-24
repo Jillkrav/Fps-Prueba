@@ -26,8 +26,12 @@ enum Estado {
 @export var voz_path:    String      = ""
 @export var estado:      Estado      = Estado.IDLE
 
+## Nombre del arma a usar (debe coincidir exactamente con la clave en skill.cfg.json).
+## Las subclases con arma asignan su default; el DevMenu puede sobreescribirlo antes de add_child.
+@export var nombre_arma: String = ""
+
 # ─────────────────────────────────────────
-# COMBATE (defaults; las subclases pueden sobreescribir antes de super._ready())
+# COMBATE
 # ─────────────────────────────────────────
 
 @export var max_health:   float = 100.0
@@ -40,11 +44,14 @@ enum Estado {
 # VARIABLES INTERNAS
 # ─────────────────────────────────────────
 
-var current_health: float  = 100.0
-var target:         Node3D = null
-var last_attack_time: int  = 0
-var is_dead:        bool   = false
-var _base_color:    Color  = Color.WHITE
+var current_health:   float  = 100.0
+var target:           Node3D = null
+var last_attack_time: int    = 0
+var is_dead:          bool   = false
+var _base_color:      Color  = Color.WHITE
+# Guarda la relacion que tenía el nodo ANTES de que la subclase la toque.
+# Se setea al instanciar desde DevMenu/Spawner para protegerla.
+var _relacion_forzada: bool = false
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -55,9 +62,7 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 # ─────────────────────────────────────────
 
 func _ready() -> void:
-	# La vida se asigna desde ConfigManager segun relacion.
-	# Si una subclase quiere un valor fijo puede sobreescribir max_health ANTES de llamar super._ready().
-	if max_health == 100.0: # solo si no fue sobreescrito
+	if max_health == 100.0:
 		if relacion == Relacion.AMIGABLE:
 			max_health = ConfigManager.get_vida_npc("Aliado")
 		else:
