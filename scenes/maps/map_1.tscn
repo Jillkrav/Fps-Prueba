@@ -1,9 +1,10 @@
-[gd_scene load_steps=13 format=3 uid="uid://b1d6x87p4e0u1"]
+[gd_scene load_steps=14 format=3 uid="uid://b1d6x87p4e0u1"]
 
 [ext_resource type="PackedScene" uid="uid://dg0u4rsk2u6o7" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://bsh2o1h3r4mno" path="res://scenes/pickups/resupply_box.tscn" id="2_resupply"]
 [ext_resource type="Script" path="res://scripts/spawner.gd" id="3_spawner"]
 [ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" path="res://scenes/team_weapon_selector.tscn" id="5_selector"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_map1"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
@@ -128,3 +129,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.5, -18)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 20)
 
 [node name="HUDLayer" parent="." groups=["hud"] instance=ExtResource("4_hud")]
+
+[node name="TeamWeaponSelector" parent="." instance=ExtResource("5_selector")]

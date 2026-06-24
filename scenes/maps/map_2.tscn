@@ -1,13 +1,14 @@
-[gd_scene load_steps=13 format=3 uid="uid://b0uy7trsk2o62"]
+[gd_scene load_steps=14 format=3 uid="uid://map2_fps"]
 
 [ext_resource type="PackedScene" uid="uid://dg0u4rsk2u6o7" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://bsh2o1h3r4mno" path="res://scenes/pickups/resupply_box.tscn" id="2_resupply"]
 [ext_resource type="Script" path="res://scripts/spawner.gd" id="3_spawner"]
 [ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" path="res://scenes/team_weapon_selector.tscn" id="5_selector"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_map2"]
-sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
-ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+sky_horizon_color = Color(0.55, 0.60, 0.65, 1)
+ground_horizon_color = Color(0.55, 0.60, 0.65, 1)
 
 [sub_resource type="Sky" id="Sky_map2"]
 sky_material = SubResource("ProceduralSkyMaterial_map2")
@@ -23,13 +24,13 @@ agent_radius = 0.5
 agent_height = 1.8
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
-albedo_color = Color(0.18, 0.22, 0.18, 1)
+albedo_color = Color(0.22, 0.20, 0.18, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
-albedo_color = Color(0.35, 0.38, 0.35, 1)
+albedo_color = Color(0.4, 0.38, 0.35, 1)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_obstacle"]
-albedo_color = Color(0.4, 0.45, 0.5, 1)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_column"]
+albedo_color = Color(0.45, 0.42, 0.38, 1)
 
 [node name="Map2" type="Node3D"]
 
@@ -48,79 +49,69 @@ navigation_mesh = SubResource("NavigationMesh_map2")
 [node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 use_collision = true
-size = Vector3(50, 1, 50)
+size = Vector3(60, 1, 60)
 material = SubResource("StandardMaterial3D_floor")
 
 [node name="OuterWalls" type="Node3D" parent="NavigationRegion3D/Geometry"]
 
 [node name="WallNorth" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -30)
 use_collision = true
-size = Vector3(50, 5, 1)
+size = Vector3(60, 5, 1)
 material = SubResource("StandardMaterial3D_wall")
 
 [node name="WallSouth" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 30)
 use_collision = true
-size = Vector3(50, 5, 1)
+size = Vector3(60, 5, 1)
 material = SubResource("StandardMaterial3D_wall")
 
 [node name="WallWest" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 2.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 2.5, 0)
 use_collision = true
-size = Vector3(1, 5, 50)
+size = Vector3(1, 5, 60)
 material = SubResource("StandardMaterial3D_wall")
 
 [node name="WallEast" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 2.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 2.5, 0)
 use_collision = true
-size = Vector3(1, 5, 50)
+size = Vector3(1, 5, 60)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="ColumnLayout" type="Node3D" parent="NavigationRegion3D/Geometry"]
+[node name="Columns" type="Node3D" parent="NavigationRegion3D/Geometry"]
 
-[node name="Column1" type="CSGCylinder3D" parent="NavigationRegion3D/Geometry/ColumnLayout"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2.5, -12)
+[node name="Col1" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Columns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 2.5, -15)
 use_collision = true
-radius = 1.5
-height = 5.0
-material = SubResource("StandardMaterial3D_obstacle")
+size = Vector3(3, 5, 3)
+material = SubResource("StandardMaterial3D_column")
 
-[node name="Column2" type="CSGCylinder3D" parent="NavigationRegion3D/Geometry/ColumnLayout"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2.5, -12)
+[node name="Col2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Columns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 2.5, -15)
 use_collision = true
-radius = 1.5
-height = 5.0
-material = SubResource("StandardMaterial3D_obstacle")
+size = Vector3(3, 5, 3)
+material = SubResource("StandardMaterial3D_column")
 
-[node name="Column3" type="CSGCylinder3D" parent="NavigationRegion3D/Geometry/ColumnLayout"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2.5, 12)
+[node name="Col3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Columns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 2.5, 15)
 use_collision = true
-radius = 1.5
-height = 5.0
-material = SubResource("StandardMaterial3D_obstacle")
+size = Vector3(3, 5, 3)
+material = SubResource("StandardMaterial3D_column")
 
-[node name="Column4" type="CSGCylinder3D" parent="NavigationRegion3D/Geometry/ColumnLayout"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2.5, 12)
+[node name="Col4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Columns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 2.5, 15)
 use_collision = true
-radius = 1.5
-height = 5.0
-material = SubResource("StandardMaterial3D_obstacle")
+size = Vector3(3, 5, 3)
+material = SubResource("StandardMaterial3D_column")
 
-[node name="CenterWall1" type="CSGBox3D" parent="NavigationRegion3D/Geometry/ColumnLayout"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 2.0, 0)
+[node name="Col5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Columns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 use_collision = true
-size = Vector3(8, 4, 2)
-material = SubResource("StandardMaterial3D_obstacle")
-
-[node name="CenterWall2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/ColumnLayout"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 2.0, 0)
-use_collision = true
-size = Vector3(8, 4, 2)
-material = SubResource("StandardMaterial3D_obstacle")
+size = Vector3(3, 5, 3)
+material = SubResource("StandardMaterial3D_column")
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 20)
 
 [node name="ResupplyBox" parent="." instance=ExtResource("2_resupply")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
@@ -129,12 +120,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 script = ExtResource("3_spawner")
 
 [node name="SpawnPoint1" type="Marker3D" parent="EnemySpawner"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0.5, -18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0.5, -25)
 
 [node name="SpawnPoint2" type="Marker3D" parent="EnemySpawner"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.5, -18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.5, -25)
 
 [node name="SpawnPoint3" type="Marker3D" parent="EnemySpawner"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 25)
 
 [node name="HUDLayer" parent="." groups=["hud"] instance=ExtResource("4_hud")]
+
+[node name="TeamWeaponSelector" parent="." instance=ExtResource("5_selector")]
