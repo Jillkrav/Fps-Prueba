@@ -2,17 +2,14 @@ extends NpcBase
 class_name NpcEscopetero
 
 func _ready() -> void:
-	npc_name = "NPC Escopeta"
-	relacion = Relacion.ENEMIGO
-	experiencia = Experiencia.MEDIA
-	estado = Estado.IDLE
-	speed = 3.0
-	attack_range = 6.0
-	attack_rate = 2.0
-	nombre_arma = "M3"
-	max_health = ConfigManager.get_vida_npc("Enemigo")
-	current_health = max_health
-	super._ready()
+	npc_name        = "NPC Escopeta"
+	equipo          = NpcBase.Equipo.DOS
+	experiencia     = NpcBase.Experiencia.MEDIA
+	estado          = NpcBase.Estado.IDLE
+	speed           = 3.0
+	attack_range    = 6.0
+	weapon_name_cfg = "M3"  # Nombre exacto en skill.cfg.json
+	super._ready()          # Carga vida y arma desde ConfigManager
 
 func perform_attack() -> void:
 	if target == null or not is_instance_valid(target):
@@ -29,9 +26,9 @@ func perform_attack() -> void:
 	var result := space_state.intersect_ray(query)
 
 	if result and result.get("collider") == target:
-		_npc_fire_weapon(target)
-		var cfg := ConfigManager.get_arma("M3")
-		var num_pellets: int = cfg.get("CantidadPerdigones", 4)
+		_npc_fire_weapon()
+		# Dibujar perdigones: cantidad desde el arma cargada en _weapon_cfg
+		var num_pellets: int = int(_weapon_cfg.get("CantidadPerdigones", 4))
 		for _i in range(num_pellets):
 			draw_debug_laser(
 				global_transform.origin + Vector3(0, 1.0, 0),

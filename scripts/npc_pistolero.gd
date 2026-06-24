@@ -1,20 +1,15 @@
 extends NpcBase
 class_name NpcPistolero
 
-@export var shoot_range: float = 15.0
-
 func _ready() -> void:
-	npc_name = "NPC Pistolero"
-	relacion = Relacion.ENEMIGO
-	experiencia = Experiencia.MEDIA
-	estado = Estado.IDLE
-	speed = 2.5
-	attack_range = 12.0
-	attack_rate = 1.5
-	nombre_arma = "Glock"
-	max_health = ConfigManager.get_vida_npc("Enemigo")
-	current_health = max_health
-	super._ready()
+	npc_name       = "NPC Pistolero"
+	equipo         = NpcBase.Equipo.DOS
+	experiencia    = NpcBase.Experiencia.MEDIA
+	estado         = NpcBase.Estado.IDLE
+	speed          = 2.5
+	attack_range   = 12.0
+	weapon_name_cfg = "Glock"  # Nombre exacto en skill.cfg.json
+	super._ready()             # Carga vida y arma desde ConfigManager
 
 func perform_attack() -> void:
 	if target == null or not is_instance_valid(target):
@@ -31,7 +26,7 @@ func perform_attack() -> void:
 	var result := space_state.intersect_ray(query)
 
 	if result and result.get("collider") == target:
-		_npc_fire_weapon(target)
+		_npc_fire_weapon()
 		draw_debug_laser(
 			global_transform.origin + Vector3(0, 1.0, 0),
 			target.global_transform.origin + Vector3(0, 1.0, 0),
