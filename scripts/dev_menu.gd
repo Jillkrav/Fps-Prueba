@@ -24,18 +24,20 @@ var is_invisible: bool = false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	opt_tipo_npc.clear()
-	_poblar_armas_en(opt_tipo_npc)
-
+	# Poblar OptionButton de equipo (usa IDs de GameState.Equipo)
 	opt_relacion.clear()
-	opt_relacion.add_item("Enemigo", NpcBase.Relacion.ENEMIGO)
-	opt_relacion.add_item("Aliado",  NpcBase.Relacion.AMIGABLE)
-	opt_relacion.add_item("Neutral", NpcBase.Relacion.NEUTRAL)
+	for id in GameState.NOMBRE_EQUIPO.keys():
+		opt_relacion.add_item(GameState.nombre_equipo(id), id)
+	# Seleccionar equipo Rojo por defecto para spawn de NPC
+	_seleccionar_opcion(opt_relacion, GameStateClass.Equipo.ROJO)
 
 	opt_experiencia.clear()
 	opt_experiencia.add_item("Baja",  NpcBase.Experiencia.BAJA)
 	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
 	opt_experiencia.add_item("Alta",  NpcBase.Experiencia.ALTA)
+
+	opt_tipo_npc.clear()
+	_poblar_armas_en(opt_tipo_npc)
 
 	visible = false
 	panel_principal.visible = true
@@ -47,8 +49,14 @@ func _ready() -> void:
 	btn_volver.pressed.connect(_on_volver_pressed)
 
 	_agregar_btn_selector_armas()
-	# Diferir la construccion del panel para que el arbol este listo
 	_build_panel_armas.call_deferred()
+
+# Selecciona la opcion del OptionButton cuyo id coincide
+func _seleccionar_opcion(opt: OptionButton, id: int) -> void:
+	for i in opt.item_count:
+		if opt.get_item_id(i) == id:
+			opt.select(i)
+			return
 
 # ── Boton Selector de Armas en panel principal ──────────────────────
 func _agregar_btn_selector_armas() -> void:
@@ -74,7 +82,6 @@ func _build_panel_armas() -> void:
 	_panel_armas.custom_minimum_size = Vector2(320, 0)
 	_panel_armas.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_panel_armas.grow_vertical   = Control.GROW_DIRECTION_BOTH
-	# call_deferred garantiza que el arbol ya termino de configurar sus hijos
 	get_parent().add_child(_panel_armas)
 
 	var margin := MarginContainer.new()
@@ -136,7 +143,6 @@ func _poblar_panel_armas() -> void:
 			_weapon_list.add_child(btn)
 
 func _on_selector_armas_pressed() -> void:
-	# Esperar a que el panel este listo si todavia no se construyo
 	if not is_instance_valid(_panel_armas):
 		await get_tree().process_frame
 	_poblar_panel_armas()
@@ -219,12 +225,18 @@ func _on_spawn_pressed() -> void:
 	if not npc:
 		push_error("DevMenu: la escena no instancio NpcBase")
 		return
+
 	npc._relacion_forzada = true
-	npc.relacion    = opt_relacion.get_selected_id() as NpcBase.Relacion
+
+	# Equipo: leer el ID seleccionado del OptionButton de equipo
+	var equipo_id: int = opt_relacion.get_selected_id()
+	npc.equipo_id = equipo_id
+
 	npc.experiencia = opt_experiencia.get_selected_id() as NpcBase.Experiencia
 	var idx: int = opt_tipo_npc.get_selected()
 	if idx >= 0 and idx < _armas_lista.size():
 		npc.nombre_arma = _armas_lista[idx]
+
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if not player:
 		push_error("DevMenu: no se encontro al jugador")
@@ -236,9 +248,10 @@ func _on_spawn_pressed() -> void:
 	var world: Node = player.get_parent()
 	world.add_child(npc)
 	npc.global_transform.origin = spawn_pos
+
 	var arma_txt: String = npc.nombre_arma if npc.nombre_arma != "" else "Melee"
 	lbl_status.text = "NPC: %s | %s | Arma: %s" % [
-		opt_relacion.get_item_text(opt_relacion.get_selected()),
+		GameState.nombre_equipo(equipo_id),
 		opt_experiencia.get_item_text(opt_experiencia.get_selected()),
 		arma_txt
 	]
