@@ -15,10 +15,8 @@ const NPC_SCENE: String = "res://scenes/npcs/npc_base.tscn"
 @onready var opt_tipo_npc: OptionButton    = $PanelNPC/VBox/GridAtributos/OptArma
 @onready var lbl_status: Label             = $PanelPrincipal/VBox/LblStatus
 
-# Panel selector de armas (creado por codigo, no necesita nodo en escena)
 var _panel_armas: PanelContainer = null
 var _weapon_list: VBoxContainer  = null
-
 var opt_arma_dinamico: OptionButton = null
 var _armas_lista: Array[String] = []
 var is_invisible: bool = false
@@ -48,12 +46,10 @@ func _ready() -> void:
 	btn_spawn.pressed.connect(_on_spawn_pressed)
 	btn_volver.pressed.connect(_on_volver_pressed)
 
-	# Agregar boton Selector de Armas al panel principal
 	_agregar_btn_selector_armas()
-	# Construir panel de armas oculto
 	_build_panel_armas()
 
-# ── Boton selector armas en panel principal ──────────────────────────
+# ── Boton Selector de Armas en panel principal ──────────────────────
 func _agregar_btn_selector_armas() -> void:
 	var vbox: VBoxContainer = get_node_or_null("PanelPrincipal/VBox")
 	if not vbox:
@@ -64,13 +60,12 @@ func _agregar_btn_selector_armas() -> void:
 	btn.custom_minimum_size = Vector2(0, 36)
 	btn.add_theme_font_size_override("font_size", 16)
 	vbox.add_child(btn)
-	# insertar antes de LblStatus si existe
 	var lbl: Label = get_node_or_null("PanelPrincipal/VBox/LblStatus")
 	if lbl:
 		vbox.move_child(btn, lbl.get_index())
 	btn.pressed.connect(_on_selector_armas_pressed)
 
-# ── Panel flotante selector de armas ─────────────────────────────────
+# ── Panel flotante selector de armas ─────────────────────────────
 func _build_panel_armas() -> void:
 	_panel_armas = PanelContainer.new()
 	_panel_armas.visible = false
@@ -78,7 +73,6 @@ func _build_panel_armas() -> void:
 	_panel_armas.custom_minimum_size = Vector2(320, 0)
 	_panel_armas.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_panel_armas.grow_vertical   = Control.GROW_DIRECTION_BOTH
-	# Se agrega al mismo CanvasLayer que el DevMenu
 	get_parent().add_child(_panel_armas)
 
 	var margin := MarginContainer.new()
@@ -147,8 +141,7 @@ func _on_selector_armas_pressed() -> void:
 func _cerrar_panel_armas() -> void:
 	_panel_armas.visible = false
 	visible = true
-
-panel_principal.visible = true
+	panel_principal.visible = true
 
 func _on_arma_seleccionada(nombre_arma: String) -> void:
 	var player: Node = get_tree().get_first_node_in_group("player")
@@ -157,14 +150,13 @@ func _on_arma_seleccionada(nombre_arma: String) -> void:
 	_panel_armas.visible = false
 	visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	# Reanudar spawner si existe
 	var spawners: Array = get_tree().get_nodes_in_group("spawner")
 	if not spawners.is_empty():
 		var sp = spawners[0]
 		if sp.has_method("reanudar_spawn"):
 			sp.reanudar_spawn()
 
-# ── Helpers existentes ────────────────────────────────────────────────
+# ── Helpers ─────────────────────────────────────────────────
 func _poblar_armas_en(opt: OptionButton) -> void:
 	_armas_lista.clear()
 	opt.clear()
