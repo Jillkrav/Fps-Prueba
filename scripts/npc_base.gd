@@ -50,15 +50,16 @@ var is_dead:           bool   = false
 var _base_color:       Color  = Color.WHITE
 var _relacion_forzada: bool   = false
 
-var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+# Cast explicito a float para evitar warning "Variant value"
+var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity"))
 
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
 
 # Nodos de la barra de vida flotante (se crean en _ready)
-var _healthbar_root:   Node3D    = null
-var _healthbar_bg:     MeshInstance3D = null
-var _healthbar_fill:   MeshInstance3D = null
-var _weapon_label_3d:  Label3D   = null
+var _healthbar_root:  Node3D         = null
+var _healthbar_bg:    MeshInstance3D = null
+var _healthbar_fill:  MeshInstance3D = null
+var _weapon_label_3d: Label3D        = null
 
 # ─────────────────────────────────────────
 # CICLO DE VIDA
@@ -135,46 +136,45 @@ func _physics_process(delta: float) -> void:
 # ─────────────────────────────────────────
 
 func _setup_healthbar() -> void:
-	# Nodo raiz que rota hacia la camara
-	_healthbar_root = Node3D.new()
+	_healthbar_root          = Node3D.new()
 	_healthbar_root.position = Vector3(0, 2.4, 0)
 	add_child(_healthbar_root)
 
-	# ── Fondo gris ──────────────────────────────────────────────────
-	_healthbar_bg = MeshInstance3D.new()
-	var bg_mesh   := QuadMesh.new()
-	bg_mesh.size  = Vector2(1.1, 0.18)
+	# ── Fondo gris ──
+	_healthbar_bg      = MeshInstance3D.new()
+	var bg_mesh        := QuadMesh.new()
+	bg_mesh.size       = Vector2(1.1, 0.18)
 	_healthbar_bg.mesh = bg_mesh
-	var bg_mat    := StandardMaterial3D.new()
-	bg_mat.albedo_color      = Color(0.15, 0.15, 0.15, 0.85)
-	bg_mat.shading_mode      = StandardMaterial3D.SHADING_MODE_UNSHADED
-	bg_mat.transparency      = BaseMaterial3D.TRANSPARENCY_ALPHA
-	bg_mat.billboard_mode    = BaseMaterial3D.BILLBOARD_DISABLED
+	var bg_mat         := StandardMaterial3D.new()
+	bg_mat.albedo_color   = Color(0.15, 0.15, 0.15, 0.85)
+	bg_mat.shading_mode   = StandardMaterial3D.SHADING_MODE_UNSHADED
+	bg_mat.transparency   = BaseMaterial3D.TRANSPARENCY_ALPHA
+	bg_mat.billboard_mode = BaseMaterial3D.BILLBOARD_DISABLED
 	_healthbar_bg.set_surface_override_material(0, bg_mat)
 	_healthbar_root.add_child(_healthbar_bg)
 
-	# ── Relleno (vida actual) ────────────────────────────────────────
-	_healthbar_fill = MeshInstance3D.new()
-	var fill_mesh   := QuadMesh.new()
-	fill_mesh.size  = Vector2(1.0, 0.13)
+	# ── Relleno (vida actual) ──
+	_healthbar_fill      = MeshInstance3D.new()
+	var fill_mesh        := QuadMesh.new()
+	fill_mesh.size       = Vector2(1.0, 0.13)
 	_healthbar_fill.mesh = fill_mesh
-	var fill_mat    := StandardMaterial3D.new()
-	fill_mat.albedo_color   = Color(0.1, 0.85, 0.1)
-	fill_mat.shading_mode   = StandardMaterial3D.SHADING_MODE_UNSHADED
-	fill_mat.transparency   = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var fill_mat         := StandardMaterial3D.new()
+	fill_mat.albedo_color = Color(0.1, 0.85, 0.1)
+	fill_mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
+	fill_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_healthbar_fill.set_surface_override_material(0, fill_mat)
 	_healthbar_root.add_child(_healthbar_fill)
 
-	# ── Label nombre del arma ───────────────────────────────────────
-	_weapon_label_3d = Label3D.new()
-	_weapon_label_3d.position       = Vector3(0, 0.18, 0.01)
-	_weapon_label_3d.font_size      = 24
-	_weapon_label_3d.modulate       = Color.WHITE
-	_weapon_label_3d.outline_size   = 6
+	# ── Label nombre del arma ──
+	_weapon_label_3d                  = Label3D.new()
+	_weapon_label_3d.position         = Vector3(0, 0.18, 0.01)
+	_weapon_label_3d.font_size        = 24
+	_weapon_label_3d.modulate         = Color.WHITE
+	_weapon_label_3d.outline_size     = 6
 	_weapon_label_3d.outline_modulate = Color(0, 0, 0, 0.8)
-	_weapon_label_3d.billboard      = BaseMaterial3D.BILLBOARD_DISABLED
-	_weapon_label_3d.double_sided   = true
-	_weapon_label_3d.text           = nombre_arma if nombre_arma != "" else "---"
+	_weapon_label_3d.billboard        = BaseMaterial3D.BILLBOARD_DISABLED
+	_weapon_label_3d.double_sided     = true
+	_weapon_label_3d.text             = nombre_arma if nombre_arma != "" else "---"
 	_healthbar_root.add_child(_weapon_label_3d)
 
 	_update_healthbar()
@@ -183,14 +183,11 @@ func _update_healthbar() -> void:
 	if not is_instance_valid(_healthbar_fill):
 		return
 	var ratio: float = clamp(current_health / max_health, 0.0, 1.0)
-	var full_width: float = 1.0
-	# Escala horizontal el fill segun la vida restante
-	_healthbar_fill.scale.x = ratio
-	# Desplazar para que se vacíe de derecha a izquierda
-	_healthbar_fill.position.x = (ratio - 1.0) * full_width * 0.5
+	_healthbar_fill.scale.x    = ratio
+	_healthbar_fill.position.x = (ratio - 1.0) * 0.5
 
-	# Color: verde > amarillo > rojo segun ratio
-	var fill_mat: StandardMaterial3D = _healthbar_fill.get_surface_override_material(0)
+	# Cast explicito a StandardMaterial3D para evitar warning de Variant
+	var fill_mat: StandardMaterial3D = _healthbar_fill.get_surface_override_material(0) as StandardMaterial3D
 	if fill_mat:
 		if ratio > 0.5:
 			fill_mat.albedo_color = Color(0.1, 0.85, 0.1)
@@ -199,7 +196,6 @@ func _update_healthbar() -> void:
 		else:
 			fill_mat.albedo_color = Color(0.9, 0.1, 0.1)
 
-# Llama esto despues de asignar nombre_arma para que el label se actualice
 func update_weapon_label(nombre: String) -> void:
 	nombre_arma = nombre
 	if is_instance_valid(_weapon_label_3d):
@@ -303,12 +299,12 @@ func die() -> void:
 # ─────────────────────────────────────────
 
 func draw_debug_laser(start: Vector3, end: Vector3, color: Color = Color.WHITE) -> void:
-	var mesh_instance := MeshInstance3D.new()
+	var mesh_instance  := MeshInstance3D.new()
 	var immediate_mesh := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
-	mesh_instance.mesh = immediate_mesh
-	material.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = color
+	var material       := StandardMaterial3D.new()
+	mesh_instance.mesh          = immediate_mesh
+	material.shading_mode       = StandardMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color       = color
 	mesh_instance.material_override = material
 	get_parent().add_child(mesh_instance)
 	immediate_mesh.surface_begin(Mesh.PRIMITIVE_LINES)
