@@ -47,7 +47,8 @@ func _ready() -> void:
 	btn_volver.pressed.connect(_on_volver_pressed)
 
 	_agregar_btn_selector_armas()
-	_build_panel_armas()
+	# Diferir la construccion del panel para que el arbol este listo
+	_build_panel_armas.call_deferred()
 
 # ── Boton Selector de Armas en panel principal ──────────────────────
 func _agregar_btn_selector_armas() -> void:
@@ -73,6 +74,7 @@ func _build_panel_armas() -> void:
 	_panel_armas.custom_minimum_size = Vector2(320, 0)
 	_panel_armas.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_panel_armas.grow_vertical   = Control.GROW_DIRECTION_BOTH
+	# call_deferred garantiza que el arbol ya termino de configurar sus hijos
 	get_parent().add_child(_panel_armas)
 
 	var margin := MarginContainer.new()
@@ -134,6 +136,9 @@ func _poblar_panel_armas() -> void:
 			_weapon_list.add_child(btn)
 
 func _on_selector_armas_pressed() -> void:
+	# Esperar a que el panel este listo si todavia no se construyo
+	if not is_instance_valid(_panel_armas):
+		await get_tree().process_frame
 	_poblar_panel_armas()
 	visible = false
 	_panel_armas.visible = true
@@ -156,7 +161,7 @@ func _on_arma_seleccionada(nombre_arma: String) -> void:
 		if sp.has_method("reanudar_spawn"):
 			sp.reanudar_spawn()
 
-# ── Helpers ─────────────────────────────────────────────────
+# ── Helpers ────────────────────────────────────────────────
 func _poblar_armas_en(opt: OptionButton) -> void:
 	_armas_lista.clear()
 	opt.clear()
