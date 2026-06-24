@@ -59,7 +59,7 @@ var _weapon_cfg: Dictionary = {}
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
-@onready var head_hitbox: Area3D = get_node_or_null("Head/HeadHitbox")
+@onready var head_hitbox: Area3D                 = get_node_or_null("Head/HeadHitbox")
 
 # ─────────────────────────────────────────
 # HELPERS
@@ -69,6 +69,9 @@ func _player_is_invisible() -> bool:
 	var player: Node = get_tree().get_first_node_in_group("player")
 	return player != null and player.is_in_group("invisible_to_npc")
 
+## Devuelve el equipo del jugador según GameState.
+## "azul" = Equipo.UNO (aliado), "rojo" = Equipo.DOS (enemigo).
+## Si no hay equipo seteado, se asume Equipo.UNO.
 func _get_player_team() -> Equipo:
 	var gs: Node = get_node_or_null("/root/GameState")
 	if gs:
@@ -76,6 +79,8 @@ func _get_player_team() -> Equipo:
 			"rojo":
 				return Equipo.DOS
 			"azul":
+				return Equipo.UNO
+			_:
 				return Equipo.UNO
 	return Equipo.UNO
 
@@ -91,12 +96,14 @@ func es_enemigo_de(nodo: Node) -> bool:
 # ─────────────────────────────────────────
 
 func _ready() -> void:
-	# ── Vida desde ConfigManager según equipo ──────────────────────
+	add_to_group("npcs")
+
+	# ── Vida desde ConfigManager según equipo ─────────────────────────
 	var tipo_npc: String = "Aliado" if equipo == Equipo.UNO else "Enemigo"
 	max_health     = ConfigManager.get_vida_npc(tipo_npc)
 	current_health = max_health
 
-	# ── Inicializar arma solo si tiene nombre válido ─────────────────
+	# ── Inicializar arma solo si tiene nombre válido ───────────────────
 	if not weapon_name_cfg.is_empty():
 		_init_weapon(weapon_name_cfg)
 
@@ -151,8 +158,9 @@ func _physics_process(delta: float) -> void:
 # ARMA DESDE CONFIGMANAGER
 # ─────────────────────────────────────────
 
-## Carga la configuración del arma desde skill.cfg.json y ajusta attack_rate.
 func _init_weapon(nombre: String) -> void:
+	if nombre.is_empty():
+		return
 	_weapon_cfg = ConfigManager.get_arma(nombre)
 	if _weapon_cfg.is_empty():
 		push_warning("NpcBase: arma '%s' no encontrada en ConfigManager, usando defaults." % nombre)
@@ -160,7 +168,6 @@ func _init_weapon(nombre: String) -> void:
 	weapon_name_cfg = nombre
 	attack_rate = float(_weapon_cfg.get("SegundosPorBala", attack_rate))
 
-## Ejecuta el disparo usando el daño DañoAlNPC del arma cargada.
 func _npc_fire_weapon() -> void:
 	if not target or not target.has_method("take_damage"):
 		return
@@ -178,33 +185,37 @@ func _apply_team_color() -> void:
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
 	match equipo:
 		Equipo.DOS:
-			mat.albedo_color = Color(0.85, 0.15, 0.15)
+			mat.albedo_color = Color(0.85, 0.15, 0.15)  # Rojo = enemigo
 		Equipo.UNO:
 			var opciones: Array[Color] = [
 				Color(0.1, 0.4, 0.9),
 				Color(0.1, 0.75, 0.95),
 				Color(0.15, 0.8, 0.3),
 			]
-			mat.albedo_color = opciones[randi() % opciones.size()]
+			mat.albedo_color = opciones[randi() % opciones.size()]  # Azul/verde = aliado
 	_base_color = mat.albedo_color
 	mesh.set_surface_override_material(0, mat)
 
 func _pick_target() -> void:
 	target = null
-	var todos_npcs: Array = get_tree().get_nodes_in_group("npcs")
-	var jugador_invisible: bool = _player_is_invisible()
 	var player_team: Equipo = _get_player_team()
+	var jugador_invisible: bool = _player_is_invisible()
 	var closest_dist: float = INF
 
+	# ── Intentar atacar al jugador si es enemigo ───────────────────────
 	var atacar_jugador: bool = (equipo != player_team) and not jugador_invisible
 	if atacar_jugador:
 		var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
-		if player and not player.get("is_dead"):
-			var d: float = global_transform.origin.distance_to(player.global_transform.origin)
-			if d < closest_dist:
-				closest_dist = d
-				target = player
+		if player and is_instance_valid(player):
+			var p_dead = player.get("is_dead")
+			if p_dead == null or p_dead == false:
+				var d: float = global_transform.origin.distance_to(player.global_transform.origin)
+				if d < closest_dist:
+					closest_dist = d
+					target = player
 
+	# ── Intentar atacar a NPC del equipo contrario ────────────────────
+	var todos_npcs: Array = get_tree().get_nodes_in_group("npcs")
 	for node in todos_npcs:
 		if node == self:
 			continue
@@ -240,7 +251,6 @@ func perform_attack() -> void:
 	elif target and target.has_method("take_damage"):
 		target.take_damage(10.0)
 
-## Recibe daño. zona puede ser "Cabeza" o "Torso".
 func take_damage(amount: float, zona: String = "Torso") -> void:
 	if is_dead:
 		return

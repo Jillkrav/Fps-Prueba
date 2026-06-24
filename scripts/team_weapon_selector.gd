@@ -1,59 +1,79 @@
-extends CanvasLayer
+# scripts/team_weapon_selector.gd
+# Pantalla de selección de equipo y arma antes de entrar al mapa.
+# Rellena los OptionButton con los datos reales de skill.cfg.json.
+extends Control
 
-# Emitida cuando el jugador confirma equipo y arma
-signal selection_finished(team: String, weapon: String)
+@onready var opt_equipo:  OptionButton = $VBox/OptEquipo
+@onready var opt_arma:    OptionButton = $VBox/OptArma
+@onready var btn_jugar:   Button       = $VBox/BtnJugar
+@onready var lbl_detalle: Label        = $VBox/LblDetalle
 
-var selected_team: String = ""
-var selected_weapon: String = ""
-
-@onready var team_panel: Control = $TeamPanel
-@onready var weapon_panel: Control = $WeaponPanel
+# Lista paralela para recuperar el nombre de arma por índice
+var _armas_lista: Array[String] = []
 
 func _ready() -> void:
-	# Este nodo debe procesar aunque el juego esté pausado
-	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
-	visible = true
-	show_team_panel()
-	get_tree().paused = true
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# ── Equipos ──────────────────────────────────────────────────────
+	opt_equipo.clear()
+	opt_equipo.add_item("Equipo Azul (Aliado)",   0)
+	opt_equipo.add_item("Equipo Rojo (Enemigo)",  1)
+	# Por defecto: azul
+	opt_equipo.select(0)
 
-func show_team_panel() -> void:
-	team_panel.visible = true
-	weapon_panel.visible = false
+	# ── Armas desde ConfigManager ────────────────────────────────────
+	_poblar_armas()
 
-func show_weapon_panel() -> void:
-	team_panel.visible = false
-	weapon_panel.visible = true
+	# Mostrar detalle del arma seleccionada al inicio
+	_on_arma_seleccionada(0)
 
-# --- BOTONES DE EQUIPO ---
-func _on_team_rojo_pressed() -> void:
-	selected_team = "rojo"
-	show_weapon_panel()
+	opt_arma.item_selected.connect(_on_arma_seleccionada)
+	btn_jugar.pressed.connect(_on_jugar_pressed)
 
-func _on_team_azul_pressed() -> void:
-	selected_team = "azul"
-	show_weapon_panel()
+func _poblar_armas() -> void:
+	_armas_lista.clear()
+	opt_arma.clear()
+	var armas_raw: Dictionary = ConfigManager._data.get("Armas", {})
+	for categoria: String in armas_raw.keys():
+		var cat_dict: Dictionary = armas_raw[categoria]
+		for nombre_arma: String in cat_dict.keys():
+			_armas_lista.append(nombre_arma)
+			opt_arma.add_item("%s  [%s]" % [nombre_arma, categoria])
 
-# --- BOTONES DE ARMA ---
-func _on_weapon_metralleta_pressed() -> void:
-	selected_weapon = "metralleta"
-	_finish_selection()
+	if _armas_lista.is_empty():
+		push_error("TeamWeaponSelector: No se encontraron armas en skill.cfg.json")
 
-func _on_weapon_escopeta_pressed() -> void:
-	selected_weapon = "escopeta"
-	_finish_selection()
+func _on_arma_seleccionada(index: int) -> void:
+	if index < 0 or index >= _armas_lista.size():
+		return
+	var nombre: String = _armas_lista[index]
+	var cfg: Dictionary = ConfigManager.get_arma(nombre)
+	if cfg.is_empty():
+		lbl_detalle.text = ""
+		return
+	lbl_detalle.text = (
+		"%s\nDaño al jugador: %s  |  Daño al NPC: %s\nCargador: %s  |  Reserva: %s\nCadencia: %ss/bala  |  Recarga: %ss" % [
+			nombre,
+			str(cfg.get("DañoAlJugador", "—")),
+			str(cfg.get("DañoAlNPC", "—")),
+			str(cfg.get("TamañoCargador", "—")),
+			str(cfg.get("ReservaMunicionMaxima", "—")),
+			str(cfg.get("SegundosPorBala", "—")),
+			str(cfg.get("TiempoRecargaSegundos", "—")),
+		]
+	)
 
-func _on_weapon_back_pressed() -> void:
-	show_team_panel()
+func _on_jugar_pressed() -> void:
+	if _armas_lista.is_empty():
+		return
 
-# --- CONFIRMAR Y ARRANCAR ---
-func _finish_selection() -> void:
-	var gs_node: Node = get_node_or_null("/root/GameState")
-	if gs_node:
-		gs_node.selected_team = selected_team
-		gs_node.selected_weapon = selected_weapon
+	# ── Guardar equipo ────────────────────────────────────────────────
+	match opt_equipo.get_selected_id():
+		0: GameState.selected_team = "azul"
+		1: GameState.selected_team = "rojo"
 
-	get_tree().paused = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	selection_finished.emit(selected_team, selected_weapon)
-	queue_free()
+	# ── Guardar arma ─────────────────────────────────────────────────
+	var arma_idx: int = opt_arma.get_selected()
+	if arma_idx >= 0 and arma_idx < _armas_lista.size():
+		GameState.selected_weapon = _armas_lista[arma_idx]
+
+	# ── Cargar mapa ───────────────────────────────────────────────────
+	get_tree().change_scene_to_file(GameState.selected_map)

@@ -1,3 +1,4 @@
+# scripts/player.gd
 extends CharacterBody3D
 class_name Player
 
@@ -15,17 +16,20 @@ var current_health: float = 100.0
 var is_dead: bool = false
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-@onready var head: Node3D = $Head
-@onready var camera: Camera3D = $Head/Camera3D
+@onready var head: Node3D          = $Head
+@onready var camera: Camera3D      = $Head/Camera3D
 @onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
 @onready var weapon_placeholder_scene: PackedScene = preload("res://scenes/weapons/weapon_placeholder.tscn")
 
 var active_weapon: Weapon = null
 
 func _ready() -> void:
-	max_health = ConfigManager.salud_jugador
+	# ── Salud desde ConfigManager ─────────────────────────────────────
+	max_health     = ConfigManager.salud_jugador
 	current_health = max_health
+
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	add_to_group("player")
 	setup_weapon()
 	health_changed.emit(current_health, max_health)
 
@@ -37,12 +41,13 @@ func setup_weapon() -> void:
 	weapon_holder.add_child(weapon_instance)
 	active_weapon = weapon_instance as Weapon
 
-	var selected: String = "USP"
-	var gs := get_node_or_null("/root/GameState")
-	if gs and "selected_weapon" in gs:
-		selected = gs.selected_weapon
-
+	# ── Arma elegida por el jugador en el selector ────────────────────
+	# get_weapon_or_default() devuelve selected_weapon si está seteado,
+	# o la primera arma del JSON como fallback seguro.
+	var selected: String = GameState.get_weapon_or_default()
 	active_weapon.initialize_from_name(selected)
+	# ──────────────────────────────────────────────────────────────────
+
 	active_weapon.weapon_fired.connect(_on_weapon_fired)
 	active_weapon.weapon_ammo_changed.connect(_on_weapon_ammo_changed)
 	weapon_changed.emit(active_weapon.weapon_name, active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
@@ -74,38 +79,42 @@ func _physics_process(delta: float) -> void:
 	if (Input.is_action_just_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_SPACE)) and is_on_floor():
 		velocity.y = jump_velocity
 	var input_dir := Vector2.ZERO
-	if Input.is_physical_key_pressed(KEY_W):
-		input_dir.y -= 1.0
-	if Input.is_physical_key_pressed(KEY_S):
-		input_dir.y += 1.0
-	if Input.is_physical_key_pressed(KEY_A):
-		input_dir.x -= 1.0
-	if Input.is_physical_key_pressed(KEY_D):
-		input_dir.x += 1.0
+	if Input.is_physical_key_pressed(KEY_W): input_dir.y -= 1.0
+	if Input.is_physical_key_pressed(KEY_S): input_dir.y += 1.0
+	if Input.is_physical_key_pressed(KEY_A): input_dir.x -= 1.0
+	if Input.is_physical_key_pressed(KEY_D): input_dir.x += 1.0
 	input_dir = input_dir.normalized()
-	var dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	if dir:
-		velocity.x = dir.x * speed
-		velocity.z = dir.z * speed
+	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	if direction:
+		velocity.x = direction.x * speed
+		velocity.z = direction.z * speed
 	else:
 		velocity.x = move_toward(velocity.x, 0, speed)
 		velocity.z = move_toward(velocity.z, 0, speed)
 	move_and_slide()
 
 func shoot() -> void:
-	if not active_weapon or not active_weapon.can_fire():
+	if not active_weapon:
 		return
-	var hits := active_weapon.fire(1.0)
-	for hit in hits:
-		var target: Node = hit["collider"]
-		if target and target.has_method("take_damage"):
-			target.take_damage(hit["damage_vs_player"] if target is Player else hit["damage_vs_npc"])
+	if active_weapon.can_fire():
+		var hits: Array = active_weapon.fire()
+		for hit in hits:
+			var target_node: Node = hit["collider"]
+			if target_node and target_node.has_method("take_damage"):
+				if target_node is Player:
+					target_node.take_damage(hit["damage_vs_player"])
+				else:
+					target_node.take_damage(hit["damage_vs_npc"])
 
 func take_damage(amount: float, zona: String = "Torso") -> void:
 	if is_dead:
 		return
-	var mult: float = ConfigManager.mult_cabeza if zona == "Cabeza" else ConfigManager.mult_torso
-	current_health = clampf(current_health - amount * mult, 0.0, max_health)
+	var multiplicador: float = 1.0
+	match zona:
+		"Cabeza": multiplicador = ConfigManager.mult_cabeza
+		"Torso":  multiplicador = ConfigManager.mult_torso
+	current_health -= amount * multiplicador
+	current_health  = clamp(current_health, 0.0, max_health)
 	health_changed.emit(current_health, max_health)
 	if current_health <= 0.0:
 		die()
