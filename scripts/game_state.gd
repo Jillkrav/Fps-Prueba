@@ -5,7 +5,6 @@
 extends Node
 class_name GameStateClass
 
-# --- Sistema de equipos ---
 # Equipo 0 = Espectador (sin equipo, sin amigos ni enemigos)
 # Equipo 1 = Azul
 # Equipo 2 = Rojo
@@ -19,7 +18,6 @@ enum Equipo {
 	VERDE      = 4
 }
 
-# Nombres para mostrar en UI
 const NOMBRE_EQUIPO: Dictionary = {
 	0: "Espectador",
 	1: "Azul",
@@ -28,26 +26,24 @@ const NOMBRE_EQUIPO: Dictionary = {
 	4: "Verde"
 }
 
-# Colores representativos de cada equipo
 const COLOR_EQUIPO: Dictionary = {
-	0: Color(0.6, 0.6, 0.6),   # Gris Espectador
-	1: Color(0.15, 0.35, 0.9), # Azul
-	2: Color(0.85, 0.15, 0.15),# Rojo
-	3: Color(0.85, 0.75, 0.1), # Amarillo
-	4: Color(0.15, 0.75, 0.25) # Verde
+	0: Color(0.6,  0.6,  0.6),    # Gris  - Espectador
+	1: Color(0.15, 0.35, 0.9),    # Azul
+	2: Color(0.85, 0.15, 0.15),   # Rojo
+	3: Color(0.85, 0.75, 0.1),    # Amarillo
+	4: Color(0.15, 0.75, 0.25)    # Verde
 }
 
 var selected_map:    String = "res://scenes/maps/map_1.tscn"
 var selected_weapon: String = "USP"
 
-# El jugador empieza como Espectador (sin equipo)
+# El jugador empieza como Espectador hasta que elija equipo
 var player_team: int = Equipo.ESPECTADOR
 
 func _ready() -> void:
 	pass
 
-# Devuelve true si el equipo_a es enemigo del equipo_b.
-# Espectador (0) NUNCA es enemigo ni aliado de nadie.
+# Devuelve true SOLO si ambos equipos son distintos Y ninguno es Espectador.
 func son_enemigos(equipo_a: int, equipo_b: int) -> bool:
 	if equipo_a == Equipo.ESPECTADOR or equipo_b == Equipo.ESPECTADOR:
 		return false

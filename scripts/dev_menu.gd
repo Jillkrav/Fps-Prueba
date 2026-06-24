@@ -1,5 +1,4 @@
 ## Menu de desarrollo. Se activa con Q desde hud.gd.
-## Nodo DevMenu en hud.tscn es tipo Control -> extends Control.
 extends Control
 
 const NPC_SCENE: String = "res://scenes/npcs/npc_base.tscn"
@@ -15,41 +14,44 @@ const NPC_SCENE: String = "res://scenes/npcs/npc_base.tscn"
 @onready var opt_tipo_npc: OptionButton    = $PanelNPC/VBox/GridAtributos/OptArma
 @onready var lbl_status: Label             = $PanelPrincipal/VBox/LblStatus
 
-var _panel_armas: PanelContainer = null
-var _weapon_list: VBoxContainer  = null
+var _panel_armas: PanelContainer    = null
+var _weapon_list: VBoxContainer     = null
+var _panel_equipo: PanelContainer   = null
 var opt_arma_dinamico: OptionButton = null
-var _armas_lista: Array[String] = []
-var is_invisible: bool = false
+var _armas_lista: Array[String]     = []
+var is_invisible: bool              = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	# Poblar OptionButton de equipo (usa IDs de GameState.Equipo)
+	# --- Equipo para spawn de NPC ---
 	opt_relacion.clear()
 	for id in GameState.NOMBRE_EQUIPO.keys():
 		opt_relacion.add_item(GameState.nombre_equipo(id), id)
-	# Seleccionar equipo Rojo por defecto para spawn de NPC
 	_seleccionar_opcion(opt_relacion, GameStateClass.Equipo.ROJO)
 
+	# --- Experiencia ---
 	opt_experiencia.clear()
 	opt_experiencia.add_item("Baja",  NpcBase.Experiencia.BAJA)
 	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
 	opt_experiencia.add_item("Alta",  NpcBase.Experiencia.ALTA)
 
+	# --- Arma del NPC ---
 	opt_tipo_npc.clear()
 	_poblar_armas_en(opt_tipo_npc)
 
 	visible = false
 	panel_principal.visible = true
-	panel_npc.visible = false
+	panel_npc.visible       = false
 
 	btn_invisible.pressed.connect(_on_invisible_pressed)
 	btn_generar.pressed.connect(_on_generar_pressed)
 	btn_spawn.pressed.connect(_on_spawn_pressed)
 	btn_volver.pressed.connect(_on_volver_pressed)
 
-	_agregar_btn_selector_armas()
+	_agregar_botones_extras()
 	_build_panel_armas.call_deferred()
+	_build_panel_equipo.call_deferred()
 
 # Selecciona la opcion del OptionButton cuyo id coincide
 func _seleccionar_opcion(opt: OptionButton, id: int) -> void:
@@ -58,23 +60,35 @@ func _seleccionar_opcion(opt: OptionButton, id: int) -> void:
 			opt.select(i)
 			return
 
-# ── Boton Selector de Armas en panel principal ──────────────────────
-func _agregar_btn_selector_armas() -> void:
+# ── Botones extras en panel principal ────────────────────────────────────────
+func _agregar_botones_extras() -> void:
 	var vbox: VBoxContainer = get_node_or_null("PanelPrincipal/VBox")
 	if not vbox:
 		return
-	var btn := Button.new()
-	btn.name = "BtnSelectorArmas"
-	btn.text = "Selector de Armas"
-	btn.custom_minimum_size = Vector2(0, 36)
-	btn.add_theme_font_size_override("font_size", 16)
-	vbox.add_child(btn)
 	var lbl: Label = get_node_or_null("PanelPrincipal/VBox/LblStatus")
-	if lbl:
-		vbox.move_child(btn, lbl.get_index())
-	btn.pressed.connect(_on_selector_armas_pressed)
+	var insert_idx: int = lbl.get_index() if lbl else vbox.get_child_count()
 
-# ── Panel flotante selector de armas ─────────────────────────────
+	# Boton selector de armas
+	var btn_armas := Button.new()
+	btn_armas.name = "BtnSelectorArmas"
+	btn_armas.text = "Selector de Armas"
+	btn_armas.custom_minimum_size = Vector2(0, 36)
+	btn_armas.add_theme_font_size_override("font_size", 16)
+	btn_armas.pressed.connect(_on_selector_armas_pressed)
+	vbox.add_child(btn_armas)
+	vbox.move_child(btn_armas, insert_idx)
+
+	# Boton cambiar equipo
+	var btn_equipo := Button.new()
+	btn_equipo.name = "BtnCambiarEquipo"
+	btn_equipo.text = "Cambiar Equipo [%s]" % GameState.nombre_equipo(GameState.player_team)
+	btn_equipo.custom_minimum_size = Vector2(0, 36)
+	btn_equipo.add_theme_font_size_override("font_size", 16)
+	btn_equipo.pressed.connect(_on_cambiar_equipo_pressed)
+	vbox.add_child(btn_equipo)
+	vbox.move_child(btn_equipo, insert_idx + 1)
+
+# ── Panel flotante selector de armas ─────────────────────────────────────────
 func _build_panel_armas() -> void:
 	_panel_armas = PanelContainer.new()
 	_panel_armas.visible = false
@@ -118,6 +132,71 @@ func _build_panel_armas() -> void:
 	btn_cerrar.pressed.connect(_cerrar_panel_armas)
 	vbox.add_child(btn_cerrar)
 
+# ── Panel flotante cambiar equipo ─────────────────────────────────────────────
+func _build_panel_equipo() -> void:
+	_panel_equipo = PanelContainer.new()
+	_panel_equipo.visible = false
+	_panel_equipo.set_anchors_preset(Control.PRESET_CENTER)
+	_panel_equipo.custom_minimum_size = Vector2(300, 0)
+	_panel_equipo.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_panel_equipo.grow_vertical   = Control.GROW_DIRECTION_BOTH
+	get_parent().add_child(_panel_equipo)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_top",    14)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	margin.add_theme_constant_override("margin_left",   18)
+	margin.add_theme_constant_override("margin_right",  18)
+	_panel_equipo.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	margin.add_child(vbox)
+
+	var titulo := Label.new()
+	titulo.text = "Cambiar Equipo"
+	titulo.add_theme_font_size_override("font_size", 20)
+	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(titulo)
+	vbox.add_child(HSeparator.new())
+
+	# Un boton por cada equipo del enum
+	for id in GameState.NOMBRE_EQUIPO.keys():
+		var nombre: String = GameState.nombre_equipo(id)
+		var color: Color   = GameState.color_equipo(id)
+		var btn := Button.new()
+		btn.text = nombre
+		btn.custom_minimum_size = Vector2(0, 40)
+		btn.add_theme_font_size_override("font_size", 18)
+		btn.add_theme_color_override("font_color", color)
+		btn.pressed.connect(_on_equipo_elegido.bind(id))
+		vbox.add_child(btn)
+
+	vbox.add_child(HSeparator.new())
+	var btn_cerrar := Button.new()
+	btn_cerrar.text = "Cancelar"
+	btn_cerrar.add_theme_font_size_override("font_size", 15)
+	btn_cerrar.pressed.connect(_cerrar_panel_equipo)
+	vbox.add_child(btn_cerrar)
+
+func _on_equipo_elegido(id: int) -> void:
+	GameState.player_team = id
+	# Actualizar texto del boton en el menu principal
+	var btn_eq: Button = get_node_or_null("PanelPrincipal/VBox/BtnCambiarEquipo")
+	if is_instance_valid(btn_eq):
+		btn_eq.text = "Cambiar Equipo [%s]" % GameState.nombre_equipo(id)
+	# Forzar retarget en todos los NPCs activos
+	for npc in get_tree().get_nodes_in_group("npcs"):
+		if npc is NpcBase:
+			npc._pick_target()
+	_cerrar_panel_equipo()
+
+func _cerrar_panel_equipo() -> void:
+	_panel_equipo.visible = false
+	visible = true
+	panel_principal.visible = true
+
+# ── Logica panel armas ────────────────────────────────────────────────────────
 func _poblar_panel_armas() -> void:
 	if not is_instance_valid(_weapon_list):
 		return
@@ -128,7 +207,7 @@ func _poblar_panel_armas() -> void:
 		armas_raw = ConfigManager._data["Armas"]
 	for categoria in armas_raw.keys():
 		var lbl_cat := Label.new()
-		lbl_cat.text = "── " + categoria + " ──"
+		lbl_cat.text = "-- " + categoria + " --"
 		lbl_cat.add_theme_font_size_override("font_size", 13)
 		lbl_cat.modulate = Color(0.75, 0.75, 0.75)
 		_weapon_list.add_child(lbl_cat)
@@ -167,7 +246,7 @@ func _on_arma_seleccionada(nombre_arma: String) -> void:
 		if sp.has_method("reanudar_spawn"):
 			sp.reanudar_spawn()
 
-# ── Helpers ────────────────────────────────────────────────
+# ── Helpers generales ─────────────────────────────────────────────────────────
 func _poblar_armas_en(opt: OptionButton) -> void:
 	_armas_lista.clear()
 	opt.clear()
@@ -180,15 +259,14 @@ func _poblar_armas_en(opt: OptionButton) -> void:
 			opt.add_item("%s [%s]" % [nombre, categoria])
 	_armas_lista.append("")
 	opt.add_item("Sin arma (Melee)")
-	if _armas_lista.is_empty() or (_armas_lista.size() == 1 and _armas_lista[0] == ""):
-		_armas_lista = [""]
-		push_warning("DevMenu: sin armas en ConfigManager, solo opcion Melee disponible")
 
 func toggle_menu() -> void:
 	if is_instance_valid(_panel_armas) and _panel_armas.visible:
 		_panel_armas.visible = false
+	if is_instance_valid(_panel_equipo) and _panel_equipo.visible:
+		_panel_equipo.visible = false
 	visible = !visible
-	panel_npc.visible = false
+	panel_npc.visible       = false
 	panel_principal.visible = true
 	if visible:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -202,19 +280,23 @@ func _on_invisible_pressed() -> void:
 		if is_invisible:
 			player.add_to_group("invisible_to_npc")
 			btn_invisible.text = "Invisible: ON"
-			lbl_status.text = "[INVISIBLE ACTIVO]"
+			lbl_status.text    = "[INVISIBLE ACTIVO]"
 		else:
 			player.remove_from_group("invisible_to_npc")
 			btn_invisible.text = "Invisible: OFF"
-			lbl_status.text = ""
+			lbl_status.text    = ""
 
 func _on_generar_pressed() -> void:
 	panel_principal.visible = false
-	panel_npc.visible = true
+	panel_npc.visible       = true
 
 func _on_volver_pressed() -> void:
-	panel_npc.visible = false
+	panel_npc.visible       = false
 	panel_principal.visible = true
+
+func _on_cambiar_equipo_pressed() -> void:
+	visible = false
+	_panel_equipo.visible = true
 
 func _on_spawn_pressed() -> void:
 	var packed: PackedScene = load(NPC_SCENE)
@@ -227,11 +309,7 @@ func _on_spawn_pressed() -> void:
 		return
 
 	npc._relacion_forzada = true
-
-	# Equipo: leer el ID seleccionado del OptionButton de equipo
-	var equipo_id: int = opt_relacion.get_selected_id()
-	npc.equipo_id = equipo_id
-
+	npc.equipo_id = opt_relacion.get_selected_id()
 	npc.experiencia = opt_experiencia.get_selected_id() as NpcBase.Experiencia
 	var idx: int = opt_tipo_npc.get_selected()
 	if idx >= 0 and idx < _armas_lista.size():
@@ -245,15 +323,14 @@ func _on_spawn_pressed() -> void:
 	var spawn_pos: Vector3 = player.global_transform.origin \
 		+ player.global_transform.basis.z * -3.0
 	spawn_pos.y = player.global_transform.origin.y
-	var world: Node = player.get_parent()
-	world.add_child(npc)
+	player.get_parent().add_child(npc)
 	npc.global_transform.origin = spawn_pos
 
 	var arma_txt: String = npc.nombre_arma if npc.nombre_arma != "" else "Melee"
-	lbl_status.text = "NPC: %s | %s | Arma: %s" % [
-		GameState.nombre_equipo(equipo_id),
+	lbl_status.text = "NPC spawneado: %s | %s | Arma: %s" % [
+		GameState.nombre_equipo(npc.equipo_id),
 		opt_experiencia.get_item_text(opt_experiencia.get_selected()),
 		arma_txt
 	]
-	panel_npc.visible = false
+	panel_npc.visible       = false
 	panel_principal.visible = true

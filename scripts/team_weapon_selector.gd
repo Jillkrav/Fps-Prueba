@@ -1,26 +1,37 @@
+# scripts/team_weapon_selector.gd
+# Pantalla de seleccion de equipo + arma al iniciar la partida.
+# Usa los IDs numericos de GameState.Equipo.
 extends CanvasLayer
 
-@onready var team_panel: VBoxContainer = $TeamPanel
+@onready var team_panel:  VBoxContainer = $TeamPanel
 @onready var weapon_panel: VBoxContainer = $WeaponPanel
-@onready var btn_rojo: Button = $TeamPanel/BtnRojo
-@onready var btn_azul: Button = $TeamPanel/BtnAzul
-@onready var btn_volver: Button = $WeaponPanel/BtnVolver
-@onready var btn_metralleta: Button = $WeaponPanel/WeaponsRow/BtnMetralleta
-@onready var btn_escopeta: Button = $WeaponPanel/WeaponsRow/BtnEscopeta
-@onready var weapon_title: Label = $WeaponPanel/Title
+@onready var btn_rojo:     Button        = $TeamPanel/BtnRojo
+@onready var btn_azul:     Button        = $TeamPanel/BtnAzul
+@onready var btn_volver:   Button        = $WeaponPanel/BtnVolver
+@onready var btn_metralleta: Button      = $WeaponPanel/WeaponsRow/BtnMetralleta
+@onready var btn_escopeta:   Button      = $WeaponPanel/WeaponsRow/BtnEscopeta
+@onready var weapon_title: Label         = $WeaponPanel/Title
 
-var _armas_lista: Array[String] = []
+var _armas_lista: Array[String]  = []
 var _armas_buttons: Array[Button] = []
-var _selected_team: String = "azul"
+var _selected_team_id: int = GameStateClass.Equipo.ESPECTADOR
 var _scroll: ScrollContainer = null
-var _list: VBoxContainer = null
+var _list:   VBoxContainer   = null
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	team_panel.visible = true
+	team_panel.visible  = true
 	weapon_panel.visible = false
 	_construir_lista()
 	_poblar_armas()
+	# Conectar botones de equipo
+	btn_rojo.pressed.connect(_on_team_rojo_pressed)
+	btn_azul.pressed.connect(_on_team_azul_pressed)
+	btn_volver.pressed.connect(_on_weapon_back_pressed)
+	if is_instance_valid(btn_metralleta):
+		btn_metralleta.pressed.connect(_on_weapon_metralleta_pressed)
+	if is_instance_valid(btn_escopeta):
+		btn_escopeta.pressed.connect(_on_weapon_escopeta_pressed)
 
 func _construir_lista() -> void:
 	var row: Node = get_node_or_null("WeaponPanel/WeaponsRow")
@@ -49,10 +60,10 @@ func _poblar_armas() -> void:
 		armas_raw = ConfigManager._data["Armas"]
 	if not armas_raw.is_empty():
 		if is_instance_valid(btn_metralleta): btn_metralleta.visible = false
-		if is_instance_valid(btn_escopeta): btn_escopeta.visible = false
+		if is_instance_valid(btn_escopeta):   btn_escopeta.visible   = false
 		for categoria in armas_raw.keys():
 			var lbl := Label.new()
-			lbl.text = "── " + categoria + " ──"
+			lbl.text = "-- " + categoria + " --"
 			lbl.add_theme_font_size_override("font_size", 13)
 			lbl.modulate = Color(0.75, 0.75, 0.75)
 			_list.add_child(lbl)
@@ -69,18 +80,22 @@ func _poblar_armas() -> void:
 				_armas_buttons.append(btn)
 	else:
 		if is_instance_valid(btn_metralleta): btn_metralleta.visible = true
-		if is_instance_valid(btn_escopeta): btn_escopeta.visible = true
+		if is_instance_valid(btn_escopeta):   btn_escopeta.visible   = true
 
 func _on_team_rojo_pressed() -> void:
-	_selected_team = "rojo"
-	team_panel.visible = false
+	_selected_team_id = GameStateClass.Equipo.ROJO
+	team_panel.visible  = false
 	weapon_panel.visible = true
+	if is_instance_valid(weapon_title):
+		weapon_title.text = "Equipo Rojo - Elige tu arma"
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _on_team_azul_pressed() -> void:
-	_selected_team = "azul"
-	team_panel.visible = false
+	_selected_team_id = GameStateClass.Equipo.AZUL
+	team_panel.visible  = false
 	weapon_panel.visible = true
+	if is_instance_valid(weapon_title):
+		weapon_title.text = "Equipo Azul - Elige tu arma"
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _on_weapon_pressed(nombre_arma: String) -> void:
@@ -94,15 +109,12 @@ func _on_weapon_escopeta_pressed() -> void:
 
 func _on_weapon_back_pressed() -> void:
 	weapon_panel.visible = false
-	team_panel.visible = true
+	team_panel.visible   = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _confirmar_seleccion(nombre_arma: String) -> void:
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs:
-		if "selected_weapon" in gs:
-			gs.selected_weapon = nombre_arma
-		if "selected_team" in gs:
-			gs.selected_team = _selected_team
+	# Guardar equipo como ID numerico en GameState
+	GameState.player_team    = _selected_team_id
+	GameState.selected_weapon = nombre_arma
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	queue_free()
