@@ -2,20 +2,16 @@ extends NpcBase
 class_name NpcMelee
 
 func _ready() -> void:
-	npc_name      = "NPC Melee"
-	especie       = ""
-	sexo          = Sexo.MASCULINO
-	experiencia   = Experiencia.MEDIA
-	skin_path     = ""
-	voz_path      = ""
-	estado        = Estado.IDLE
-
-	max_health    = 40.0
-	speed         = 4.0
-	damage        = 15.0
-	attack_range  = 1.5
-	attack_rate   = 1.0
-	# equipo se asigna ANTES de _ready() desde el spawner o inspector
+	npc_name = "NPC Melee"
+	relacion = Relacion.ENEMIGO
+	experiencia = Experiencia.MEDIA
+	estado = Estado.IDLE
+	speed = 4.0
+	attack_range = 1.5
+	attack_rate = 1.0
+	nombre_arma = "Punos"
+	max_health = ConfigManager.get_vida_npc("Enemigo")
+	current_health = max_health
 	super._ready()
 
 func perform_attack() -> void:
@@ -23,5 +19,4 @@ func perform_attack() -> void:
 		return
 	if target.has_method("is_dead") and target.get("is_dead"):
 		return
-	# take_damage acepta (amount, is_headshot=false) — melee nunca hace headshot
-	target.take_damage(damage)
+	_npc_fire_weapon(target)

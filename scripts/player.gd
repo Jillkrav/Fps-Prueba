@@ -6,11 +6,11 @@ signal weapon_changed(weapon_name: String, current_ammo: int, max_ammo: int)
 signal ammo_changed(current_ammo: int, max_ammo: int)
 signal player_died()
 
-@export var max_health: float = 100.0
 @export var speed: float = 6.0
 @export var jump_velocity: float = 4.5
 @export var mouse_sensitivity: float = 0.002
 
+var max_health: float = 100.0
 var current_health: float = 100.0
 var is_dead: bool = false
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -23,6 +23,7 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var active_weapon: Weapon = null
 
 func _ready() -> void:
+	max_health = ConfigManager.salud_jugador
 	current_health = max_health
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	setup_weapon()
@@ -31,27 +32,17 @@ func _ready() -> void:
 func setup_weapon() -> void:
 	for child in weapon_holder.get_children():
 		child.queue_free()
+
 	var weapon_instance: Node = weapon_placeholder_scene.instantiate()
 	weapon_holder.add_child(weapon_instance)
 	active_weapon = weapon_instance as Weapon
-	var selected: String = "metralleta"
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs:
+
+	var selected: String = "USP"
+	var gs := get_node_or_null("/root/GameState")
+	if gs and "selected_weapon" in gs:
 		selected = gs.selected_weapon
-	var weapon_configs: Dictionary = {}
-	if gs and "WEAPON_CONFIGS" in gs:
-		weapon_configs = gs.WEAPON_CONFIGS
-	var config: Dictionary = weapon_configs.get(selected, {
-		"name": "Metralleta",
-		"damage": 10.0,
-		"fire_rate": 0.12,
-		"max_ammo": 120,
-		"clip_size": 30,
-		"spread": 0.03,
-		"range": 50.0,
-		"color": Color(0.2, 0.6, 1.0)
-	})
-	active_weapon.initialize_from_config(config)
+
+	active_weapon.initialize_from_name(selected)
 	active_weapon.weapon_fired.connect(_on_weapon_fired)
 	active_weapon.weapon_ammo_changed.connect(_on_weapon_ammo_changed)
 	weapon_changed.emit(active_weapon.weapon_name, active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
@@ -68,10 +59,7 @@ func _process(_delta: float) -> void:
 	if is_dead:
 		return
 	if Input.is_action_just_pressed("ui_cancel"):
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else Input.MOUSE_MODE_CAPTURED
 	if Input.is_physical_key_pressed(KEY_R):
 		if active_weapon:
 			active_weapon.start_reload()
@@ -85,50 +73,41 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 	if (Input.is_action_just_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_SPACE)) and is_on_floor():
 		velocity.y = jump_velocity
-	var input_dir: Vector2 = Vector2.ZERO
-	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
+	var input_dir := Vector2.ZERO
+	if Input.is_physical_key_pressed(KEY_W):
 		input_dir.y -= 1.0
-	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
+	if Input.is_physical_key_pressed(KEY_S):
 		input_dir.y += 1.0
-	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
+	if Input.is_physical_key_pressed(KEY_A):
 		input_dir.x -= 1.0
-	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
+	if Input.is_physical_key_pressed(KEY_D):
 		input_dir.x += 1.0
 	input_dir = input_dir.normalized()
-	var direction: Vector3 = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	if direction:
-		velocity.x = direction.x * speed
-		velocity.z = direction.z * speed
+	var dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	if dir:
+		velocity.x = dir.x * speed
+		velocity.z = dir.z * speed
 	else:
 		velocity.x = move_toward(velocity.x, 0, speed)
 		velocity.z = move_toward(velocity.z, 0, speed)
 	move_and_slide()
 
 func shoot() -> void:
-	if not active_weapon:
+	if not active_weapon or not active_weapon.can_fire():
 		return
-	if active_weapon.can_fire():
-		var hits: Array = active_weapon.fire()
-		for hit in hits:
-			var target: Node = hit["collider"]
-			var is_headshot: bool = hit.get("is_headshot", false)
-			# Llamada segura: soporta tanto take_damage(amount) como take_damage(amount, headshot)
-			if target and target.has_method("take_damage"):
-				var method: Dictionary = target.get_method_list().filter(
-					func(m): return m["name"] == "take_damage"
-				).front()
-				if method and method.get("args", []).size() >= 2:
-					target.take_damage(hit["damage"], is_headshot)
-				else:
-					target.take_damage(hit["damage"])
+	var hits := active_weapon.fire(1.0)
+	for hit in hits:
+		var target: Node = hit["collider"]
+		if target and target.has_method("take_damage"):
+			target.take_damage(hit["damage_vs_player"] if target is Player else hit["damage_vs_npc"])
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, zona: String = "Torso") -> void:
 	if is_dead:
 		return
-	current_health -= amount
-	current_health = clamp(current_health, 0, max_health)
+	var mult: float = ConfigManager.mult_cabeza if zona == "Cabeza" else ConfigManager.mult_torso
+	current_health = clampf(current_health - amount * mult, 0.0, max_health)
 	health_changed.emit(current_health, max_health)
-	if current_health <= 0:
+	if current_health <= 0.0:
 		die()
 
 func die() -> void:
@@ -142,8 +121,8 @@ func resupply() -> void:
 	if active_weapon:
 		active_weapon.resupply()
 
-func _on_weapon_fired(curr_ammo: int, mx_ammo: int) -> void:
-	ammo_changed.emit(curr_ammo, mx_ammo)
+func _on_weapon_fired(curr: int, mx: int) -> void:
+	ammo_changed.emit(curr, mx)
 
-func _on_weapon_ammo_changed(curr_ammo: int, mx_ammo: int) -> void:
-	ammo_changed.emit(curr_ammo, mx_ammo)
+func _on_weapon_ammo_changed(curr: int, mx: int) -> void:
+	ammo_changed.emit(curr, mx)
