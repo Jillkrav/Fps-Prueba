@@ -31,8 +31,8 @@ enum Estado {
 @export var voz_path: String = ""
 @export var estado: Estado = Estado.IDLE
 
-# Nombre del arma tal como aparece en skill.cfg.json
-# Las subclases pueden sobreescribir este valor antes de _ready()
+## Nombre del arma tal como aparece en skill.cfg.json.
+## Dejar vacío ("") para NPC melee o sin arma.
 @export var weapon_name_cfg: String = "USP"
 
 # ─────────────────────────────────────────
@@ -42,7 +42,7 @@ enum Estado {
 @export var max_health: float = 100.0
 @export var speed: float = 3.0
 @export var attack_range: float = 15.0
-@export var attack_rate: float = 1.0          # segundos entre ataques (fallback)
+@export var attack_rate: float = 1.0
 @export var headshot_multiplier: float = 2.5
 
 # ─────────────────────────────────────────
@@ -54,7 +54,7 @@ var target: Node3D = null
 var last_attack_time: int = 0
 var is_dead: bool = false
 var _base_color: Color = Color.WHITE
-var _weapon_cfg: Dictionary = {}   # datos del arma leídos de ConfigManager
+var _weapon_cfg: Dictionary = {}
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -95,11 +95,10 @@ func _ready() -> void:
 	var tipo_npc: String = "Aliado" if equipo == Equipo.UNO else "Enemigo"
 	max_health     = ConfigManager.get_vida_npc(tipo_npc)
 	current_health = max_health
-	# ───────────────────────────────────────────────────────────────
 
-	# ── Inicializar configuración de arma ──────────────────────────
-	_init_weapon(weapon_name_cfg)
-	# ───────────────────────────────────────────────────────────────
+	# ── Inicializar arma solo si tiene nombre válido ─────────────────
+	if not weapon_name_cfg.is_empty():
+		_init_weapon(weapon_name_cfg)
 
 	_apply_team_color()
 	_pick_target()
@@ -159,7 +158,6 @@ func _init_weapon(nombre: String) -> void:
 		push_warning("NpcBase: arma '%s' no encontrada en ConfigManager, usando defaults." % nombre)
 		return
 	weapon_name_cfg = nombre
-	# El NPC dispara al ritmo del arma: SegundosPorBala
 	attack_rate = float(_weapon_cfg.get("SegundosPorBala", attack_rate))
 
 ## Ejecuta el disparo usando el daño DañoAlNPC del arma cargada.
@@ -237,7 +235,6 @@ func attempt_attack() -> void:
 		perform_attack()
 
 func perform_attack() -> void:
-	# Si el NPC tiene arma configurada, usa el daño del JSON
 	if not _weapon_cfg.is_empty():
 		_npc_fire_weapon()
 	elif target and target.has_method("take_damage"):
