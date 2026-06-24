@@ -25,17 +25,18 @@ enum Estado {
 @export var attack_range: float = 2.0
 @export var attack_rate:  float = 1.0
 
-var current_health:    float  = 100.0
-var target_player:     Player = null
-var last_attack_time:  int    = 0
-var is_dead:           bool   = false
+var current_health:   float  = 100.0
+var target_player:    Player = null
+var last_attack_time: int    = 0
+var is_dead:          bool   = false
 
-var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+# Cast explicito a float para evitar warning de Variant
+var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity"))
 
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
 
 func _ready() -> void:
-	# Vida desde ConfigManager (si la subclase no la sobreescribe antes de super._ready())
+	# Vida desde ConfigManager
 	if max_health == 100.0:
 		max_health = ConfigManager.get_vida_npc("Enemigo")
 	current_health = max_health
@@ -80,7 +81,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 func look_at_target_flat(target_pos: Vector3) -> void:
-	var flat_pos := Vector3(target_pos.x, global_transform.origin.y, target_pos.z)
+	var flat_pos: Vector3 = Vector3(target_pos.x, global_transform.origin.y, target_pos.z)
 	if flat_pos.distance_to(global_transform.origin) > 0.1:
 		look_at(flat_pos, Vector3.UP)
 
@@ -106,8 +107,8 @@ func take_damage(amount: float) -> void:
 func flash_red() -> void:
 	var mesh: MeshInstance3D = get_node_or_null("MeshInstance3D")
 	if mesh:
-		var mat: Material = mesh.get_surface_override_material(0)
-		if mat is StandardMaterial3D:
+		var mat: StandardMaterial3D = mesh.get_surface_override_material(0) as StandardMaterial3D
+		if mat:
 			var orig: Color = mat.albedo_color
 			mat.albedo_color = Color.RED
 			get_tree().create_timer(0.1).timeout.connect(
@@ -119,12 +120,12 @@ func die() -> void:
 	queue_free()
 
 func draw_debug_laser(start: Vector3, end: Vector3, color: Color = Color.WHITE) -> void:
-	var mesh_instance := MeshInstance3D.new()
-	var immediate_mesh := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
-	mesh_instance.mesh = immediate_mesh
-	material.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = color
+	var mesh_instance:  MeshInstance3D = MeshInstance3D.new()
+	var immediate_mesh: ImmediateMesh  = ImmediateMesh.new()
+	var material:       StandardMaterial3D = StandardMaterial3D.new()
+	mesh_instance.mesh          = immediate_mesh
+	material.shading_mode       = StandardMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color       = color
 	mesh_instance.material_override = material
 	get_parent().add_child(mesh_instance)
 	immediate_mesh.surface_begin(Mesh.PRIMITIVE_LINES)

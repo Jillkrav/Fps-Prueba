@@ -1,3 +1,4 @@
+# scripts/player.gd
 extends CharacterBody3D
 class_name Player
 
@@ -6,27 +7,28 @@ signal weapon_changed(weapon_name: String, current_ammo: int, max_ammo: int)
 signal ammo_changed(current_ammo: int, max_ammo: int)
 signal player_died()
 
-@export var speed: float = 6.0
-@export var jump_velocity: float = 4.5
+@export var speed:             float = 6.0
+@export var jump_velocity:     float = 4.5
 @export var mouse_sensitivity: float = 0.002
 
-var max_health: float = 100.0
+var max_health:     float = 100.0
 var current_health: float = 100.0
-var is_dead: bool = false
-var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+var is_dead:        bool  = false
 
-@onready var head: Node3D = $Head
-@onready var camera: Camera3D = $Head/Camera3D
-@onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
+# Cast explicito a float para evitar warning de Variant
+var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity"))
+
+@onready var head:                    Node3D     = $Head
+@onready var camera:                  Camera3D   = $Head/Camera3D
+@onready var weapon_holder:           Node3D     = $Head/Camera3D/WeaponHolder
 @onready var weapon_placeholder_scene: PackedScene = preload("res://scenes/weapons/weapon_placeholder.tscn")
 
 var active_weapon: Weapon = null
 
 func _ready() -> void:
+	# Vida desde ConfigManager
 	max_health     = ConfigManager.salud_jugador
 	current_health = max_health
-	# No capturamos el mouse aqui. El HUD lo maneja con F1 y al hacer click para jugar.
-	# Input.mouse_mode se deja como lo tenga el HUD (VISIBLE al entrar al mapa).
 	add_to_group("player")
 	setup_weapon()
 	health_changed.emit(current_health, max_health)
@@ -40,7 +42,7 @@ func setup_weapon() -> void:
 	var selected: String = "USP"
 	var gs: Node = get_node_or_null("/root/GameState")
 	if gs and "selected_weapon" in gs:
-		selected = gs.selected_weapon
+		selected = str(gs.get("selected_weapon"))
 	active_weapon.initialize_from_name(selected)
 	active_weapon.weapon_fired.connect(_on_weapon_fired)
 	active_weapon.weapon_ammo_changed.connect(_on_weapon_ammo_changed)
@@ -49,12 +51,10 @@ func setup_weapon() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if is_dead:
 		return
-	# Solo rotar camara si el mouse esta capturado
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		head.rotate_x(-event.relative.y * mouse_sensitivity)
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-85), deg_to_rad(85))
-	# Click izquierdo captura el mouse para empezar a jugar
 	if event is InputEventMouseButton and event.pressed \
 			and event.button_index == MOUSE_BUTTON_LEFT \
 			and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
@@ -66,7 +66,6 @@ func _process(_delta: float) -> void:
 	if Input.is_physical_key_pressed(KEY_R):
 		if active_weapon:
 			active_weapon.start_reload()
-	# Disparar solo si el mouse esta capturado
 	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if Input.is_physical_key_pressed(KEY_F) or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			shoot()
@@ -84,7 +83,7 @@ func _physics_process(delta: float) -> void:
 	if Input.is_physical_key_pressed(KEY_A): input_dir.x -= 1.0
 	if Input.is_physical_key_pressed(KEY_D): input_dir.x += 1.0
 	input_dir = input_dir.normalized()
-	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var direction: Vector3 = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	if direction:
 		velocity.x = direction.x * speed
 		velocity.z = direction.z * speed
@@ -98,13 +97,13 @@ func shoot() -> void:
 		return
 	if active_weapon.can_fire():
 		var hits: Array = active_weapon.fire()
-		for hit in hits:
+		for hit: Dictionary in hits:
 			var target_node: Node = hit["collider"]
 			if target_node and target_node.has_method("take_damage"):
 				if target_node is Player:
-					target_node.take_damage(hit["damage_vs_player"])
+					target_node.take_damage(float(hit["damage_vs_player"]))
 				else:
-					target_node.take_damage(hit["damage_vs_npc"])
+					target_node.take_damage(float(hit["damage_vs_npc"]))
 
 func take_damage(amount: float, zona: String = "Torso") -> void:
 	if is_dead:
