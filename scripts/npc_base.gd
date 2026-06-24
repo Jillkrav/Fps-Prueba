@@ -26,6 +26,11 @@ enum Estado {
 @export var voz_path:    String      = ""
 @export var estado:      Estado      = Estado.IDLE
 
+## Equipo al que pertenece: "rojo" o "azul".
+## Los NPC con relacion ENEMIGO son siempre equipo "rojo".
+## Los NPC con relacion AMIGABLE heredan el equipo del jugador.
+@export var equipo: String = "rojo"
+
 ## Nombre del arma a usar (debe coincidir exactamente con la clave en skill.cfg.json).
 @export var nombre_arma: String = ""
 
@@ -43,12 +48,11 @@ enum Estado {
 # VARIABLES INTERNAS
 # ─────────────────────────────────────────
 
-var current_health:    float  = 100.0
-var target:            Node3D = null
-var last_attack_time:  int    = 0
-var is_dead:           bool   = false
-var _base_color:       Color  = Color.WHITE
-var _relacion_forzada: bool   = false
+var current_health:   float  = 100.0
+var target:           Node3D = null
+var last_attack_time: int    = 0
+var is_dead:          bool   = false
+var _base_color:      Color  = Color.WHITE
 
 # Cast explicito a float para evitar warning "Variant value"
 var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity"))
@@ -72,6 +76,12 @@ func _ready() -> void:
 		else:
 			max_health = ConfigManager.get_vida_npc("Enemigo")
 	current_health = max_health
+
+	# Asignar equipo segun relacion si no fue forzado externamente
+	if relacion == Relacion.ENEMIGO:
+		equipo = "rojo"
+	# AMIGABLE: el equipo lo asigna el spawner segun el equipo del jugador
+
 	_apply_relation_color()
 	_pick_target()
 	_setup_healthbar()
@@ -225,25 +235,56 @@ func _apply_relation_color() -> void:
 	_base_color = mat.albedo_color
 	mesh.set_surface_override_material(0, mat)
 
+# ─────────────────────────────────────────
+# SELECCION DE OBJETIVO (IA DE EQUIPOS)
+# ─────────────────────────────────────────
+# Logica:
+#   - Un NPC ENEMIGO (equipo rojo) ataca al jugador Y a NPC AMIGABLE.
+#   - Un NPC AMIGABLE (equipo azul u otro) ataca a NPC ENEMIGO Y al jugador
+#     si el jugador es del equipo contrario.
+#   - El equipo del jugador se lee desde GameState.selected_team.
+# ─────────────────────────────────────────
+
+func _es_enemigo_de(otro: Node) -> bool:
+	if not is_instance_valid(otro):
+		return false
+
+	# Otro es el jugador
+	if otro.is_in_group("player"):
+		var gs: Node = get_node_or_null("/root/GameState")
+		var equipo_jugador: String = "azul"
+		if gs and "selected_team" in gs:
+			equipo_jugador = gs.selected_team
+		# Si somos del mismo equipo que el jugador, NO es enemigo
+		return equipo != equipo_jugador
+
+	# Otro es un NPC
+	if otro is NpcBase:
+		return equipo != otro.equipo
+
+	return false
+
 func _pick_target() -> void:
 	target = null
-	match relacion:
-		Relacion.ENEMIGO:
-			var player: Node = get_tree().get_first_node_in_group("player")
-			if player:
-				target = player as Node3D
-		Relacion.AMIGABLE:
-			var closest_dist: float = INF
-			for node in get_tree().get_nodes_in_group("npc"):
-				if node == self:
-					continue
-				if node is NpcBase and node.relacion == Relacion.ENEMIGO and not node.is_dead:
-					var d: float = global_transform.origin.distance_to(node.global_transform.origin)
-					if d < closest_dist:
-						closest_dist = d
-						target = node as Node3D
-		Relacion.NEUTRAL:
-			target = null
+	var closest_dist: float = INF
+
+	# Evaluar al jugador como posible objetivo
+	var player: Node = get_tree().get_first_node_in_group("player")
+	if player and is_instance_valid(player) and _es_enemigo_de(player):
+		var d: float = global_transform.origin.distance_to((player as Node3D).global_transform.origin)
+		if d < closest_dist:
+			closest_dist = d
+			target = player as Node3D
+
+	# Evaluar NPC como posibles objetivos
+	for node in get_tree().get_nodes_in_group("npc"):
+		if node == self:
+			continue
+		if node is NpcBase and not node.is_dead and _es_enemigo_de(node):
+			var d: float = global_transform.origin.distance_to(node.global_transform.origin)
+			if d < closest_dist:
+				closest_dist = d
+				target = node as Node3D
 
 # ─────────────────────────────────────────
 # MOVIMIENTO

@@ -1,95 +1,211 @@
 # scripts/hud.gd
 extends CanvasLayer
 
-@onready var health_bar:       ProgressBar = $HUD/MarginContainer/VBox/HealthBar
-@onready var health_label:     Label       = $HUD/MarginContainer/VBox/HealthBar/Label
-@onready var ammo_label:       Label       = $HUD/MarginContainer/VBox/AmmoContainer/AmmoLabel
-@onready var weapon_label:     Label       = $HUD/MarginContainer/VBox/AmmoContainer/WeaponLabel
-@onready var next_spawn_label: Label       = $HUD/MarginContainer/VBox/SpawnLabel
-@onready var crosshair:        TextureRect = $HUD/Crosshair
-@onready var death_screen:     Panel       = $DeathScreen
-@onready var pause_screen:     Panel       = $PauseScreen
-@onready var dev_menu:         Control     = $DevMenu
+# ─────────────────────────────────────────
+# REFERENCIAS UI
+# ─────────────────────────────────────────
+
+@onready var health_label:       Label  = $MarginContainer/HUDLayout/TopRow/HealthLabel
+@onready var ammo_label:         Label  = $MarginContainer/HUDLayout/TopRow/AmmoLabel
+@onready var weapon_name_label:  Label  = $MarginContainer/HUDLayout/TopRow/WeaponNameLabel
+@onready var spawn_timer_label:  Label  = $MarginContainer/HUDLayout/TopRow/SpawnTimerLabel
+@onready var crosshair:          Label  = $Crosshair
+
+# Boton ARMAS (Q) — se construye en _ready()
+var _btn_armas: Button = null
+
+# Panel selector de armas en partida
+var _weapon_selector_panel: PanelContainer = null
+var _weapon_list:           VBoxContainer  = null
+
+# Referencia al spawner para pausar/reanudar
+var _spawner: NpcSpawner = null
+
+# ─────────────────────────────────────────
+# CICLO DE VIDA
+# ─────────────────────────────────────────
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	death_screen.visible  = false
-	pause_screen.visible  = false
+	_build_boton_armas()
+	_build_weapon_selector()
 
-	# Registrar la accion toggle_cursor por codigo para no depender del InputMap del proyecto
-	if not InputMap.has_action("toggle_cursor"):
-		InputMap.add_action("toggle_cursor")
-		var ev := InputEventKey.new()
-		ev.keycode = KEY_F1
-		InputMap.action_add_event("toggle_cursor", ev)
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_Q:
+			_toggle_weapon_selector()
 
-	# El cursor empieza VISIBLE para que el jugador pueda usar la UI de seleccion
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+# ─────────────────────────────────────────
+# CONSTRUCCION DINAMICA — BOTON ARMAS
+# ─────────────────────────────────────────
 
-	var player: Node = get_tree().get_first_node_in_group("player")
-	if player:
-		connect_player_signals(player)
+func _build_boton_armas() -> void:
+	_btn_armas = Button.new()
+	_btn_armas.text               = "ARMAS  [Q]"
+	_btn_armas.custom_minimum_size = Vector2(130, 40)
+	_btn_armas.add_theme_font_size_override("font_size", 16)
+	_btn_armas.pressed.connect(_toggle_weapon_selector)
 
-func connect_player_signals(player: Player) -> void:
-	player.health_changed.connect(_on_player_health_changed)
-	player.weapon_changed.connect(_on_player_weapon_changed)
-	player.ammo_changed.connect(_on_player_ammo_changed)
-	player.player_died.connect(_on_player_died)
+	# Intentar agregarlo al TopRow si existe; si no, al root del HUD
+	var top_row: Node = get_node_or_null("MarginContainer/HUDLayout/TopRow")
+	if top_row:
+		top_row.add_child(_btn_armas)
+	else:
+		add_child(_btn_armas)
+		_btn_armas.position = Vector2(10, 10)
 
-func update_spawn_timer(time_left: float) -> void:
-	next_spawn_label.text = "Siguiente oleada en: " + str(snappedf(time_left, 0.1)) + "s"
+# ─────────────────────────────────────────
+# CONSTRUCCION DINAMICA — SELECTOR DE ARMAS
+# ─────────────────────────────────────────
 
-func _process(_delta: float) -> void:
-	# F1: toggle cursor (la accion ya existe, registrada en _ready)
-	if Input.is_action_just_pressed("toggle_cursor"):
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+func _build_weapon_selector() -> void:
+	_weapon_selector_panel = PanelContainer.new()
+	_weapon_selector_panel.visible = false
+	# Centrar en pantalla
+	_weapon_selector_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_weapon_selector_panel.custom_minimum_size = Vector2(280, 0)
+	add_child(_weapon_selector_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_top",    12)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	margin.add_theme_constant_override("margin_left",   16)
+	margin.add_theme_constant_override("margin_right",  16)
+	_weapon_selector_panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 6)
+	margin.add_child(vbox)
+
+	# Titulo
+	var titulo := Label.new()
+	titulo.text = "Seleccionar Arma"
+	titulo.add_theme_font_size_override("font_size", 20)
+	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(titulo)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	# Lista scrollable de armas
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 320)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(scroll)
+
+	_weapon_list = VBoxContainer.new()
+	_weapon_list.add_theme_constant_override("separation", 4)
+	_weapon_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_weapon_list)
+
+	# Boton cerrar
+	var btn_cerrar := Button.new()
+	btn_cerrar.text = "Cerrar  [Q]"
+	btn_cerrar.add_theme_font_size_override("font_size", 15)
+	btn_cerrar.pressed.connect(_toggle_weapon_selector)
+	vbox.add_child(btn_cerrar)
+
+	_poblar_lista_armas()
+
+func _poblar_lista_armas() -> void:
+	if not is_instance_valid(_weapon_list):
+		return
+	for child in _weapon_list.get_children():
+		child.queue_free()
+
+	var armas_raw: Dictionary = {}
+	if ConfigManager and ConfigManager._data.has("Armas"):
+		armas_raw = ConfigManager._data["Armas"]
+
+	for categoria in armas_raw.keys():
+		# Encabezado de categoria
+		var lbl_cat := Label.new()
+		lbl_cat.text = "── " + categoria + " ──"
+		lbl_cat.add_theme_font_size_override("font_size", 13)
+		lbl_cat.modulate = Color(0.75, 0.75, 0.75)
+		_weapon_list.add_child(lbl_cat)
+
+		for nombre_arma in armas_raw[categoria].keys():
+			var btn := Button.new()
+			btn.text                    = nombre_arma
+			btn.size_flags_horizontal   = Control.SIZE_EXPAND_FILL
+			btn.custom_minimum_size     = Vector2(0, 36)
+			btn.add_theme_font_size_override("font_size", 17)
+			btn.alignment               = HORIZONTAL_ALIGNMENT_LEFT
+			btn.pressed.connect(_on_arma_seleccionada.bind(nombre_arma))
+			_weapon_list.add_child(btn)
+
+# ─────────────────────────────────────────
+# LOGICA DEL SELECTOR EN PARTIDA
+# ─────────────────────────────────────────
+
+func _toggle_weapon_selector() -> void:
+	if not is_instance_valid(_weapon_selector_panel):
+		return
+	var abrir: bool = not _weapon_selector_panel.visible
+	_weapon_selector_panel.visible = abrir
+
+	# Pausar / reanudar spawn
+	_get_spawner()
+	if _spawner:
+		if abrir:
+			_spawner.pausar_spawn()
 		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		return
+			_spawner.reanudar_spawn()
 
-	if Input.is_action_just_pressed("dev_menu"):
-		if dev_menu and dev_menu.has_method("toggle_menu"):
-			dev_menu.toggle_menu()
-		return
-
-	if Input.is_action_just_pressed("ui_cancel"):
-		toggle_pause()
-
-func toggle_pause() -> void:
-	var is_paused: bool = get_tree().paused
-	get_tree().paused = !is_paused
-	pause_screen.visible = !is_paused
-	if !is_paused:
+	# Pausar movimiento del jugador y liberar cursor
+	if abrir:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-func _on_player_health_changed(current: float, max_val: float) -> void:
-	health_bar.max_value = max_val
-	health_bar.value     = current
-	health_label.text    = "VIDA: " + str(int(current)) + " / " + str(int(max_val))
+func _on_arma_seleccionada(nombre_arma: String) -> void:
+	# Cambiar arma al jugador en tiempo real
+	var player: Node = get_tree().get_first_node_in_group("player")
+	if player and player.has_method("cambiar_arma"):
+		player.cambiar_arma(nombre_arma)
 
-func _on_player_weapon_changed(w_name: String, ammo_in_mag: int, reserve_ammo: int) -> void:
-	weapon_label.text = w_name
-	ammo_label.text   = str(ammo_in_mag) + " / " + str(reserve_ammo)
+	# Cerrar el panel
+	_weapon_selector_panel.visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-func _on_player_ammo_changed(ammo_in_mag: int, reserve_ammo: int) -> void:
-	ammo_label.text = str(ammo_in_mag) + " / " + str(reserve_ammo)
+	# Reanudar spawn
+	_get_spawner()
+	if _spawner:
+		_spawner.reanudar_spawn()
 
-func _on_player_died() -> void:
-	death_screen.visible = true
-	get_tree().paused    = true
+func _get_spawner() -> void:
+	if _spawner and is_instance_valid(_spawner):
+		return
+	var spawners: Array = get_tree().get_nodes_in_group("spawner")
+	if not spawners.is_empty():
+		_spawner = spawners[0] as NpcSpawner
+	else:
+		# Buscar por clase directamente si no tiene grupo
+		for node in get_tree().get_nodes_in_group("npc"):
+			pass  # fallback: se encontrara via get_tree si el spawner usa add_to_group
+		var root: Node = get_tree().current_scene
+		if root:
+			for child in root.get_children():
+				if child is NpcSpawner:
+					_spawner = child
+					break
 
-func _on_retry_pressed() -> void:
-	get_tree().paused = false
-	get_tree().reload_current_scene()
+# ─────────────────────────────────────────
+# API PUBLICA — actualizaciones de datos
+# ─────────────────────────────────────────
 
-func _on_menu_pressed() -> void:
-	get_tree().paused = false
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+func update_health(current: float, maximum: float) -> void:
+	if health_label:
+		health_label.text = "HP: %d / %d" % [int(current), int(maximum)]
 
-func _on_resume_pressed() -> void:
-	get_tree().paused    = false
-	pause_screen.visible = false
-	Input.mouse_mode     = Input.MOUSE_MODE_CAPTURED
+func update_ammo(current_ammo: int, max_ammo: int) -> void:
+	if ammo_label:
+		ammo_label.text = "%d / %d" % [current_ammo, max_ammo]
+
+func update_weapon_name(wname: String) -> void:
+	if weapon_name_label:
+		weapon_name_label.text = wname
+
+func update_spawn_timer(time_left: float) -> void:
+	if spawn_timer_label:
+		spawn_timer_label.text = "Spawn: %.1fs" % time_left

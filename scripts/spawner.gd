@@ -1,3 +1,4 @@
+# scripts/spawner.gd
 extends Node3D
 class_name NpcSpawner
 
@@ -15,6 +16,9 @@ var npc_escopetero_scene: PackedScene = preload("res://scenes/npcs/npc_escopeter
 var spawn_timer: Timer
 var spawn_points: Array[Marker3D] = []
 var hud: CanvasLayer = null
+
+# Mientras el selector de armas este abierto, el timer se pausa.
+var _selector_abierto: bool = false
 
 func _ready() -> void:
 	for path in spawn_points_paths:
@@ -42,7 +46,20 @@ func _ready() -> void:
 
 	call_deferred("spawn_wave")
 
+# ── API publica para pausar/reanudar el spawn desde el HUD ──────────
+func pausar_spawn() -> void:
+	_selector_abierto = true
+	if not spawn_timer.is_paused():
+		spawn_timer.set_paused(true)
+
+func reanudar_spawn() -> void:
+	_selector_abierto = false
+	if spawn_timer.is_paused():
+		spawn_timer.set_paused(false)
+
 func _process(_delta: float) -> void:
+	if _selector_abierto:
+		return
 	if not spawn_timer.is_stopped():
 		if hud and hud.has_method("update_spawn_timer"):
 			hud.update_spawn_timer(spawn_timer.time_left)
@@ -50,6 +67,8 @@ func _process(_delta: float) -> void:
 			hud = get_tree().get_first_node_in_group("hud") as CanvasLayer
 
 func _on_spawn_timeout() -> void:
+	if _selector_abierto:
+		return
 	spawn_wave()
 
 func spawn_wave() -> void:
@@ -57,6 +76,13 @@ func spawn_wave() -> void:
 		return
 	if not is_inside_tree() or not get_parent().is_inside_tree():
 		return
+
+	# Leer equipo del jugador para asignarlo a los aliados
+	var equipo_jugador: String = "azul"
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs and "selected_team" in gs:
+		equipo_jugador = gs.selected_team
+	var equipo_enemigo: String = "rojo" if equipo_jugador == "azul" else "azul"
 
 	for i in range(spawn_count_per_cycle):
 		var point: Marker3D = spawn_points[randi() % spawn_points.size()]
@@ -76,11 +102,13 @@ func spawn_wave() -> void:
 		if not npc:
 			continue
 
-		# Asignar relacion ANTES de add_child para que _ready() la reciba correctamente
+		# Asignar relacion Y equipo ANTES de add_child para que _ready() los reciba
 		if randf() < aliado_ratio:
 			npc.relacion = NpcBase.Relacion.AMIGABLE
+			npc.equipo   = equipo_jugador
 		else:
 			npc.relacion = NpcBase.Relacion.ENEMIGO
+			npc.equipo   = equipo_enemigo
 
 		var spawn_pos: Vector3 = point.global_transform.origin + Vector3(
 			randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0)
