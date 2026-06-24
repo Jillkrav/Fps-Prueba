@@ -9,13 +9,13 @@ var _data: Dictionary = {}
 # ─── Accesos directos ───────────────────────────────────────────────
 
 var salud_jugador: float:
-	get: return _get("SistemaSalud/SaludEstandarJugador", 100.0)
+	get: return _cfg_get("SistemaSalud/SaludEstandarJugador", 100.0)
 
 var mult_cabeza: float:
-	get: return _get("SistemaSalud/MultiplicadoresDano/Cabeza", 5.0)
+	get: return _cfg_get("SistemaSalud/MultiplicadoresDano/Cabeza", 5.0)
 
 var mult_torso: float:
-	get: return _get("SistemaSalud/MultiplicadoresDano/Torso", 1.0)
+	get: return _cfg_get("SistemaSalud/MultiplicadoresDano/Torso", 1.0)
 
 # ─── Inicializacion ──────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ func _load_config() -> void:
 	var json  := JSON.new()
 	var error := json.parse(json_text)
 	if error != OK:
-		push_error("ConfigManager: Error al parsear JSON — linea %d: %s" % [json.get_error_line(), json.get_error_message()])
+		push_error("ConfigManager: Error al parsear JSON - linea %d: %s" % [json.get_error_line(), json.get_error_message()])
 		return
 
 	_data = json.get_data().get("ConfiguracionJuego", {})
@@ -76,9 +76,10 @@ func get_nombres_armas(categoria: String = "") -> Array[String]:
 
 # ─── Acceso generico por ruta ────────────────────────────────────────
 
-## Acceso generico. Separa claves con "/".
-## Ejemplo: _get("SistemaSalud/SaludEstandarJugador", 100.0)
-func _get(path: String, default_value: Variant) -> Variant:
+## Acceso generico interno. Separa claves con "/".
+## Ejemplo: _cfg_get("SistemaSalud/SaludEstandarJugador", 100.0)
+## NOTA: no usar "_get" porque es un metodo reservado de Object en Godot.
+func _cfg_get(path: String, default_value: Variant) -> Variant:
 	var keys    := path.split("/")
 	var current: Variant = _data
 	for key in keys:
