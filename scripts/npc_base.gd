@@ -8,7 +8,6 @@ enum Experiencia { BAJA, MEDIA, ALTA }
 enum Estado { IDLE, GUARDIA, ALERTA, BUSCANDO, ESCONDIENDOSE, SIGUIENDO, ATACANDO }
 
 # NOTA: Relacion se mantiene solo para compatibilidad con el DevMenu.
-# La logica real de amistad/enemistad depende del equipo (equipo_id).
 enum Relacion { AMIGABLE, NEUTRAL, ENEMIGO }
 
 @export var npc_name: String = "NPC"
@@ -21,8 +20,6 @@ enum Relacion { AMIGABLE, NEUTRAL, ENEMIGO }
 @export var estado: Estado = Estado.IDLE
 @export var nombre_arma: String = ""
 
-# ID numerico de equipo (usar GameState.Equipo.*)
-# Por defecto Rojo=2 para NPCs enemigos del mapa
 @export var equipo_id: int = 2
 
 var _relacion_forzada: bool = false
@@ -49,7 +46,6 @@ var _healthbar_bg: MeshInstance3D = null
 var _healthbar_fill: MeshInstance3D = null
 var _weapon_label_3d: Label3D = null
 
-# Temporizador para refrescar objetivo periodicamente
 var _retarget_timer: float = 0.0
 const RETARGET_INTERVAL: float = 2.0
 
@@ -59,13 +55,11 @@ func _ready() -> void:
 		max_health = ConfigManager.get_vida_npc("Enemigo")
 	current_health = max_health
 
-	# Si no fue forzado desde afuera, asignar equipo segun relacion legada
 	if not _relacion_forzada:
 		match relacion:
 			Relacion.ENEMIGO:
 				equipo_id = GameStateClass.Equipo.ROJO
 			Relacion.AMIGABLE:
-				# Aliado = mismo equipo que el jugador
 				equipo_id = _equipo_jugador()
 			Relacion.NEUTRAL:
 				equipo_id = GameStateClass.Equipo.ESPECTADOR
@@ -77,33 +71,40 @@ func _ready() -> void:
 
 func _configurar_arma() -> void:
 	if nombre_arma == "":
-		_es_ranged = false
+		_es_ranged   = false
 		_es_escopeta = false
 		attack_range = 1.8
-		attack_rate = 1.0
-		speed = 4.0
-		damage = 15.0
+		attack_rate  = 1.0
+		speed        = 4.0
+		damage       = 15.0
 		return
 	var cfg: Dictionary = ConfigManager.get_arma(nombre_arma)
 	if cfg.is_empty():
-		_es_ranged = false
+		_es_ranged   = false
 		attack_range = 1.8
 		return
 	var rango_cfg: float = float(cfg.get("RangoAtaque", 10.0))
 	attack_range = rango_cfg
-	_es_ranged = rango_cfg > 1.8
+	_es_ranged   = rango_cfg > 1.8
 	var categoria: String = str(cfg.get("Categoria", "")).to_lower()
 	_es_escopeta = categoria.contains("escopeta") or nombre_arma.to_lower().contains("shotgun")
-	var danno_raw = cfg.get("DannoAlNPC", cfg.get("DaNNOAlNPC", cfg.get("DaNNioAlNPC", 0.0)))
-	var danno_val: float = float(danno_raw)
+
+	# FIX: buscar la clave de danno con todos los posibles nombres del JSON
+	# Clave oficial nueva: "DanioAlNPC" — fallbacks para configs viejas
+	var danno_val: float = 0.0
+	for clave in ["DanioAlNPC", "DannoAlNPC", "DaNNOAlNPC", "DaNNioAlNPC", "Danno", "Dano"]:
+		if cfg.has(clave):
+			danno_val = float(cfg[clave])
+			break
 	if danno_val <= 0.0:
-		danno_val = float(cfg.get("Danno", cfg.get("Dano", 20.0)))
+		danno_val = 20.0
 	damage = danno_val
+
 	if _es_ranged:
-		speed = 2.5
+		speed       = 2.5
 		attack_rate = float(cfg.get("CadenciaSegundos", 1.5))
 	else:
-		speed = 4.0
+		speed       = 4.0
 		attack_rate = 1.0
 
 func _physics_process(delta: float) -> void:
@@ -114,7 +115,6 @@ func _physics_process(delta: float) -> void:
 		if cam:
 			_healthbar_root.look_at(cam.global_transform.origin, Vector3.UP)
 
-	# Retargeteo periodico para detectar nuevos enemigos
 	_retarget_timer += delta
 	if _retarget_timer >= RETARGET_INTERVAL:
 		_retarget_timer = 0.0
@@ -129,7 +129,6 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = 0.0
 
-	# Invisibilidad: ignorar al jugador si es enemigo y esta en grupo invisible
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player and player.is_in_group("invisible_to_npc") and _es_enemigo_de_nodo(player):
 		velocity.x = move_toward(velocity.x, 0, speed)
@@ -227,11 +226,9 @@ func _apply_team_color() -> void:
 	_base_color = mat.albedo_color
 	mesh.set_surface_override_material(0, mat)
 
-# Devuelve el equipo_id del jugador desde GameState
 func _equipo_jugador() -> int:
 	return GameState.player_team
 
-# Devuelve true si este NPC es enemigo de otro nodo (player o NpcBase)
 func _es_enemigo_de_nodo(otro: Node) -> bool:
 	if not is_instance_valid(otro):
 		return false
@@ -247,7 +244,6 @@ func _es_enemigo_de_nodo(otro: Node) -> bool:
 func _pick_target() -> void:
 	target = null
 	var closest_dist: float = INF
-	# Evaluar jugador
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player and is_instance_valid(player) and _es_enemigo_de_nodo(player):
 		if not player.is_in_group("invisible_to_npc"):
@@ -255,7 +251,6 @@ func _pick_target() -> void:
 			if d < closest_dist:
 				closest_dist = d
 				target = player as Node3D
-	# Evaluar otros NPCs
 	for node in get_tree().get_nodes_in_group("npcs"):
 		if node == self:
 			continue

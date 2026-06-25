@@ -23,11 +23,12 @@ var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravi
 var active_weapon: Weapon = null
 
 func _ready() -> void:
+	add_to_group("player")
 	max_health = ConfigManager.salud_jugador
 	current_health = max_health
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs and "selected_team" in gs and String(gs.selected_team).strip_edges() == "":
-		gs.selected_team = "azul"
+	# FIX: usar GameState directamente en lugar de get_node con cast inseguro
+	if GameState.player_team == GameStateClass.Equipo.ESPECTADOR:
+		GameState.player_team = GameStateClass.Equipo.AZUL
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	setup_weapon()
 	health_changed.emit(current_health, max_health)
@@ -38,13 +39,15 @@ func setup_weapon() -> void:
 	var weapon_instance: Node = weapon_placeholder_scene.instantiate()
 	weapon_holder.add_child(weapon_instance)
 	active_weapon = weapon_instance as Weapon
-	var selected: String = "USP"
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs and "selected_weapon" in gs and String(gs.selected_weapon).strip_edges() != "":
-		selected = gs.selected_weapon
+	# FIX: leer el arma directamente desde GameState (es autoload tipado)
+	var selected: String = GameState.selected_weapon
+	if selected.strip_edges() == "":
+		selected = "USP"
 	active_weapon.initialize_from_name(selected)
-	active_weapon.weapon_fired.connect(_on_weapon_fired)
-	active_weapon.weapon_ammo_changed.connect(_on_weapon_ammo_changed)
+	if not active_weapon.weapon_fired.is_connected(_on_weapon_fired):
+		active_weapon.weapon_fired.connect(_on_weapon_fired)
+	if not active_weapon.weapon_ammo_changed.is_connected(_on_weapon_ammo_changed):
+		active_weapon.weapon_ammo_changed.connect(_on_weapon_ammo_changed)
 	weapon_changed.emit(active_weapon.weapon_name, active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
 	ammo_changed.emit(active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
 
@@ -61,9 +64,7 @@ func cambiar_arma(nombre_arma: String) -> void:
 	active_weapon.weapon_ammo_changed.connect(_on_weapon_ammo_changed)
 	weapon_changed.emit(active_weapon.weapon_name, active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
 	ammo_changed.emit(active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs and "selected_weapon" in gs:
-		gs.selected_weapon = nombre_arma
+	GameState.selected_weapon = nombre_arma
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_dead:
@@ -124,7 +125,7 @@ func take_damage(amount: float, zona: String = "Torso") -> void:
 	var multiplicador: float = 1.0
 	match zona:
 		"Cabeza": multiplicador = ConfigManager.mult_cabeza
-		"Torso": multiplicador = ConfigManager.mult_torso
+		"Torso":  multiplicador = ConfigManager.mult_torso
 	current_health -= amount * multiplicador
 	current_health = clamp(current_health, 0.0, max_health)
 	health_changed.emit(current_health, max_health)

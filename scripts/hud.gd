@@ -19,6 +19,8 @@ var _player:       Player     = null
 var _menu_abierto: bool       = false
 
 func _ready() -> void:
+	# FIX: registrar en grupo para que spawner.gd pueda encontrarlo con get_nodes_in_group("hud")
+	add_to_group("hud")
 	_conectar_player()
 	_configurar_pausa()
 
@@ -55,7 +57,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	match event.keycode:
 		KEY_Q:
-			# Q abre/cierra el DevMenu completo (con sus 3 botones adentro)
 			if dev_menu:
 				dev_menu.toggle_menu()
 				_menu_abierto = dev_menu.visible
