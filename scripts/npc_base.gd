@@ -32,14 +32,32 @@ enum EstadoTactico {
 @export var voz_path: String = ""
 
 # ─────────────────────────────────────────
+# ARMA
+# El NPC se identifica por el arma que porta, no por su clase.
+# nombre_arma se setea en el editor o en spawn. La logica de disparo
+# usa los datos del arma directo desde ConfigManager.
+# ─────────────────────────────────────────
+
+@export var nombre_arma: String = "USP"
+
+# Propiedades calculadas desde el arma (se llenan en _ready)
+var arma_danio: float = 10.0
+var arma_rango: float = 50.0
+var arma_spread: float = 0.0
+var arma_segundos_por_bala: float = 1.0
+var arma_pellets: int = 1
+var _arma_cfg: Dictionary = {}
+
+# ─────────────────────────────────────────
 # COMBATE
 # ─────────────────────────────────────────
 
 @export var max_health: float = 30.0
 @export var speed: float = 3.0
-@export var damage: float = 10.0
 @export var attack_range: float = 2.0
 @export var attack_rate: float = 1.0
+# 'damage' se calcula desde el arma; sigue disponible como override manual.
+@export var damage: float = 10.0
 
 # ─────────────────────────────────────────
 # ARRANCARSE - Configuracion
@@ -89,6 +107,7 @@ func _ready() -> void:
 	estado_actual = EstadoTactico.IDLE
 	target = null
 
+	_cargar_arma()
 	_apply_relation_color()
 
 	if area_vision:
@@ -127,10 +146,8 @@ func _physics_process(delta: float) -> void:
 			move_and_slide()
 			return
 
-	# Evaluar vision (raycast) en cada frame
 	_evaluar_vision(delta)
 
-	# Maquina de estados tactica
 	match estado_actual:
 		EstadoTactico.IDLE:
 			_proceso_idle(delta)
@@ -146,6 +163,43 @@ func _physics_process(delta: float) -> void:
 			pass
 
 	move_and_slide()
+
+# ─────────────────────────────────────────
+# ARMA - CARGA Y DISPARO
+# ─────────────────────────────────────────
+
+func _cargar_arma() -> void:
+	# Intentar cargar desde ConfigManager. Si no existe, usar los @export como fallback.
+	if nombre_arma == "":
+		return
+	if not Engine.has_singleton("ConfigManager") and not ClassDB.class_exists("ConfigManager"):
+		# ConfigManager no disponible todavia, usar valores @export
+		arma_danio = damage
+		return
+	_arma_cfg = ConfigManager.get_arma(nombre_arma)
+	if _arma_cfg.is_empty():
+		push_warning("[NpcBase] " + npc_name + ": Arma '" + nombre_arma + "' no encontrada en config. Usando @export.")
+		arma_danio = damage
+		return
+	arma_danio             = float(_arma_cfg.get("DanioAlNPC",             damage))
+	arma_rango             = float(_arma_cfg.get("RangoDisparo",           arma_rango))
+	arma_spread            = float(_arma_cfg.get("Dispersion",             arma_spread))
+	arma_segundos_por_bala = float(_arma_cfg.get("DanioPorSegundo",        arma_segundos_por_bala))
+	arma_pellets           = int(_arma_cfg.get("Pellets",                  arma_pellets))
+	# Sincronizar damage con el del arma para compatibilidad con codigo externo
+	damage = arma_danio
+	# Si el arma define rango de ataque, usarlo como attack_range
+	if arma_rango > 0.0:
+		attack_range = arma_rango
+
+func _calcular_dano_por_distancia(dist: float) -> float:
+	# Escopetas y armas de area usan caida de danio. Otras armas danio plano.
+	var pellets_cfg: int = int(_arma_cfg.get("Pellets", 1))
+	if pellets_cfg > 1:
+		# Caida de danio segun distancia (0.2 minimo)
+		var mult: float = clamp((attack_range - dist) / attack_range, 0.2, 1.0)
+		return arma_danio * mult
+	return arma_danio
 
 # ─────────────────────────────────────────
 # ESTADOS TACTICOS
@@ -170,7 +224,7 @@ func _proceso_buscando(_delta: float) -> void:
 	else:
 		_cambiar_estado(EstadoTactico.ALERTA)
 
-func _proceso_atacando(delta: float) -> void:
+func _proceso_atacando(_delta: float) -> void:
 	if target == null or not is_instance_valid(target) \
 		or (target.has_method("is_dead") and target.get("is_dead") == true):
 		target = null
@@ -304,6 +358,81 @@ func _on_audio_body_exited(body: Node3D) -> void:
 	_estimulo_audio_activo = false
 
 # ─────────────────────────────────────────
+# COMBATE
+# ─────────────────────────────────────────
+
+func attempt_attack() -> void:
+	var current_time: int = Time.get_ticks_msec()
+	var elapsed: float = (current_time - last_attack_time) / 1000.0
+	if elapsed >= attack_rate:
+		last_attack_time = current_time
+		perform_attack()
+
+func perform_attack() -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if target.has_method("is_dead") and target.get("is_dead"):
+		return
+	var dist: float = global_transform.origin.distance_to(target.global_transform.origin)
+	var dano_final: float = _calcular_dano_por_distancia(dist)
+
+	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var origen_disparo: Vector3 = global_transform.origin + Vector3(0, 1.0, 0)
+	var destino_disparo: Vector3 = target.global_transform.origin + Vector3(0, 1.0, 0)
+
+	var pellets_a_disparar: int = max(arma_pellets, 1)
+	for i in range(pellets_a_disparar):
+		var dir_base: Vector3 = (destino_disparo - origen_disparo).normalized()
+		var dir_final: Vector3 = dir_base
+		if arma_spread > 0.0:
+			dir_final += Vector3(
+				randf_range(-arma_spread, arma_spread),
+				randf_range(-arma_spread, arma_spread),
+				randf_range(-arma_spread, arma_spread)
+			)
+			dir_final = dir_final.normalized()
+		var query := PhysicsRayQueryParameters3D.create(
+			origen_disparo,
+			origen_disparo + dir_final * attack_range
+		)
+		query.exclude = [self]
+		var result: Dictionary = space_state.intersect_ray(query)
+		if result and result.get("collider") == target:
+			target.take_damage(dano_final)
+			draw_debug_laser(origen_disparo, result.get("position", destino_disparo), Color.YELLOW)
+			break  # Un impacto es suficiente para aplicar danio
+
+func take_damage(amount: float) -> void:
+	if is_dead:
+		return
+	current_health -= amount
+	current_health = clamp(current_health, 0, max_health)
+	flash_hit()
+	if current_health > 0 and (current_health / max_health) <= umbral_arrancarse:
+		if estado_actual != EstadoTactico.ARRANSE:
+			_objetivo_vida = null
+			_objetivo_aliado = null
+			_cambiar_estado(EstadoTactico.ARRANSE)
+	if current_health <= 0:
+		die()
+
+func flash_hit() -> void:
+	var mesh: MeshInstance3D = get_node_or_null("MeshInstance3D")
+	if mesh:
+		var mat: StandardMaterial3D = mesh.get_surface_override_material(0) as StandardMaterial3D
+		if mat:
+			mat.albedo_color = Color.WHITE
+			var t: SceneTreeTimer = get_tree().create_timer(0.1)
+			t.timeout.connect(func() -> void:
+				if is_instance_valid(mat):
+					mat.albedo_color = _base_color
+			)
+
+func die() -> void:
+	is_dead = true
+	queue_free()
+
+# ─────────────────────────────────────────
 # UTILIDADES
 # ─────────────────────────────────────────
 
@@ -408,51 +537,6 @@ func look_at_target_flat(target_pos: Vector3) -> void:
 	var flat_pos: Vector3 = Vector3(target_pos.x, global_transform.origin.y, target_pos.z)
 	if flat_pos.distance_to(global_transform.origin) > 0.1:
 		look_at(flat_pos, Vector3.UP)
-
-# ─────────────────────────────────────────
-# COMBATE
-# ─────────────────────────────────────────
-
-func attempt_attack() -> void:
-	var current_time: int = Time.get_ticks_msec()
-	var elapsed: float = (current_time - last_attack_time) / 1000.0
-	if elapsed >= attack_rate:
-		last_attack_time = current_time
-		perform_attack()
-
-func perform_attack() -> void:
-	if target and target.has_method("take_damage"):
-		target.take_damage(damage)
-
-func take_damage(amount: float) -> void:
-	if is_dead:
-		return
-	current_health -= amount
-	current_health = clamp(current_health, 0, max_health)
-	flash_hit()
-	if current_health > 0 and (current_health / max_health) <= umbral_arrancarse:
-		if estado_actual != EstadoTactico.ARRANSE:
-			_objetivo_vida = null
-			_objetivo_aliado = null
-			_cambiar_estado(EstadoTactico.ARRANSE)
-	if current_health <= 0:
-		die()
-
-func flash_hit() -> void:
-	var mesh: MeshInstance3D = get_node_or_null("MeshInstance3D")
-	if mesh:
-		var mat: StandardMaterial3D = mesh.get_surface_override_material(0) as StandardMaterial3D
-		if mat:
-			mat.albedo_color = Color.WHITE
-			var t: SceneTreeTimer = get_tree().create_timer(0.1)
-			t.timeout.connect(func() -> void:
-				if is_instance_valid(mat):
-					mat.albedo_color = _base_color
-			)
-
-func die() -> void:
-	is_dead = true
-	queue_free()
 
 # ─────────────────────────────────────────
 # DEBUG
