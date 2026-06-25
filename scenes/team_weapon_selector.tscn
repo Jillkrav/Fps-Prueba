@@ -1,0 +1,107 @@
+[gd_scene load_steps=2 format=3 uid="uid://team_weapon_selector"]
+
+[ext_resource type="Script" path="res://scripts/team_weapon_selector.gd" id="1_selector"]
+
+[node name="TeamWeaponSelector" type="CanvasLayer"]
+script = ExtResource("1_selector")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.05, 0.1, 0.85)
+
+[node name="TeamPanel" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -220.0
+offset_right = 300.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="Title" type="Label" parent="TeamPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "SELECCIONA TU EQUIPO"
+horizontal_alignment = 1
+
+[node name="BtnRojo" type="Button" parent="TeamPanel"]
+custom_minimum_size = Vector2(300, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1.0, 0.2, 0.2, 1)
+text = "🔴  EQUIPO ROJO"
+
+[node name="BtnAzul" type="Button" parent="TeamPanel"]
+custom_minimum_size = Vector2(300, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.2, 0.5, 1.0, 1)
+text = "🔵  EQUIPO AZUL"
+
+[node name="WeaponPanel" type="VBoxContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -260.0
+offset_right = 350.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="Title" type="Label" parent="WeaponPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "SELECCIONA TU ARMA"
+horizontal_alignment = 1
+
+[node name="WeaponsRow" type="HBoxContainer" parent="WeaponPanel"]
+layout_mode = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="BtnMetralleta" type="Button" parent="WeaponPanel/WeaponsRow"]
+custom_minimum_size = Vector2(240, 120)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "METRALLETA
+(Fuego rápido,
+menos daño)"
+
+[node name="BtnEscopeta" type="Button" parent="WeaponPanel/WeaponsRow"]
+custom_minimum_size = Vector2(240, 120)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "ESCOPETA
+(Fuego lento,
+ráfaga dispersa)"
+
+[node name="BtnVolver" type="Button" parent="WeaponPanel"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "← VOLVER"
+
+[connection signal="pressed" from="TeamPanel/BtnRojo" to="." method="_on_team_rojo_pressed"]
+[connection signal="pressed" from="TeamPanel/BtnAzul" to="." method="_on_team_azul_pressed"]
+[connection signal="pressed" from="WeaponPanel/WeaponsRow/BtnMetralleta" to="." method="_on_weapon_metralleta_pressed"]
+[connection signal="pressed" from="WeaponPanel/WeaponsRow/BtnEscopeta" to="." method="_on_weapon_escopeta_pressed"]
+[connection signal="pressed" from="WeaponPanel/BtnVolver" to="." method="_on_weapon_back_pressed"]

@@ -1,26 +1,4 @@
-extends NpcBase
-class_name NpcMelee
-
-func _ready() -> void:
-	npc_name      = "NPC Melee"
-	especie       = ""
-	sexo          = Sexo.MASCULINO
-	relacion      = Relacion.ENEMIGO
-	experiencia   = Experiencia.MEDIA
-	skin_path     = ""
-	voz_path      = ""
-	estado        = Estado.IDLE
-
-	max_health    = 40.0
-	speed         = 4.0
-	damage        = 15.0
-	attack_range  = 1.5
-	attack_rate   = 1.0
-	super._ready()
-
-func perform_attack() -> void:
-	if target == null or not is_instance_valid(target):
-		return
-	if target.has_method("is_dead") and target.get("is_dead"):
-		return
-	target.take_damage(damage)
+# ARCHIVO DEPRECADO - Ya no se usa.
+# El sistema de NPC ahora es data-driven: un solo tipo NpcBase con @export var nombre_arma.
+# Para crear un NPC melee, usar la escena npc.tscn y setear nombre_arma = "Cuchillo" (o el nombre del arma melee en tu JSON).
+# Este archivo puede borrarse de forma segura.

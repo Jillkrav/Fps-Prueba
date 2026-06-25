@@ -6,14 +6,14 @@ signal weapon_changed(weapon_name: String, current_ammo: int, max_ammo: int)
 signal ammo_changed(current_ammo: int, max_ammo: int)
 signal player_died()
 
-@export var max_health: float = 100.0
 @export var speed: float = 6.0
 @export var jump_velocity: float = 4.5
 @export var mouse_sensitivity: float = 0.002
 
+var max_health: float = 100.0
 var current_health: float = 100.0
 var is_dead: bool = false
-var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity"))
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
@@ -23,43 +23,45 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var active_weapon: Weapon = null
 
 func _ready() -> void:
+	add_to_group("player")
+	max_health = ConfigManager.salud_jugador
 	current_health = max_health
+	# FIX: usar GameState directamente en lugar de get_node con cast inseguro
+	if GameState.player_team == GameStateClass.Equipo.ESPECTADOR:
+		GameState.player_team = GameStateClass.Equipo.AZUL
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	setup_weapon()
+	# El arma se equipa externamente (DevMenu, team_weapon_selector, etc.)
+	active_weapon = null
 	health_changed.emit(current_health, max_health)
 
-func setup_weapon() -> void:
+func setup_weapon(nombre_arma: String) -> void:
 	for child in weapon_holder.get_children():
 		child.queue_free()
-
 	var weapon_instance: Node = weapon_placeholder_scene.instantiate()
 	weapon_holder.add_child(weapon_instance)
 	active_weapon = weapon_instance as Weapon
+	active_weapon.initialize_from_name(nombre_arma)
+	if not active_weapon.weapon_fired.is_connected(_on_weapon_fired):
+		active_weapon.weapon_fired.connect(_on_weapon_fired)
+	if not active_weapon.weapon_ammo_changed.is_connected(_on_weapon_ammo_changed):
+		active_weapon.weapon_ammo_changed.connect(_on_weapon_ammo_changed)
+	weapon_changed.emit(active_weapon.weapon_name, active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
+	ammo_changed.emit(active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
 
-	var selected: String = "metralleta"
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs:
-		selected = gs.selected_weapon
-
-	var weapon_configs: Dictionary = {}
-	if gs and "WEAPON_CONFIGS" in gs:
-		weapon_configs = gs.WEAPON_CONFIGS
-
-	var config: Dictionary = weapon_configs.get(selected, {
-		"name": "Metralleta",
-		"damage": 10.0,
-		"fire_rate": 0.12,
-		"max_ammo": 120,
-		"clip_size": 30,
-		"spread": 0.03,
-		"range": 50.0,
-		"color": Color(0.2, 0.6, 1.0)
-	})
-
-	active_weapon.initialize_from_config(config)
+func cambiar_arma(nombre_arma: String) -> void:
+	if not is_instance_valid(active_weapon):
+		setup_weapon(nombre_arma)
+		return
+	if active_weapon.weapon_fired.is_connected(_on_weapon_fired):
+		active_weapon.weapon_fired.disconnect(_on_weapon_fired)
+	if active_weapon.weapon_ammo_changed.is_connected(_on_weapon_ammo_changed):
+		active_weapon.weapon_ammo_changed.disconnect(_on_weapon_ammo_changed)
+	active_weapon.initialize_from_name(nombre_arma)
 	active_weapon.weapon_fired.connect(_on_weapon_fired)
 	active_weapon.weapon_ammo_changed.connect(_on_weapon_ammo_changed)
 	weapon_changed.emit(active_weapon.weapon_name, active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
+	ammo_changed.emit(active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
+	GameState.selected_weapon = nombre_arma
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_dead:
@@ -72,49 +74,34 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	if is_dead:
 		return
-
-	if Input.is_action_just_pressed("ui_cancel"):
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
+	if not active_weapon:
+		return
 	if Input.is_physical_key_pressed(KEY_R):
-		if active_weapon:
-			active_weapon.start_reload()
-
-	if Input.is_physical_key_pressed(KEY_F) or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		shoot()
+		active_weapon.start_reload()
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if Input.is_physical_key_pressed(KEY_F) or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			shoot()
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
-
 	if not is_on_floor():
 		velocity.y -= gravity * delta
-
 	if (Input.is_action_just_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_SPACE)) and is_on_floor():
 		velocity.y = jump_velocity
-
-	var input_dir: Vector2 = Vector2.ZERO
-	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
-		input_dir.y -= 1.0
-	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
-		input_dir.y += 1.0
-	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
-		input_dir.x -= 1.0
-	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
-		input_dir.x += 1.0
-
+	var input_dir := Vector2.ZERO
+	if Input.is_physical_key_pressed(KEY_W): input_dir.y -= 1.0
+	if Input.is_physical_key_pressed(KEY_S): input_dir.y += 1.0
+	if Input.is_physical_key_pressed(KEY_A): input_dir.x -= 1.0
+	if Input.is_physical_key_pressed(KEY_D): input_dir.x += 1.0
 	input_dir = input_dir.normalized()
-	var direction: Vector3 = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	if direction:
 		velocity.x = direction.x * speed
 		velocity.z = direction.z * speed
 	else:
 		velocity.x = move_toward(velocity.x, 0, speed)
 		velocity.z = move_toward(velocity.z, 0, speed)
-
 	move_and_slide()
 
 func shoot() -> void:
@@ -123,17 +110,24 @@ func shoot() -> void:
 	if active_weapon.can_fire():
 		var hits: Array = active_weapon.fire()
 		for hit in hits:
-			var target: Node = hit["collider"]
-			if target and target.has_method("take_damage"):
-				target.take_damage(hit["damage"])
+			var target_node: Node = hit["collider"]
+			if target_node and target_node.has_method("take_damage"):
+				if target_node is Player:
+					target_node.take_damage(hit["damage_vs_player"])
+				else:
+					target_node.take_damage(hit["damage_vs_npc"])
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, zona: String = "Torso") -> void:
 	if is_dead:
 		return
-	current_health -= amount
-	current_health = clamp(current_health, 0, max_health)
+	var multiplicador: float = 1.0
+	match zona:
+		"Cabeza": multiplicador = ConfigManager.mult_cabeza
+		"Torso":  multiplicador = ConfigManager.mult_torso
+	current_health -= amount * multiplicador
+	current_health = clamp(current_health, 0.0, max_health)
 	health_changed.emit(current_health, max_health)
-	if current_health <= 0:
+	if current_health <= 0.0:
 		die()
 
 func die() -> void:
@@ -146,9 +140,10 @@ func resupply() -> void:
 	health_changed.emit(current_health, max_health)
 	if active_weapon:
 		active_weapon.resupply()
+		ammo_changed.emit(active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
 
-func _on_weapon_fired(curr_ammo: int, mx_ammo: int) -> void:
-	ammo_changed.emit(curr_ammo, mx_ammo)
+func _on_weapon_fired(curr: int, mx: int) -> void:
+	ammo_changed.emit(curr, mx)
 
-func _on_weapon_ammo_changed(curr_ammo: int, mx_ammo: int) -> void:
-	ammo_changed.emit(curr_ammo, mx_ammo)
+func _on_weapon_ammo_changed(curr: int, mx: int) -> void:
+	ammo_changed.emit(curr, mx)
