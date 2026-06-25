@@ -1,15 +1,27 @@
-# scripts/npc_base.gd
-# NPC UNIVERSAL: comportamiento de combate delegado al sistema IASkill.
-# El IASkill se crea como hijo en _ready() y maneja la FSM táctica.
 extends CharacterBody3D
 class_name NpcBase
 
-enum Sexo { MASCULINO, FEMENINO }
-enum Experiencia { BAJA, MEDIA, ALTA }
-enum Estado { IDLE, GUARDIA, ALERTA, BUSCANDO, ESCONDIENDOSE, SIGUIENDO, ATACANDO }
+# ─────────────────────────────────────────
+# ENUMS
+# ─────────────────────────────────────────
 
-# NOTA: Relacion se mantiene solo para compatibilidad con el DevMenu.
-enum Relacion { AMIGABLE, NEUTRAL, ENEMIGO }
+enum Sexo        { MASCULINO, FEMENINO }
+enum Relacion    { AMIGABLE, NEUTRAL, ENEMIGO }
+enum Experiencia { BAJA, MEDIA, ALTA }
+enum EstadoTactico {
+	IDLE,
+	GUARDIA,
+	ALERTA,
+	BUSCANDO,
+	ESCONDIENDO,
+	SIGUIENDO,
+	ATACANDO,
+	ARRANSE
+}
+
+# ─────────────────────────────────────────
+# IDENTIDAD
+# ─────────────────────────────────────────
 
 @export var npc_name: String = "NPC"
 @export var especie: String = ""
@@ -18,348 +30,411 @@ enum Relacion { AMIGABLE, NEUTRAL, ENEMIGO }
 @export var experiencia: Experiencia = Experiencia.MEDIA
 @export var skin_path: String = ""
 @export var voz_path: String = ""
-@export var estado: Estado = Estado.IDLE
-@export var nombre_arma: String = ""
 
-@export var equipo_id: int = 2
+# ─────────────────────────────────────────
+# COMBATE
+# ─────────────────────────────────────────
 
-# ─── Integración IASkill ───────────────────────────────────────────
-## Si true, el NPC usa el sistema táctico IASkill (FSM completa con
-## ruido, visión, cobertura, flanqueo, recarga, etc.).
-@export var use_ia_skill: bool = true
-
-## Referencia al módulo de IA táctica (creado automáticamente).
-var ia_skill: IASkill = null
-
-var _relacion_forzada: bool = false
-
-@export var max_health: float = 100.0
+@export var max_health: float = 30.0
 @export var speed: float = 3.0
-@export var damage: float = 15.0
+@export var damage: float = 10.0
 @export var attack_range: float = 2.0
 @export var attack_rate: float = 1.0
 
-var current_health: float = 100.0
+# ─────────────────────────────────────────
+# ARRANCARSE - Configuracion
+# ─────────────────────────────────────────
+
+@export var umbral_arrancarse: float = 0.2
+@export var radio_busqueda_vida: float = 20.0
+
+# ─────────────────────────────────────────
+# VARIABLES INTERNAS
+# ─────────────────────────────────────────
+
+var estado_actual: EstadoTactico = EstadoTactico.IDLE
+var current_health: float = 30.0
 var target: Node3D = null
 var last_attack_time: int = 0
 var is_dead: bool = false
 var _base_color: Color = Color.WHITE
-var _es_ranged: bool = false
-var _es_escopeta: bool = false
-var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity"))
+
+var _estimulo_audio_activo: bool = false
+var _estimulo_vision_activo: bool = false
+
+var _enemigos_en_rango_vision: Array[Node3D] = []
+var _timer_reaccion: float = 0.0
+var _reaccionando: bool = false
+var _objetivo_reaccion: Node3D = null
+
+var _posicion_ruido: Vector3 = Vector3.ZERO
+var _hay_ruido: bool = false
+
+var _objetivo_vida: Node3D = null
+var _objetivo_aliado: Node3D = null
+
+var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var navigation_agent: NavigationAgent3D = get_node_or_null("NavigationAgent3D")
+@onready var area_vision: Area3D = get_node_or_null("AreaVision")
+@onready var area_audio: Area3D = get_node_or_null("AreaAudio")
+@onready var raycast_vision: RayCast3D = get_node_or_null("RaycastVision")
 
-var _healthbar_root: Node3D = null
-var _healthbar_bg: MeshInstance3D = null
-var _healthbar_fill: MeshInstance3D = null
-var _weapon_label_3d: Label3D = null
-
-var _retarget_timer: float = 0.0
-const RETARGET_INTERVAL: float = 2.0
+# ─────────────────────────────────────────
+# CICLO DE VIDA
+# ─────────────────────────────────────────
 
 func _ready() -> void:
-	add_to_group("npcs")
-	if max_health == 100.0:
-		max_health = ConfigManager.get_vida_npc("Enemigo")
 	current_health = max_health
+	estado_actual = EstadoTactico.IDLE
+	target = null
 
-	if not _relacion_forzada:
-		match relacion:
-			Relacion.ENEMIGO:
-				equipo_id = GameStateClass.Equipo.ROJO
-			Relacion.AMIGABLE:
-				equipo_id = _equipo_jugador()
-			Relacion.NEUTRAL:
-				equipo_id = GameStateClass.Equipo.ESPECTADOR
+	_apply_relation_color()
 
-	_configurar_arma()
-	_apply_team_color()
-	_pick_target()
-	_setup_healthbar()
-
-	# ─── Inicializar IASkill si está habilitado ────────────
-	if use_ia_skill:
-		_init_ia_skill()
-
-func _configurar_arma() -> void:
-	if nombre_arma == "":
-		_es_ranged   = false
-		_es_escopeta = false
-		attack_range = 1.8
-		attack_rate  = 1.0
-		speed        = 4.0
-		damage       = 15.0
-		return
-	var cfg: Dictionary = ConfigManager.get_arma(nombre_arma)
-	if cfg.is_empty():
-		_es_ranged   = false
-		attack_range = 1.8
-		return
-	# Determinar si el arma es de fuego (tiene cargador) o melee
-	var es_de_fuego: bool = cfg.has("TamanoCargador")
-	_es_ranged = es_de_fuego
-
-	# Determinar si es escopeta por nombre de arma (skill.json no tiene campo Categoria)
-	var nombre_bajo: String = nombre_arma.to_lower()
-	_es_escopeta = nombre_bajo in ["m3", "spas12", "recortada", "escopetaautomatica"]
-
-	# Danio desde skill.json: clave "DanioAlNPC" (con 'i')
-	damage = float(cfg.get("DanioAlNPC", 20.0))
-
-	if _es_ranged:
-		speed       = 2.5
-		# Cadencia desde skill.json: "DanioPorSegundo" = segundos entre disparos
-		attack_rate = float(cfg.get("DanioPorSegundo", 1.5))
-		# Rango segun tipo de arma: escopeta corto, pistola medio, rifle largo
-		if _es_escopeta:
-			attack_range = 6.0
-		elif nombre_bajo in ["scout", "awp"]:
-			attack_range = 30.0
-		elif nombre_bajo in ["mp7", "mp5"]:
-			attack_range = 15.0
-		elif nombre_bajo in ["aug", "m4", "g36"]:
-			attack_range = 22.0
-		else:
-			attack_range = 12.0
+	if area_vision:
+		if not area_vision.body_entered.is_connected(_on_vision_body_entered):
+			area_vision.body_entered.connect(_on_vision_body_entered)
+		if not area_vision.body_exited.is_connected(_on_vision_body_exited):
+			area_vision.body_exited.connect(_on_vision_body_exited)
 	else:
-		speed       = 4.0
-		attack_rate = 1.0
-		attack_range = 1.8
+		push_warning("[NpcBase] " + npc_name + ": No se encontro AreaVision.")
 
-func _init_ia_skill() -> void:
-	var skill := IASkill.new()
-	skill.name = "IASkill"
-	add_child(skill)
-	ia_skill = skill
-	# Mapear experiencia del NPC al sistema de IA
-	match experiencia:
-		Experiencia.BAJA:
-			skill.experiencia = IASkill.ExperienciaIA.BAJA
-		Experiencia.MEDIA:
-			skill.experiencia = IASkill.ExperienciaIA.MEDIA
-		Experiencia.ALTA:
-			skill.experiencia = IASkill.ExperienciaIA.ALTA
-	skill.initialize(self)
+	if area_audio:
+		if not area_audio.body_entered.is_connected(_on_audio_body_entered):
+			area_audio.body_entered.connect(_on_audio_body_entered)
+		if not area_audio.body_exited.is_connected(_on_audio_body_exited):
+			area_audio.body_exited.connect(_on_audio_body_exited)
+	else:
+		push_warning("[NpcBase] " + npc_name + ": No se encontro AreaAudio.")
+
+	if not raycast_vision:
+		push_warning("[NpcBase] " + npc_name + ": No se encontro RaycastVision.")
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
-
-	# ─── Si IASkill está activo, delegar toda la lógica ────
-	if use_ia_skill and ia_skill and is_instance_valid(ia_skill):
-		return  # IASkill maneja todo en su propio _physics_process
-
-	# ─── Fallback: comportamiento original sin IA ──────────
-	if _healthbar_root and is_instance_valid(_healthbar_root):
-		var cam: Camera3D = get_viewport().get_camera_3d()
-		if cam:
-			_healthbar_root.look_at(cam.global_transform.origin, Vector3.UP)
-
-	_retarget_timer += delta
-	if _retarget_timer >= RETARGET_INTERVAL:
-		_retarget_timer = 0.0
-		if target == null or not is_instance_valid(target) or (target.has_method("is_dead") and target.get("is_dead")):
-			_pick_target()
-
-	if target == null or not is_instance_valid(target) or (target.has_method("is_dead") and target.get("is_dead")):
-		_pick_target()
 
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = 0.0
 
-	if target and is_instance_valid(target):
-		var target_pos: Vector3 = target.global_transform.origin
-		var direction: Vector3 = Vector3.ZERO
-		if navigation_agent and not navigation_agent.is_navigation_finished():
-			navigation_agent.target_position = target_pos
-			direction = (navigation_agent.get_next_path_position() - global_transform.origin).normalized()
-		else:
-			direction = (target_pos - global_transform.origin).normalized()
-		direction.y = 0
-		direction = direction.normalized()
-		look_at_target_flat(target_pos)
-		var dist: float = global_transform.origin.distance_to(target_pos)
-		if dist <= attack_range:
-			velocity.x = 0
-			velocity.z = 0
-			attempt_attack()
-		else:
-			velocity.x = direction.x * speed
-			velocity.z = direction.z * speed
+	if relacion == Relacion.ENEMIGO:
+		var player: Node = get_tree().get_first_node_in_group("player")
+		if player and player.is_in_group("invisible_to_npc"):
+			velocity.x = move_toward(velocity.x, 0, speed)
+			velocity.z = move_toward(velocity.z, 0, speed)
+			move_and_slide()
+			return
+
+	# Evaluar vision (raycast) en cada frame
+	_evaluar_vision(delta)
+
+	# Maquina de estados tactica
+	match estado_actual:
+		EstadoTactico.IDLE:
+			_proceso_idle(delta)
+		EstadoTactico.ALERTA:
+			_proceso_alerta(delta)
+		EstadoTactico.BUSCANDO:
+			_proceso_buscando(delta)
+		EstadoTactico.ATACANDO:
+			_proceso_atacando(delta)
+		EstadoTactico.ARRANSE:
+			_proceso_arrancarse(delta)
+		EstadoTactico.GUARDIA, EstadoTactico.ESCONDIENDO, EstadoTactico.SIGUIENDO:
+			pass
+
+	move_and_slide()
+
+# ─────────────────────────────────────────
+# ESTADOS TACTICOS
+# ─────────────────────────────────────────
+
+func _proceso_idle(_delta: float) -> void:
+	velocity.x = move_toward(velocity.x, 0, speed)
+	velocity.z = move_toward(velocity.z, 0, speed)
+
+func _proceso_alerta(_delta: float) -> void:
+	velocity.x = move_toward(velocity.x, 0, speed)
+	velocity.z = move_toward(velocity.z, 0, speed)
+
+func _proceso_buscando(_delta: float) -> void:
+	if _posicion_ruido != Vector3.ZERO:
+		_mover_hacia(_posicion_ruido)
+		var dist: float = global_transform.origin.distance_to(_posicion_ruido)
+		if dist < 1.5:
+			_posicion_ruido = Vector3.ZERO
+			_hay_ruido = false
+			_cambiar_estado(EstadoTactico.ALERTA)
+	else:
+		_cambiar_estado(EstadoTactico.ALERTA)
+
+func _proceso_atacando(delta: float) -> void:
+	if target == null or not is_instance_valid(target) \
+		or (target.has_method("is_dead") and target.get("is_dead") == true):
+		target = null
+		_reaccionando = false
+		_objetivo_reaccion = null
+		_cambiar_estado(EstadoTactico.BUSCANDO)
+		return
+
+	if not _tiene_linea_de_vision(target):
+		_reaccionando = false
+		_objetivo_reaccion = null
+		_posicion_ruido = target.global_transform.origin
+		_cambiar_estado(EstadoTactico.BUSCANDO)
+		return
+
+	var dist: float = global_transform.origin.distance_to(target.global_transform.origin)
+	look_at_target_flat(target.global_transform.origin)
+
+	if dist <= attack_range:
+		velocity.x = 0
+		velocity.z = 0
+		attempt_attack()
+	else:
+		_mover_hacia(target.global_transform.origin)
+
+func _proceso_arrancarse(_delta: float) -> void:
+	_objetivo_vida = _buscar_pickup_vida()
+	if _objetivo_vida and is_instance_valid(_objetivo_vida):
+		_mover_hacia(_objetivo_vida.global_transform.origin)
+		return
+
+	if _objetivo_aliado == null or not is_instance_valid(_objetivo_aliado):
+		_objetivo_aliado = _buscar_aliado_mas_cercano()
+
+	if _objetivo_aliado and is_instance_valid(_objetivo_aliado):
+		var dist_aliado: float = global_transform.origin.distance_to(_objetivo_aliado.global_transform.origin)
+		var radio_audio: float = _obtener_radio_audio()
+		if dist_aliado <= radio_audio:
+			if _estimulo_audio_activo or _estimulo_vision_activo:
+				_cambiar_estado(EstadoTactico.ALERTA)
+			else:
+				_cambiar_estado(EstadoTactico.IDLE)
+			return
+		_mover_hacia(_objetivo_aliado.global_transform.origin)
 	else:
 		velocity.x = move_toward(velocity.x, 0, speed)
 		velocity.z = move_toward(velocity.z, 0, speed)
-	move_and_slide()
 
-func _setup_healthbar() -> void:
-	_healthbar_root = Node3D.new()
-	_healthbar_root.position = Vector3(0, 2.4, 0)
-	add_child(_healthbar_root)
-	_healthbar_bg = MeshInstance3D.new()
-	var bg_mesh := QuadMesh.new()
-	bg_mesh.size = Vector2(1.1, 0.18)
-	_healthbar_bg.mesh = bg_mesh
-	var bg_mat := StandardMaterial3D.new()
-	bg_mat.albedo_color = Color(0.15, 0.15, 0.15, 0.85)
-	bg_mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
-	bg_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	bg_mat.billboard_mode = BaseMaterial3D.BILLBOARD_DISABLED
-	_healthbar_bg.set_surface_override_material(0, bg_mat)
-	_healthbar_root.add_child(_healthbar_bg)
-	_healthbar_fill = MeshInstance3D.new()
-	var fill_mesh := QuadMesh.new()
-	fill_mesh.size = Vector2(1.0, 0.13)
-	_healthbar_fill.mesh = fill_mesh
-	var fill_mat := StandardMaterial3D.new()
-	fill_mat.albedo_color = Color(0.1, 0.85, 0.1)
-	fill_mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
-	fill_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_healthbar_fill.set_surface_override_material(0, fill_mat)
-	_healthbar_root.add_child(_healthbar_fill)
-	_weapon_label_3d = Label3D.new()
-	_weapon_label_3d.position = Vector3(0, 0.18, 0.01)
-	_weapon_label_3d.font_size = 24
-	_weapon_label_3d.modulate = Color.WHITE
-	_weapon_label_3d.outline_size = 6
-	_weapon_label_3d.outline_modulate = Color(0, 0, 0, 0.8)
-	_weapon_label_3d.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	_weapon_label_3d.double_sided = true
-	_weapon_label_3d.text = nombre_arma if nombre_arma != "" else "Melee"
-	_healthbar_root.add_child(_weapon_label_3d)
-	_update_healthbar()
+# ─────────────────────────────────────────
+# DETECCION POR VISION (Area3D verde)
+# ─────────────────────────────────────────
 
-func _update_healthbar() -> void:
-	if not is_instance_valid(_healthbar_fill):
+func _on_vision_body_entered(body: Node3D) -> void:
+	if _es_enemigo(body):
+		if not _enemigos_en_rango_vision.has(body):
+			_enemigos_en_rango_vision.append(body)
+
+func _on_vision_body_exited(body: Node3D) -> void:
+	_enemigos_en_rango_vision.erase(body)
+	if body == _objetivo_reaccion:
+		_reaccionando = false
+		_objetivo_reaccion = null
+		if estado_actual == EstadoTactico.ATACANDO:
+			_cambiar_estado(EstadoTactico.BUSCANDO)
+
+func _evaluar_vision(delta: float) -> void:
+	if estado_actual == EstadoTactico.ARRANSE:
 		return
-	var ratio: float = clamp(current_health / max_health, 0.0, 1.0)
-	_healthbar_fill.scale.x = ratio
-	_healthbar_fill.position.x = (ratio - 1.0) * 0.5
-	var fill_mat: StandardMaterial3D = _healthbar_fill.get_surface_override_material(0) as StandardMaterial3D
-	if fill_mat:
-		if ratio > 0.5:
-			fill_mat.albedo_color = Color(0.1, 0.85, 0.1)
-		elif ratio > 0.25:
-			fill_mat.albedo_color = Color(0.9, 0.75, 0.0)
-		else:
-			fill_mat.albedo_color = Color(0.9, 0.1, 0.1)
 
-func _apply_team_color() -> void:
+	for enemigo in _enemigos_en_rango_vision:
+		if not is_instance_valid(enemigo):
+			continue
+		if _tiene_linea_de_vision(enemigo):
+			_estimulo_vision_activo = true
+			if _reaccionando and _objetivo_reaccion == enemigo:
+				_timer_reaccion -= delta
+				if _timer_reaccion <= 0.0:
+					_reaccionando = false
+					_objetivo_reaccion = null
+					target = enemigo
+					_cambiar_estado(EstadoTactico.ATACANDO)
+			elif not _reaccionando and estado_actual != EstadoTactico.ATACANDO:
+				_reaccionando = true
+				_objetivo_reaccion = enemigo
+				match experiencia:
+					Experiencia.BAJA:
+						_timer_reaccion = 1.2
+					Experiencia.MEDIA:
+						_timer_reaccion = 0.5
+					Experiencia.ALTA:
+						_timer_reaccion = 0.1
+			return
+
+	_estimulo_vision_activo = false
+
+func _tiene_linea_de_vision(objetivo: Node3D) -> bool:
+	if raycast_vision == null:
+		return false
+	var origen: Vector3 = global_transform.origin + Vector3(0, 0.8, 0)
+	raycast_vision.global_transform.origin = origen
+	var dir: Vector3 = (objetivo.global_transform.origin - origen).normalized()
+	raycast_vision.target_position = raycast_vision.to_local(origen + dir * 50.0)
+	raycast_vision.force_raycast_update()
+	if raycast_vision.is_colliding():
+		var collider: Object = raycast_vision.get_collider()
+		if collider == objetivo or (collider is Node and collider.get_parent() == objetivo):
+			return true
+		return false
+	return false
+
+# ─────────────────────────────────────────
+# DETECCION POR AUDIO (Area3D amarilla)
+# ─────────────────────────────────────────
+
+func _on_audio_body_entered(body: Node3D) -> void:
+	if _es_enemigo(body):
+		_estimulo_audio_activo = true
+		_hay_ruido = true
+		_posicion_ruido = body.global_transform.origin
+		if estado_actual == EstadoTactico.IDLE or estado_actual == EstadoTactico.GUARDIA:
+			_cambiar_estado(EstadoTactico.ALERTA)
+		if estado_actual == EstadoTactico.ALERTA:
+			_cambiar_estado(EstadoTactico.BUSCANDO)
+
+func _on_audio_body_exited(body: Node3D) -> void:
+	if area_audio:
+		var cuerpos: Array = area_audio.get_overlapping_bodies()
+		for c in cuerpos:
+			if _es_enemigo(c):
+				return
+	_estimulo_audio_activo = false
+
+# ─────────────────────────────────────────
+# UTILIDADES
+# ─────────────────────────────────────────
+
+func _es_enemigo(body: Node3D) -> bool:
+	if body == self:
+		return false
+	if relacion == Relacion.ENEMIGO:
+		if body.is_in_group("player"):
+			return true
+		if body is NpcBase and body.relacion == Relacion.AMIGABLE:
+			return true
+	if relacion == Relacion.AMIGABLE:
+		if body is NpcBase and body.relacion == Relacion.ENEMIGO:
+			return true
+	return false
+
+func _cambiar_estado(nuevo_estado: EstadoTactico) -> void:
+	if estado_actual == nuevo_estado:
+		return
+	estado_actual = nuevo_estado
+
+func _mover_hacia(destino: Vector3) -> void:
+	if navigation_agent:
+		navigation_agent.target_position = destino
+		if not navigation_agent.is_navigation_finished():
+			var next: Vector3 = navigation_agent.get_next_path_position()
+			var dir: Vector3 = (next - global_transform.origin).normalized()
+			dir.y = 0
+			velocity.x = dir.x * speed
+			velocity.z = dir.z * speed
+			look_at_target_flat(destino)
+			return
+	var dir: Vector3 = (destino - global_transform.origin).normalized()
+	dir.y = 0
+	velocity.x = dir.x * speed
+	velocity.z = dir.z * speed
+	look_at_target_flat(destino)
+
+func _buscar_pickup_vida() -> Node3D:
+	var pickups: Array = get_tree().get_nodes_in_group("pickup_vida")
+	var mas_cercano: Node3D = null
+	var dist_min: float = radio_busqueda_vida
+	for p in pickups:
+		if not is_instance_valid(p):
+			continue
+		var d: float = global_transform.origin.distance_to((p as Node3D).global_transform.origin)
+		if d < dist_min:
+			dist_min = d
+			mas_cercano = p as Node3D
+	return mas_cercano
+
+func _buscar_aliado_mas_cercano() -> Node3D:
+	var aliados: Array = get_tree().get_nodes_in_group("npc")
+	var mas_cercano: Node3D = null
+	var dist_min: float = INF
+	for a in aliados:
+		if a == self:
+			continue
+		if a is NpcBase and a.relacion == relacion and not a.is_dead:
+			var d: float = global_transform.origin.distance_to((a as Node3D).global_transform.origin)
+			if d < dist_min:
+				dist_min = d
+				mas_cercano = a as Node3D
+	return mas_cercano
+
+func _obtener_radio_audio() -> float:
+	if area_audio:
+		for child in area_audio.get_children():
+			if child is CollisionShape3D and child.shape is SphereShape3D:
+				return (child.shape as SphereShape3D).radius
+	return 5.0
+
+# ─────────────────────────────────────────
+# RELACION: COLOR
+# ─────────────────────────────────────────
+
+func _apply_relation_color() -> void:
 	var mesh: MeshInstance3D = get_node_or_null("MeshInstance3D")
 	if not mesh:
 		return
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = GameState.color_equipo(equipo_id)
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	match relacion:
+		Relacion.ENEMIGO:
+			mat.albedo_color = Color(0.85, 0.15, 0.15)
+		Relacion.AMIGABLE:
+			var opciones: Array[Color] = [
+				Color(0.1, 0.4, 0.9),
+				Color(0.1, 0.75, 0.95),
+				Color(0.15, 0.8, 0.3),
+			]
+			mat.albedo_color = opciones[randi() % opciones.size()]
+		Relacion.NEUTRAL:
+			mat.albedo_color = Color(0.7, 0.7, 0.1)
 	_base_color = mat.albedo_color
 	mesh.set_surface_override_material(0, mat)
 
-func _equipo_jugador() -> int:
-	return GameState.player_team
-
-func _es_enemigo_de_nodo(otro: Node) -> bool:
-	if not is_instance_valid(otro):
-		return false
-	var otro_equipo: int
-	if otro.is_in_group("player"):
-		otro_equipo = _equipo_jugador()
-	elif otro is NpcBase:
-		otro_equipo = otro.equipo_id
-	else:
-		return false
-	return GameState.son_enemigos(equipo_id, otro_equipo)
-
-func _pick_target() -> void:
-	target = null
-	var closest_dist: float = INF
-	var player: Node = get_tree().get_first_node_in_group("player")
-	if player and is_instance_valid(player) and _es_enemigo_de_nodo(player):
-		if not player.is_in_group("invisible_to_npc"):
-			var d: float = global_transform.origin.distance_to((player as Node3D).global_transform.origin)
-			if d < closest_dist:
-				closest_dist = d
-				target = player as Node3D
-	for node in get_tree().get_nodes_in_group("npcs"):
-		if node == self:
-			continue
-		if node is NpcBase and not node.is_dead and _es_enemigo_de_nodo(node):
-			var d: float = global_transform.origin.distance_to(node.global_transform.origin)
-			if d < closest_dist:
-				closest_dist = d
-				target = node as Node3D
+# ─────────────────────────────────────────
+# MOVIMIENTO
+# ─────────────────────────────────────────
 
 func look_at_target_flat(target_pos: Vector3) -> void:
-	var flat_pos := Vector3(target_pos.x, global_transform.origin.y, target_pos.z)
+	var flat_pos: Vector3 = Vector3(target_pos.x, global_transform.origin.y, target_pos.z)
 	if flat_pos.distance_to(global_transform.origin) > 0.1:
 		look_at(flat_pos, Vector3.UP)
 
-func attempt_attack() -> void:
-	var elapsed: float = (Time.get_ticks_msec() - last_attack_time) / 1000.0
-	if elapsed >= attack_rate:
-		last_attack_time = Time.get_ticks_msec()
-		perform_attack()
+# ─────────────────────────────────────────
+# COMBATE
+# ─────────────────────────────────────────
 
-## Como attempt_attack() pero consume munición del IASkill.
-## Devuelve true si el ataque se ejecutó, false si no (sin balas).
-func attempt_attack_with_ammo() -> bool:
-	var elapsed: float = (Time.get_ticks_msec() - last_attack_time) / 1000.0
+func attempt_attack() -> void:
+	var current_time: int = Time.get_ticks_msec()
+	var elapsed: float = (current_time - last_attack_time) / 1000.0
 	if elapsed >= attack_rate:
-		# Verificar munición del IASkill
-		if ia_skill and is_instance_valid(ia_skill):
-			if ia_skill.balas_cargador <= 0:
-				return false
-		last_attack_time = Time.get_ticks_msec()
+		last_attack_time = current_time
 		perform_attack()
-		return true
-	return false
 
 func perform_attack() -> void:
-	if target == null or not is_instance_valid(target):
-		return
-	if target.has_method("is_dead") and target.get("is_dead"):
-		return
-	if _es_ranged:
-		_atacar_a_distancia()
-	else:
-		_atacar_melee()
-
-func _atacar_melee() -> void:
-	target.take_damage(damage)
-
-func _atacar_a_distancia() -> void:
-	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var origin_pos: Vector3 = global_transform.origin + Vector3(0, 1.0, 0)
-	var target_pos: Vector3 = target.global_transform.origin + Vector3(0, 1.0, 0)
-	if _es_escopeta:
-		var impactos: int = 0
-		var dist: float = global_transform.origin.distance_to(target.global_transform.origin)
-		var damage_mult: float = clamp((attack_range - dist) / attack_range, 0.2, 1.0)
-		for _i in range(5):
-			var spread_end: Vector3 = target_pos + Vector3(randf_range(-0.5, 0.5), randf_range(-0.5, 0.5), randf_range(-0.5, 0.5))
-			var q := PhysicsRayQueryParameters3D.create(origin_pos, spread_end)
-			q.exclude = [self]
-			var res: Dictionary = space_state.intersect_ray(q)
-			if res and res.get("collider") == target:
-				impactos += 1
-			draw_debug_laser(origin_pos, spread_end, Color.ORANGE)
-		if impactos > 0:
-			target.take_damage(damage * damage_mult * impactos)
-	else:
-		var q := PhysicsRayQueryParameters3D.create(origin_pos, target_pos)
-		q.exclude = [self]
-		var res: Dictionary = space_state.intersect_ray(q)
-		if res and res.get("collider") == target:
-			target.take_damage(damage)
-			draw_debug_laser(origin_pos, target_pos, Color.YELLOW)
+	if target and target.has_method("take_damage"):
+		target.take_damage(damage)
 
 func take_damage(amount: float) -> void:
 	if is_dead:
 		return
 	current_health -= amount
 	current_health = clamp(current_health, 0, max_health)
-	_update_healthbar()
 	flash_hit()
+	if current_health > 0 and (current_health / max_health) <= umbral_arrancarse:
+		if estado_actual != EstadoTactico.ARRANSE:
+			_objetivo_vida = null
+			_objetivo_aliado = null
+			_cambiar_estado(EstadoTactico.ARRANSE)
 	if current_health <= 0:
 		die()
 
@@ -369,51 +444,24 @@ func flash_hit() -> void:
 		var mat: StandardMaterial3D = mesh.get_surface_override_material(0) as StandardMaterial3D
 		if mat:
 			mat.albedo_color = Color.WHITE
-			get_tree().create_timer(0.1).timeout.connect(func() -> void:
+			var t: SceneTreeTimer = get_tree().create_timer(0.1)
+			t.timeout.connect(func() -> void:
 				if is_instance_valid(mat):
 					mat.albedo_color = _base_color
 			)
 
 func die() -> void:
 	is_dead = true
-	if use_ia_skill and ia_skill and is_instance_valid(ia_skill):
-		ia_skill.set_process(false)
-		ia_skill.set_physics_process(false)
-	_drop_weapon()
 	queue_free()
 
-## Crea un arma dropeada en el piso con los datos actuales de munición.
-func _drop_weapon() -> void:
-	if nombre_arma == "":
-		return
-	var DroppedWeaponScene := preload("res://scenes/pickups/dropped_weapon.tscn")
-	if not DroppedWeaponScene:
-		return
-	var dropped: Node3D = DroppedWeaponScene.instantiate() as Node3D
-	if not dropped:
-		return
-
-	get_parent().add_child(dropped)
-	dropped.global_transform.origin = global_transform.origin + Vector3(0, 0.3, 0)
-
-	# Pasar datos de munición
-	if dropped.has_method("set_weapon_data"):
-		if ia_skill and is_instance_valid(ia_skill):
-			dropped.set_weapon_data(ia_skill.get_ammo_data())
-		else:
-			# Sin IASkill: usar datos por defecto del ConfigManager
-			var cfg: Dictionary = ConfigManager.get_arma(nombre_arma)
-			dropped.set_weapon_data({
-				"tipo_arma": nombre_arma,
-				"balas_cargador": int(cfg.get("TamanoCargador", 0)),
-				"balas_reserva": int(cfg.get("ReservaMunicionMaxima", 0)),
-				"capacidad_cargador": int(cfg.get("TamanoCargador", 0))
-			})
+# ─────────────────────────────────────────
+# DEBUG
+# ─────────────────────────────────────────
 
 func draw_debug_laser(start: Vector3, end: Vector3, color: Color = Color.WHITE) -> void:
-	var mesh_instance := MeshInstance3D.new()
-	var immediate_mesh := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	var immediate_mesh: ImmediateMesh = ImmediateMesh.new()
+	var material: StandardMaterial3D = StandardMaterial3D.new()
 	mesh_instance.mesh = immediate_mesh
 	material.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
 	material.albedo_color = color
@@ -423,4 +471,5 @@ func draw_debug_laser(start: Vector3, end: Vector3, color: Color = Color.WHITE) 
 	immediate_mesh.surface_add_vertex(start)
 	immediate_mesh.surface_add_vertex(end)
 	immediate_mesh.surface_end()
-	get_tree().create_timer(0.08).timeout.connect(func() -> void: mesh_instance.queue_free())
+	var timer: SceneTreeTimer = get_tree().create_timer(0.08)
+	timer.timeout.connect(func() -> void: mesh_instance.queue_free())
