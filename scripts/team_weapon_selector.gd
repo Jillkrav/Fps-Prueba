@@ -48,30 +48,30 @@ func _poblar_armas() -> void:
 		child.queue_free()
 	_armas_lista.clear()
 	_armas_buttons.clear()
-	var armas_raw: Dictionary = {}
-	if ConfigManager and ConfigManager._data.has("Armas"):
-		armas_raw = ConfigManager._data["Armas"]
-	if not armas_raw.is_empty():
-		if is_instance_valid(btn_metralleta): btn_metralleta.visible = false
-		if is_instance_valid(btn_escopeta):   btn_escopeta.visible   = false
-		for categoria in armas_raw.keys():
-			var lbl := Label.new()
-			lbl.text = "-- " + categoria + " --"
-			lbl.add_theme_font_size_override("font_size", 13)
-			lbl.modulate = Color(0.75, 0.75, 0.75)
-			_list.add_child(lbl)
-			for nombre_arma in armas_raw[categoria].keys():
-				_armas_lista.append(nombre_arma)
-				var btn := Button.new()
-				btn.text = nombre_arma
-				btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				btn.custom_minimum_size = Vector2(0, 38)
-				btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-				btn.add_theme_font_size_override("font_size", 17)
-				btn.pressed.connect(_on_weapon_pressed.bind(nombre_arma))
-				_list.add_child(btn)
-				_armas_buttons.append(btn)
-	else:
+	var categorias: Array[String] = ["Pistolas", "Escopetas", "Subfusiles", "Rifles", "Francotiradores", "Melee"]
+	var hay_armas: bool = false
+	for categoria in categorias:
+		var armas_cat: Array[String] = ConfigManager.get_nombres_armas(categoria)
+		if armas_cat.is_empty():
+			continue
+		hay_armas = true
+		var lbl := Label.new()
+		lbl.text = "-- " + categoria + " --"
+		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.modulate = Color(0.75, 0.75, 0.75)
+		_list.add_child(lbl)
+		for nombre_arma in armas_cat:
+			_armas_lista.append(nombre_arma)
+			var btn := Button.new()
+			btn.text = nombre_arma
+			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			btn.custom_minimum_size = Vector2(0, 38)
+			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			btn.add_theme_font_size_override("font_size", 17)
+			btn.pressed.connect(_on_weapon_pressed.bind(nombre_arma))
+			_list.add_child(btn)
+			_armas_buttons.append(btn)
+	if not hay_armas:
 		if is_instance_valid(btn_metralleta): btn_metralleta.visible = true
 		if is_instance_valid(btn_escopeta):   btn_escopeta.visible   = true
 

@@ -95,12 +95,8 @@ func spawn_wave() -> void:
 			# Espectador u otro: spawnear Rojos por defecto
 			equipo_enemigo = GameStateClass.Equipo.ROJO
 
-	# Lista de armas disponibles
-	var armas_lista: Array[String] = []
-	if ConfigManager and ConfigManager._data.has("Armas"):
-		for categoria in ConfigManager._data["Armas"].keys():
-			for nombre in ConfigManager._data["Armas"][categoria].keys():
-				armas_lista.append(nombre)
+	# Lista de armas disponibles desde ConfigManager
+	var armas_lista: Array[String] = ConfigManager.get_nombres_armas()
 	if armas_lista.is_empty():
 		armas_lista = [""]
 

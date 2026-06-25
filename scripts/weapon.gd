@@ -44,7 +44,7 @@ func initialize_from_name(nombre_arma: String) -> void:
 	# Claves exactas del JSON: DanioAlJugador, DanioAlNPC, TamanoCargador
 	damage_vs_player  = float(cfg.get("DanioAlJugador",        damage_vs_player))
 	damage_vs_npc     = float(cfg.get("DanioAlNPC",            damage_vs_npc))
-	segundos_por_bala = float(cfg.get("SegundosPorBala",        segundos_por_bala))
+	segundos_por_bala = float(cfg.get("DanioPorSegundo",         segundos_por_bala))
 	clip_size         = int(cfg.get("TamanoCargador",           clip_size))
 	max_ammo          = int(cfg.get("ReservaMunicionMaxima",    max_ammo))
 	reload_time       = float(cfg.get("TiempoRecargaSegundos",  reload_time))
@@ -53,26 +53,6 @@ func initialize_from_name(nombre_arma: String) -> void:
 	ammo_in_mag  = clip_size
 	reserve_ammo = max_ammo
 	print("Weapon: '%s' inicializada — dano=%.0f spb=%.3f cargador=%d" % [weapon_name, damage_vs_player, segundos_por_bala, clip_size])
-
-# Compatibilidad con codigo viejo que use initialize_from_config con dict manual
-func initialize_from_config(config: Dictionary) -> void:
-	weapon_name        = str(config.get("name",        weapon_name))
-	damage_vs_player   = float(config.get("damage",      damage_vs_player))
-	damage_vs_npc      = float(config.get("damage",      damage_vs_npc))
-	segundos_por_bala  = float(config.get("fire_rate",   segundos_por_bala))
-	max_ammo           = int(config.get("max_ammo",    max_ammo))
-	clip_size          = int(config.get("clip_size",   clip_size))
-	spread             = float(config.get("spread",      spread))
-	weapon_range       = float(config.get("range",       weapon_range))
-	pellets            = int(config.get("pellets",     pellets))
-	reload_time        = float(config.get("reload_time", reload_time))
-	ammo_in_mag        = clip_size
-	reserve_ammo       = max_ammo
-	var mesh: MeshInstance3D = get_node_or_null("WeaponMesh")
-	if mesh and config.has("color"):
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = config["color"]
-		mesh.set_surface_override_material(0, mat)
 
 func can_fire() -> bool:
 	if is_reloading:

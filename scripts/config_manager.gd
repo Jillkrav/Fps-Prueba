@@ -2,7 +2,7 @@
 # Autoload singleton. Registrar como "ConfigManager" en Project Settings > Autoload.
 extends Node
 
-const CONFIG_PATH := "res://config/skill.cfg.json"
+const CONFIG_PATH := "res://config/skill.json"
 
 var _data: Dictionary = {}
 
@@ -24,7 +24,7 @@ func _ready() -> void:
 
 func _load_config() -> void:
 	if not FileAccess.file_exists(CONFIG_PATH):
-		push_error("ConfigManager: No se encontro skill.cfg.json en " + CONFIG_PATH)
+		push_error("ConfigManager: No se encontro skill.json en " + CONFIG_PATH)
 		return
 
 	var file      := FileAccess.open(CONFIG_PATH, FileAccess.READ)
@@ -38,7 +38,7 @@ func _load_config() -> void:
 		return
 
 	_data = json.get_data().get("ConfiguracionJuego", {})
-	print("ConfigManager: skill.cfg.json cargado OK. Claves: ", _data.keys())
+	print("ConfigManager: skill.json cargado OK. Claves: ", _data.keys())
 
 # ─── Metodos publicos ────────────────────────────────────────────────
 
@@ -50,7 +50,7 @@ func get_arma(nombre: String) -> Dictionary:
 	for categoria in armas.values():
 		if categoria.has(nombre):
 			return categoria[nombre]
-	push_warning("ConfigManager: Arma '%s' no encontrada en skill.cfg.json" % nombre)
+	push_warning("ConfigManager: Arma '%s' no encontrada en skill.json" % nombre)
 	return {}
 
 ## Devuelve la vida de un NPC por tipo ("Enemigo" o "Aliado").

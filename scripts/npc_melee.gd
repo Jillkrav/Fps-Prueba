@@ -6,17 +6,9 @@ func _ready() -> void:
 	npc_name     = "NPC Melee"
 	experiencia  = Experiencia.MEDIA
 	estado       = Estado.IDLE
-	speed        = 4.0
-	attack_range = 1.5
-	attack_rate  = 1.0
-	# damage fijo de melee (no tiene arma en skill.cfg.json, valor razonable)
-	damage = 15.0
-
-	# La relacion y el equipo son asignados por el spawner ANTES de _ready.
-	# NO sobreescribir relacion aqui para respetar aliados spawneados.
-	# Solo garantizar defaults si el spawner no toco nada.
-	if relacion == Relacion.ENEMIGO and equipo == "rojo":
-		pass  # defaults correctos
+	# Stats desde skill.json usando arma melee (sin cargador -> _configurar_arma lo detecta)
+	if nombre_arma == "":
+		nombre_arma = "Crowbar"
 
 	super._ready()
 

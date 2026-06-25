@@ -14,7 +14,6 @@ extends CanvasLayer
 @onready var pause_screen: Control     = $PauseScreen
 @onready var death_screen: Control     = $DeathScreen
 
-var _spawner:      NpcSpawner = null
 var _player:       Player     = null
 var _menu_abierto: bool       = false
 
@@ -23,6 +22,7 @@ func _ready() -> void:
 	add_to_group("hud")
 	_conectar_player()
 	_configurar_pausa()
+	_configurar_death_screen()
 
 func _conectar_player() -> void:
 	_player = get_tree().get_first_node_in_group("player") as Player
@@ -37,12 +37,6 @@ func _conectar_player() -> void:
 	if not _player.player_died.is_connected(_on_player_died):
 		_player.player_died.connect(_on_player_died)
 	update_health(_player.current_health, _player.max_health)
-	if _player.active_weapon:
-		_on_player_weapon_changed(
-			_player.active_weapon.weapon_name,
-			_player.active_weapon.ammo_in_mag,
-			_player.active_weapon.reserve_ammo
-		)
 
 func _configurar_pausa() -> void:
 	var btn_continuar: Button = get_node_or_null("PauseScreen/Buttons/BtnContinuar")
@@ -101,28 +95,31 @@ func _esta_una_ui_abierta() -> bool:
 		(death_screen and death_screen.visible) or \
 		(dev_menu and dev_menu.visible)
 
-func _get_spawner() -> void:
-	if _spawner and is_instance_valid(_spawner):
-		return
-	var spawners: Array = get_tree().get_nodes_in_group("spawner")
-	if not spawners.is_empty():
-		_spawner = spawners[0] as NpcSpawner
-		return
-	var root: Node = get_tree().current_scene
-	if root:
-		for child in root.get_children():
-			if child is NpcSpawner:
-				_spawner = child
-				break
-
 func _on_player_weapon_changed(weapon_name: String, current_ammo: int, max_ammo: int) -> void:
 	update_weapon_name(weapon_name)
 	update_ammo(current_ammo, max_ammo)
+
+func _configurar_death_screen() -> void:
+	var btn_reintentar: Button = get_node_or_null("DeathScreen/Buttons/BtnReintentar")
+	var btn_menu:      Button = get_node_or_null("DeathScreen/Buttons/BtnMenu")
+	if btn_reintentar and not btn_reintentar.pressed.is_connected(_on_btn_reintentar_pressed):
+		btn_reintentar.pressed.connect(_on_btn_reintentar_pressed)
+	if btn_menu and not btn_menu.pressed.is_connected(_on_btn_death_menu_pressed):
+		btn_menu.pressed.connect(_on_btn_death_menu_pressed)
 
 func _on_player_died() -> void:
 	if death_screen:
 		death_screen.visible = true
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _on_btn_reintentar_pressed() -> void:
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	get_tree().reload_current_scene()
+
+func _on_btn_death_menu_pressed() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 func _on_btn_continuar_pressed() -> void:
 	if pause_screen and pause_screen.visible:

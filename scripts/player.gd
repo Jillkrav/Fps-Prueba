@@ -30,20 +30,17 @@ func _ready() -> void:
 	if GameState.player_team == GameStateClass.Equipo.ESPECTADOR:
 		GameState.player_team = GameStateClass.Equipo.AZUL
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	setup_weapon()
+	# El arma se equipa externamente (DevMenu, team_weapon_selector, etc.)
+	active_weapon = null
 	health_changed.emit(current_health, max_health)
 
-func setup_weapon() -> void:
+func setup_weapon(nombre_arma: String) -> void:
 	for child in weapon_holder.get_children():
 		child.queue_free()
 	var weapon_instance: Node = weapon_placeholder_scene.instantiate()
 	weapon_holder.add_child(weapon_instance)
 	active_weapon = weapon_instance as Weapon
-	# FIX: leer el arma directamente desde GameState (es autoload tipado)
-	var selected: String = GameState.selected_weapon
-	if selected.strip_edges() == "":
-		selected = "USP"
-	active_weapon.initialize_from_name(selected)
+	active_weapon.initialize_from_name(nombre_arma)
 	if not active_weapon.weapon_fired.is_connected(_on_weapon_fired):
 		active_weapon.weapon_fired.connect(_on_weapon_fired)
 	if not active_weapon.weapon_ammo_changed.is_connected(_on_weapon_ammo_changed):
@@ -53,7 +50,7 @@ func setup_weapon() -> void:
 
 func cambiar_arma(nombre_arma: String) -> void:
 	if not is_instance_valid(active_weapon):
-		setup_weapon()
+		setup_weapon(nombre_arma)
 		return
 	if active_weapon.weapon_fired.is_connected(_on_weapon_fired):
 		active_weapon.weapon_fired.disconnect(_on_weapon_fired)
@@ -77,9 +74,10 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	if is_dead:
 		return
+	if not active_weapon:
+		return
 	if Input.is_physical_key_pressed(KEY_R):
-		if active_weapon:
-			active_weapon.start_reload()
+		active_weapon.start_reload()
 	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if Input.is_physical_key_pressed(KEY_F) or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			shoot()

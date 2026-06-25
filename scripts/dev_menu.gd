@@ -17,7 +17,6 @@ const NPC_SCENE: String = "res://scenes/npcs/npc_base.tscn"
 var _panel_armas: PanelContainer    = null
 var _weapon_list: VBoxContainer     = null
 var _panel_equipo: PanelContainer   = null
-var opt_arma_dinamico: OptionButton = null
 var _armas_lista: Array[String]     = []
 var is_invisible: bool              = false
 
@@ -222,16 +221,18 @@ func _poblar_panel_armas() -> void:
 		return
 	for child in _weapon_list.get_children():
 		child.queue_free()
-	var armas_raw: Dictionary = {}
-	if ConfigManager and ConfigManager._data.has("Armas"):
-		armas_raw = ConfigManager._data["Armas"]
-	for categoria in armas_raw.keys():
+	# Categorias conocidas de skill.json (sin acceder a _data directamente)
+	var categorias: Array[String] = ["Pistolas", "Escopetas", "Subfusiles", "Rifles", "Francotiradores", "Melee"]
+	for categoria in categorias:
+		var armas_cat: Array[String] = ConfigManager.get_nombres_armas(categoria)
+		if armas_cat.is_empty():
+			continue
 		var lbl_cat := Label.new()
 		lbl_cat.text = "-- " + categoria + " --"
 		lbl_cat.add_theme_font_size_override("font_size", 13)
 		lbl_cat.modulate = Color(0.75, 0.75, 0.75)
 		_weapon_list.add_child(lbl_cat)
-		for nombre_arma in armas_raw[categoria].keys():
+		for nombre_arma in armas_cat:
 			var btn := Button.new()
 			btn.text = nombre_arma
 			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -270,13 +271,9 @@ func _on_arma_seleccionada(nombre_arma: String) -> void:
 func _poblar_armas_en(opt: OptionButton) -> void:
 	_armas_lista.clear()
 	opt.clear()
-	var armas_raw: Dictionary = {}
-	if ConfigManager and ConfigManager._data.has("Armas"):
-		armas_raw = ConfigManager._data["Armas"]
-	for categoria in armas_raw.keys():
-		for nombre in armas_raw[categoria].keys():
-			_armas_lista.append(nombre)
-			opt.add_item("%s [%s]" % [nombre, categoria])
+	_armas_lista = ConfigManager.get_nombres_armas()
+	for nombre in _armas_lista:
+		opt.add_item(nombre)
 	_armas_lista.append("")
 	opt.add_item("Sin arma (Melee)")
 

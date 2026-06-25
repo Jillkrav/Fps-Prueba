@@ -6,21 +6,13 @@ func _ready() -> void:
 	npc_name     = "NPC Pistolero"
 	experiencia  = Experiencia.MEDIA
 	estado       = Estado.IDLE
-	speed        = 2.5
-	attack_range = 12.0
-	attack_rate  = 1.5
-
-	# La relacion y el equipo son asignados por el spawner ANTES de _ready.
-	# Solo usamos ENEMIGO como valor por defecto si el spawner no asigno nada.
-	if relacion == Relacion.ENEMIGO and equipo == "rojo":
-		pass  # valores por defecto correctos, no tocar
-	# Si el spawner asigno AMIGABLE, respetar esa asignacion sin sobreescribir.
 
 	# Arma: usa nombre_arma si fue asignado externamente, si no usa USP por defecto
 	if nombre_arma == "":
 		nombre_arma = "USP"
+	# Danio desde skill.json clave "DanioAlNPC"
 	var cfg: Dictionary = ConfigManager.get_arma(nombre_arma)
-	damage = float(cfg.get("DaNNÃ±oAlNPC", cfg.get("DañoAlNPC", 30.0)))
+	damage = float(cfg.get("DanioAlNPC", 30.0))
 
 	super._ready()
 

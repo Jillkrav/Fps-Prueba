@@ -1,5 +1,6 @@
 # scripts/npc_base.gd
-# NPC UNIVERSAL: el comportamiento de combate depende del arma asignada.
+# NPC UNIVERSAL: comportamiento de combate delegado al sistema IASkill.
+# El IASkill se crea como hijo en _ready() y maneja la FSM táctica.
 extends CharacterBody3D
 class_name NpcBase
 
@@ -21,6 +22,14 @@ enum Relacion { AMIGABLE, NEUTRAL, ENEMIGO }
 @export var nombre_arma: String = ""
 
 @export var equipo_id: int = 2
+
+# ─── Integración IASkill ───────────────────────────────────────────
+## Si true, el NPC usa el sistema táctico IASkill (FSM completa con
+## ruido, visión, cobertura, flanqueo, recarga, etc.).
+@export var use_ia_skill: bool = true
+
+## Referencia al módulo de IA táctica (creado automáticamente).
+var ia_skill: IASkill = null
 
 var _relacion_forzada: bool = false
 
@@ -69,6 +78,10 @@ func _ready() -> void:
 	_pick_target()
 	_setup_healthbar()
 
+	# ─── Inicializar IASkill si está habilitado ────────────
+	if use_ia_skill:
+		_init_ia_skill()
+
 func _configurar_arma() -> void:
 	if nombre_arma == "":
 		_es_ranged   = false
@@ -83,33 +96,61 @@ func _configurar_arma() -> void:
 		_es_ranged   = false
 		attack_range = 1.8
 		return
-	var rango_cfg: float = float(cfg.get("RangoAtaque", 10.0))
-	attack_range = rango_cfg
-	_es_ranged   = rango_cfg > 1.8
-	var categoria: String = str(cfg.get("Categoria", "")).to_lower()
-	_es_escopeta = categoria.contains("escopeta") or nombre_arma.to_lower().contains("shotgun")
+	# Determinar si el arma es de fuego (tiene cargador) o melee
+	var es_de_fuego: bool = cfg.has("TamanoCargador")
+	_es_ranged = es_de_fuego
 
-	# FIX: buscar la clave de danno con todos los posibles nombres del JSON
-	# Clave oficial nueva: "DanioAlNPC" — fallbacks para configs viejas
-	var danno_val: float = 0.0
-	for clave in ["DanioAlNPC", "DannoAlNPC", "DaNNOAlNPC", "DaNNioAlNPC", "Danno", "Dano"]:
-		if cfg.has(clave):
-			danno_val = float(cfg[clave])
-			break
-	if danno_val <= 0.0:
-		danno_val = 20.0
-	damage = danno_val
+	# Determinar si es escopeta por nombre de arma (skill.json no tiene campo Categoria)
+	var nombre_bajo: String = nombre_arma.to_lower()
+	_es_escopeta = nombre_bajo in ["m3", "spas12", "recortada", "escopetaautomatica"]
+
+	# Danio desde skill.json: clave "DanioAlNPC" (con 'i')
+	damage = float(cfg.get("DanioAlNPC", 20.0))
 
 	if _es_ranged:
 		speed       = 2.5
-		attack_rate = float(cfg.get("CadenciaSegundos", 1.5))
+		# Cadencia desde skill.json: "DanioPorSegundo" = segundos entre disparos
+		attack_rate = float(cfg.get("DanioPorSegundo", 1.5))
+		# Rango segun tipo de arma: escopeta corto, pistola medio, rifle largo
+		if _es_escopeta:
+			attack_range = 6.0
+		elif nombre_bajo in ["scout", "awp"]:
+			attack_range = 30.0
+		elif nombre_bajo in ["mp7", "mp5"]:
+			attack_range = 15.0
+		elif nombre_bajo in ["aug", "m4", "g36"]:
+			attack_range = 22.0
+		else:
+			attack_range = 12.0
 	else:
 		speed       = 4.0
 		attack_rate = 1.0
+		attack_range = 1.8
+
+func _init_ia_skill() -> void:
+	var skill := IASkill.new()
+	skill.name = "IASkill"
+	add_child(skill)
+	ia_skill = skill
+	# Mapear experiencia del NPC al sistema de IA
+	match experiencia:
+		Experiencia.BAJA:
+			skill.experiencia = IASkill.ExperienciaIA.BAJA
+		Experiencia.MEDIA:
+			skill.experiencia = IASkill.ExperienciaIA.MEDIA
+		Experiencia.ALTA:
+			skill.experiencia = IASkill.ExperienciaIA.ALTA
+	skill.initialize(self)
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
+
+	# ─── Si IASkill está activo, delegar toda la lógica ────
+	if use_ia_skill and ia_skill and is_instance_valid(ia_skill):
+		return  # IASkill maneja todo en su propio _physics_process
+
+	# ─── Fallback: comportamiento original sin IA ──────────
 	if _healthbar_root and is_instance_valid(_healthbar_root):
 		var cam: Camera3D = get_viewport().get_camera_3d()
 		if cam:
@@ -128,13 +169,6 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = 0.0
-
-	var player: Node = get_tree().get_first_node_in_group("player")
-	if player and player.is_in_group("invisible_to_npc") and _es_enemigo_de_nodo(player):
-		velocity.x = move_toward(velocity.x, 0, speed)
-		velocity.z = move_toward(velocity.z, 0, speed)
-		move_and_slide()
-		return
 
 	if target and is_instance_valid(target):
 		var target_pos: Vector3 = target.global_transform.origin
@@ -212,11 +246,6 @@ func _update_healthbar() -> void:
 		else:
 			fill_mat.albedo_color = Color(0.9, 0.1, 0.1)
 
-func update_weapon_label(nombre: String) -> void:
-	nombre_arma = nombre
-	if is_instance_valid(_weapon_label_3d):
-		_weapon_label_3d.text = nombre if nombre != "" else "Melee"
-
 func _apply_team_color() -> void:
 	var mesh: MeshInstance3D = get_node_or_null("MeshInstance3D")
 	if not mesh:
@@ -270,6 +299,20 @@ func attempt_attack() -> void:
 	if elapsed >= attack_rate:
 		last_attack_time = Time.get_ticks_msec()
 		perform_attack()
+
+## Como attempt_attack() pero consume munición del IASkill.
+## Devuelve true si el ataque se ejecutó, false si no (sin balas).
+func attempt_attack_with_ammo() -> bool:
+	var elapsed: float = (Time.get_ticks_msec() - last_attack_time) / 1000.0
+	if elapsed >= attack_rate:
+		# Verificar munición del IASkill
+		if ia_skill and is_instance_valid(ia_skill):
+			if ia_skill.balas_cargador <= 0:
+				return false
+		last_attack_time = Time.get_ticks_msec()
+		perform_attack()
+		return true
+	return false
 
 func perform_attack() -> void:
 	if target == null or not is_instance_valid(target):
@@ -333,7 +376,39 @@ func flash_hit() -> void:
 
 func die() -> void:
 	is_dead = true
+	if use_ia_skill and ia_skill and is_instance_valid(ia_skill):
+		ia_skill.set_process(false)
+		ia_skill.set_physics_process(false)
+	_drop_weapon()
 	queue_free()
+
+## Crea un arma dropeada en el piso con los datos actuales de munición.
+func _drop_weapon() -> void:
+	if nombre_arma == "":
+		return
+	var DroppedWeaponScene := preload("res://scenes/pickups/dropped_weapon.tscn")
+	if not DroppedWeaponScene:
+		return
+	var dropped: Node3D = DroppedWeaponScene.instantiate() as Node3D
+	if not dropped:
+		return
+
+	get_parent().add_child(dropped)
+	dropped.global_transform.origin = global_transform.origin + Vector3(0, 0.3, 0)
+
+	# Pasar datos de munición
+	if dropped.has_method("set_weapon_data"):
+		if ia_skill and is_instance_valid(ia_skill):
+			dropped.set_weapon_data(ia_skill.get_ammo_data())
+		else:
+			# Sin IASkill: usar datos por defecto del ConfigManager
+			var cfg: Dictionary = ConfigManager.get_arma(nombre_arma)
+			dropped.set_weapon_data({
+				"tipo_arma": nombre_arma,
+				"balas_cargador": int(cfg.get("TamanoCargador", 0)),
+				"balas_reserva": int(cfg.get("ReservaMunicionMaxima", 0)),
+				"capacidad_cargador": int(cfg.get("TamanoCargador", 0))
+			})
 
 func draw_debug_laser(start: Vector3, end: Vector3, color: Color = Color.WHITE) -> void:
 	var mesh_instance := MeshInstance3D.new()

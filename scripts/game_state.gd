@@ -35,7 +35,7 @@ const COLOR_EQUIPO: Dictionary = {
 }
 
 var selected_map:    String = "res://scenes/maps/map_1.tscn"
-var selected_weapon: String = "USP"
+var selected_weapon: String = ""
 
 # El jugador empieza como Espectador hasta que elija equipo
 var player_team: int = Equipo.ESPECTADOR

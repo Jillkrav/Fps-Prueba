@@ -1,6 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://dg0u4rsk2u6o7"]
+[gd_scene format=3 uid="uid://dg0u4rsk2u6o7"]
 
-[ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
+[ext_resource type="Script" uid="uid://dfvsvok385kg5" path="res://scripts/player.gd" id="1_player"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.4
@@ -13,31 +13,31 @@ height = 1.8
 [sub_resource type="BoxMesh" id="BoxMesh_visor"]
 size = Vector3(0.5, 0.15, 0.2)
 
-[node name="Player" type="CharacterBody3D" groups=["player"]]
+[node name="Player" type="CharacterBody3D" unique_id=832726447 groups=["player"]]
 collision_layer = 2
 collision_mask = 13
 script = ExtResource("1_player")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=569102080]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_player")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1775224933]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+visible = false
 mesh = SubResource("CapsuleMesh_player")
-visible = false
 
-[node name="VisorMesh" type="MeshInstance3D" parent="MeshInstance3D"]
+[node name="VisorMesh" type="MeshInstance3D" parent="MeshInstance3D" unique_id=1954972671]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -0.35)
-mesh = SubResource("BoxMesh_visor")
 visible = false
+mesh = SubResource("BoxMesh_visor")
 
-[node name="Head" type="Node3D" parent="."]
+[node name="Head" type="Node3D" parent="." unique_id=1835668165]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 
-[node name="Camera3D" type="Camera3D" parent="Head"]
+[node name="Camera3D" type="Camera3D" parent="Head" unique_id=825183615]
 current = true
 
-[node name="WeaponHolder" type="Node3D" parent="Head/Camera3D"]
+[node name="WeaponHolder" type="Node3D" parent="Head/Camera3D" unique_id=581084668]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.25, -0.4)
 visible = false
