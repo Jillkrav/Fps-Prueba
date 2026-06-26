@@ -1,28 +1,29 @@
-[gd_scene load_steps=5 format=3 uid="uid://bix4g2asdxsyg"]
+[gd_scene format=3 uid="uid://bix4g2asdxsyg"]
 
-[ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
-[ext_resource type="Texture2D" path="res://icon.svg" id="2_crosshair"]
-[ext_resource type="Script" path="res://scripts/dev_menu.gd" id="3_devmenu"]
+[ext_resource type="Script" uid="uid://c4r8pehqod33t" path="res://scripts/hud.gd" id="1_hud"]
+[ext_resource type="Texture2D" uid="uid://c1tp7pqe622b5" path="res://icon.svg" id="2_crosshair"]
+[ext_resource type="Script" uid="uid://cq7s20sfsphw0" path="res://scripts/dev_menu.gd" id="3_devmenu"]
+[ext_resource type="PackedScene" uid="uid://dgxv5pum0iw37" path="res://scenes/options_menu.tscn" id="4_options"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hud"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0.05, 0.05, 0.08, 0.92)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.3, 0.3, 0.4, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
-[node name="HUDLayer" type="CanvasLayer"]
+[node name="HUDLayer" type="CanvasLayer" unique_id=582612962]
 process_mode = 3
 script = ExtResource("1_hud")
 
-[node name="HUD" type="Control" parent="."]
+[node name="HUD" type="Control" parent="." unique_id=1846710622]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -31,46 +32,46 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="HUD"]
+[node name="MarginContainer" type="MarginContainer" parent="HUD" unique_id=1622714639]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 30
 theme_override_constants/margin_top = 30
 theme_override_constants/margin_right = 30
 theme_override_constants/margin_bottom = 30
-mouse_filter = 2
 
-[node name="VBox" type="VBoxContainer" parent="HUD/MarginContainer"]
+[node name="VBox" type="VBoxContainer" parent="HUD/MarginContainer" unique_id=130385590]
 layout_mode = 2
 size_flags_vertical = 8
 mouse_filter = 2
 theme_override_constants/separation = 15
 
-[node name="SpawnLabel" type="Label" parent="HUD/MarginContainer/VBox"]
+[node name="SpawnLabel" type="Label" parent="HUD/MarginContainer/VBox" unique_id=231980141]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Siguiente oleada en: 20.0s"
 
-[node name="AmmoContainer" type="HBoxContainer" parent="HUD/MarginContainer/VBox"]
+[node name="AmmoContainer" type="HBoxContainer" parent="HUD/MarginContainer/VBox" unique_id=1236271109]
 layout_mode = 2
-theme_override_constants/separation = 20
 mouse_filter = 2
+theme_override_constants/separation = 20
 
-[node name="WeaponLabel" type="Label" parent="HUD/MarginContainer/VBox/AmmoContainer"]
+[node name="WeaponLabel" type="Label" parent="HUD/MarginContainer/VBox/AmmoContainer" unique_id=1818706482]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Metralleta"
 
-[node name="AmmoLabel" type="Label" parent="HUD/MarginContainer/VBox/AmmoContainer"]
+[node name="AmmoLabel" type="Label" parent="HUD/MarginContainer/VBox/AmmoContainer" unique_id=677213782]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "100 / 100"
 
-[node name="HealthBar" type="ProgressBar" parent="HUD/MarginContainer/VBox"]
+[node name="HealthBar" type="ProgressBar" parent="HUD/MarginContainer/VBox" unique_id=1052213112]
 custom_minimum_size = Vector2(300, 30)
 layout_mode = 2
 size_flags_horizontal = 0
@@ -78,7 +79,7 @@ theme_override_font_sizes/font_size = 1
 value = 100.0
 show_percentage = false
 
-[node name="Label" type="Label" parent="HUD/MarginContainer/VBox/HealthBar"]
+[node name="Label" type="Label" parent="HUD/MarginContainer/VBox/HealthBar" unique_id=1410406124]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -95,7 +96,7 @@ text = "VIDA: 100 / 100"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Crosshair" type="TextureRect" parent="HUD"]
+[node name="Crosshair" type="TextureRect" parent="HUD" unique_id=602654302]
 modulate = Color(1, 1, 1, 0.6)
 custom_minimum_size = Vector2(12, 12)
 layout_mode = 1
@@ -113,19 +114,18 @@ grow_vertical = 2
 texture = ExtResource("2_crosshair")
 expand_mode = 1
 
-[node name="DeathScreen" type="Panel" parent="."]
+[node name="DeathScreen" type="Panel" parent="." unique_id=619009485]
 visible = false
 self_modulate = Color(1, 0, 0, 0.4)
-layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxEmpty_hud")
 mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_hud")
 
-[node name="Label" type="Label" parent="DeathScreen"]
+[node name="Label" type="Label" parent="DeathScreen" unique_id=1183574729]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -143,7 +143,7 @@ text = "HAS MUERTO"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Buttons" type="VBoxContainer" parent="DeathScreen"]
+[node name="Buttons" type="VBoxContainer" parent="DeathScreen" unique_id=2122790279]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -158,28 +158,27 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 15
 
-[node name="BtnReintentar" type="Button" parent="DeathScreen/Buttons"]
+[node name="BtnReintentar" type="Button" parent="DeathScreen/Buttons" unique_id=792440975]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "REINTENTAR"
 
-[node name="BtnMenu" type="Button" parent="DeathScreen/Buttons"]
+[node name="BtnMenu" type="Button" parent="DeathScreen/Buttons" unique_id=244609178]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "MENU PRINCIPAL"
 
-[node name="PauseScreen" type="Panel" parent="."]
+[node name="PauseScreen" type="Panel" parent="." unique_id=1759615516]
 visible = false
-layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxEmpty_hud")
 mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_hud")
 
-[node name="Label" type="Label" parent="PauseScreen"]
+[node name="Label" type="Label" parent="PauseScreen" unique_id=688079285]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -197,7 +196,7 @@ text = "PAUSA"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Buttons" type="VBoxContainer" parent="PauseScreen"]
+[node name="Buttons" type="VBoxContainer" parent="PauseScreen" unique_id=903549484]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -212,20 +211,167 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 15
 
-[node name="BtnContinuar" type="Button" parent="PauseScreen/Buttons"]
+[node name="BtnContinuar" type="Button" parent="PauseScreen/Buttons" unique_id=1794323964]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "CONTINUAR"
 
-[node name="BtnMenu" type="Button" parent="PauseScreen/Buttons"]
+[node name="BtnOptions" type="Button" parent="PauseScreen/Buttons" unique_id=1197727860]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "OPCIONES"
+
+[node name="BtnMenu" type="Button" parent="PauseScreen/Buttons" unique_id=1197727861]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "MENU PRINCIPAL"
 
-[node name="DevMenu" type="Control" parent="."]
-script = ExtResource("3_devmenu")
+[node name="OptionsMenu" parent="." instance=ExtResource("4_options")]
 visible = false
+
+[node name="CoreBars" type="HBoxContainer" parent="."]
 layout_mode = 1
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 8.0
+offset_right = -100.0
+offset_bottom = 48.0
+theme_override_constants/separation = 30
+
+[node name="BlueCoreBar" type="ProgressBar" parent="CoreBars"]
+custom_minimum_size = Vector2(300, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+value = 100.0
+show_percentage = false
+modulate = Color(0.2, 0.5, 1.0, 1)
+
+[node name="Label" type="Label" parent="CoreBars/BlueCoreBar"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = -11.0
+offset_right = 50.0
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "500 / 500"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RedCoreBar" type="ProgressBar" parent="CoreBars"]
+custom_minimum_size = Vector2(300, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+value = 100.0
+show_percentage = false
+modulate = Color(1.0, 0.2, 0.2, 1)
+
+[node name="Label" type="Label" parent="CoreBars/RedCoreBar"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = -11.0
+offset_right = 50.0
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "500 / 500"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MatchOver" type="Panel" parent="."]
+visible = false
+self_modulate = Color(0, 0, 0, 0.85)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_hud")
+
+[node name="Label" type="Label" parent="MatchOver"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -100.0
+offset_right = 300.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 72
+text = "VICTORIA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SubLabel" type="Label" parent="MatchOver"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = 20.0
+offset_right = 300.0
+offset_bottom = 70.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 28
+text = "¡Tu equipo ha destruido el Core enemigo!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BtnReintentar" type="Button" parent="MatchOver"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = 100.0
+offset_right = 120.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "REINTENTAR"
+
+[node name="BtnMenu" type="Button" parent="MatchOver"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = 180.0
+offset_right = 120.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "MENU PRINCIPAL"
+
+[node name="DevMenu" type="Control" parent="." unique_id=978619598]
+visible = false
+layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -237,8 +383,9 @@ offset_right = 150.0
 offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("3_devmenu")
 
-[node name="PanelPrincipal" type="Panel" parent="DevMenu"]
+[node name="PanelPrincipal" type="Panel" parent="DevMenu" unique_id=1754044121]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -247,42 +394,41 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="DevMenu/PanelPrincipal"]
+[node name="VBox" type="VBoxContainer" parent="DevMenu/PanelPrincipal" unique_id=375428484]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
-offset_left = 16
-offset_top = 16
-offset_right = -16
-offset_bottom = -16
 
-[node name="LblTitulo" type="Label" parent="DevMenu/PanelPrincipal/VBox"]
+[node name="LblTitulo" type="Label" parent="DevMenu/PanelPrincipal/VBox" unique_id=686382603]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "[DEV MENU]"
 horizontal_alignment = 1
 
-[node name="BtnInvisible" type="Button" parent="DevMenu/PanelPrincipal/VBox"]
+[node name="BtnInvisible" type="Button" parent="DevMenu/PanelPrincipal/VBox" unique_id=1079562930]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Invisible: OFF"
 
-[node name="BtnGenerar" type="Button" parent="DevMenu/PanelPrincipal/VBox"]
+[node name="BtnGenerar" type="Button" parent="DevMenu/PanelPrincipal/VBox" unique_id=500399553]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Generar NPC"
 
-[node name="LblStatus" type="Label" parent="DevMenu/PanelPrincipal/VBox"]
+[node name="LblStatus" type="Label" parent="DevMenu/PanelPrincipal/VBox" unique_id=852914569]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = ""
 horizontal_alignment = 1
 
-[node name="PanelNPC" type="Panel" parent="DevMenu"]
+[node name="PanelNPC" type="Panel" parent="DevMenu" unique_id=1376850431]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -292,69 +438,76 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="DevMenu/PanelNPC"]
+[node name="VBox" type="VBoxContainer" parent="DevMenu/PanelNPC" unique_id=1014031529]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 10
-offset_left = 16
-offset_top = 16
-offset_right = -16
-offset_bottom = -16
 
-[node name="LblTitulo" type="Label" parent="DevMenu/PanelNPC/VBox"]
+[node name="LblTitulo" type="Label" parent="DevMenu/PanelNPC/VBox" unique_id=1737275959]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Configurar NPC"
 horizontal_alignment = 1
 
-[node name="GridAtributos" type="GridContainer" parent="DevMenu/PanelNPC/VBox"]
+[node name="GridAtributos" type="GridContainer" parent="DevMenu/PanelNPC/VBox" unique_id=1839151376]
 layout_mode = 2
-columns = 2
 theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 8
+columns = 2
 
-[node name="LblRelacion" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+[node name="LblRelacion" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos" unique_id=1585998361]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Relación:"
 
-[node name="OptRelacion" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+[node name="OptRelacion" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos" unique_id=877874036]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
-[node name="LblExperiencia" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+[node name="LblExperiencia" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos" unique_id=337536356]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Experiencia:"
 
-[node name="OptExperiencia" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+[node name="OptExperiencia" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos" unique_id=1719053581]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
-[node name="LblArma" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+[node name="LblArma" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos" unique_id=405076015]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Arma:"
 
-[node name="OptArma" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos"]
+[node name="OptArma" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos" unique_id=301087789]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
-[node name="BtnSpawn" type="Button" parent="DevMenu/PanelNPC/VBox"]
+[node name="LblRol" type="Label" parent="DevMenu/PanelNPC/VBox/GridAtributos" unique_id=2093013477]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Rol:"
+
+[node name="OptRol" type="OptionButton" parent="DevMenu/PanelNPC/VBox/GridAtributos" unique_id=1466821357]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+
+[node name="BtnSpawn" type="Button" parent="DevMenu/PanelNPC/VBox" unique_id=1138228468]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Spawnear NPC"
 
-[node name="BtnVolver" type="Button" parent="DevMenu/PanelNPC/VBox"]
+[node name="BtnVolver" type="Button" parent="DevMenu/PanelNPC/VBox" unique_id=1597675595]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Volver"
 
-[connection signal="pressed" from="DeathScreen/Buttons/BtnReintentar" to="." method="_on_retry_pressed"]
-[connection signal="pressed" from="DeathScreen/Buttons/BtnMenu" to="." method="_on_menu_pressed"]
-[connection signal="pressed" from="PauseScreen/Buttons/BtnContinuar" to="." method="_on_resume_pressed"]
-[connection signal="pressed" from="PauseScreen/Buttons/BtnMenu" to="." method="_on_menu_pressed"]
+[connection signal="pressed" from="DeathScreen/Buttons/BtnReintentar" to="." method="_on_btn_reintentar_pressed"]
+[connection signal="pressed" from="PauseScreen/Buttons/BtnContinuar" to="." method="_on_btn_continuar_pressed"]

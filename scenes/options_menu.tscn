@@ -1,0 +1,280 @@
+[gd_scene format=3 uid="uid://dgxv5pum0iw37"]
+
+[ext_resource type="Script" uid="uid://16b1w7enugen" path="res://scripts/options_menu.gd" id="1_f4pl0"]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.05, 0.05, 0.1, 0.95)
+
+[node name="OptionsMenu" type="Control" unique_id=757625900]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_f4pl0")
+
+[node name="BgPanel" type="Panel" parent="." unique_id=1582965892]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_styles/panel = SubResource("1")
+
+[node name="Panel" type="PanelContainer" parent="BgPanel" unique_id=55994167]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -280.0
+offset_right = 340.0
+offset_bottom = 280.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BgPanel/Panel" unique_id=1514263068]
+layout_mode = 2
+
+[node name="TabContainer" type="TabContainer" parent="BgPanel/Panel/VBoxContainer" unique_id=235324891]
+custom_minimum_size = Vector2(600, 460)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Partida" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer" unique_id=705105240]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="Margin" type="MarginContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Partida" unique_id=1002897825]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Partida/Margin" unique_id=958044982]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="LblTitle" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Partida/Margin/VBox" unique_id=139889243]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "CAMBIAR DE EQUIPO"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="BgPanel/Panel/VBoxContainer/TabContainer/Partida/Margin/VBox" unique_id=1910285312]
+layout_mode = 2
+
+[node name="Grid" type="GridContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Partida/Margin/VBox" unique_id=548273939]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+
+[node name="BtnTeamInfo" type="Button" parent="BgPanel/Panel/VBoxContainer/TabContainer/Partida/Margin/VBox" unique_id=404884770]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Equipo actual: --"
+
+[node name="HSeparator2" type="HSeparator" parent="BgPanel/Panel/VBoxContainer/TabContainer/Partida/Margin/VBox" unique_id=377052243]
+layout_mode = 2
+
+[node name="BtnRestart" type="Button" parent="BgPanel/Panel/VBoxContainer/TabContainer/Partida/Margin/VBox" unique_id=405513374]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "REINICIAR PARTIDA"
+
+[node name="Audio" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer" unique_id=573456871]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Margin" type="MarginContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Audio" unique_id=1039314972]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Audio/Margin" unique_id=261317511]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MasterLabel" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Audio/Margin/VBox" unique_id=143499843]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Volumen Maestro: 100%"
+
+[node name="MasterSlider" type="HSlider" parent="BgPanel/Panel/VBoxContainer/TabContainer/Audio/Margin/VBox" unique_id=1111660319]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -60.0
+max_value = 0.0
+rounded = true
+tick_count = 13
+
+[node name="LblAudioNote" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Audio/Margin/VBox" unique_id=888094166]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+text = "Nota: Aun no hay pistas de audio para probar."
+
+[node name="Video" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer" unique_id=149050502]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="Margin" type="MarginContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Video" unique_id=1144742316]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Video/Margin" unique_id=277195735]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="LblResolution" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Video/Margin/VBox" unique_id=1014144385]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Resolucion"
+
+[node name="ResolutionOption" type="OptionButton" parent="BgPanel/Panel/VBoxContainer/TabContainer/Video/Margin/VBox" unique_id=1451132949]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HSeparator" type="HSeparator" parent="BgPanel/Panel/VBoxContainer/TabContainer/Video/Margin/VBox" unique_id=830392806]
+layout_mode = 2
+
+[node name="FullscreenCheck" type="CheckButton" parent="BgPanel/Panel/VBoxContainer/TabContainer/Video/Margin/VBox" unique_id=508507438]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "Pantalla Completa"
+
+[node name="Teclas" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer" unique_id=94591205]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 3
+
+[node name="Margin" type="MarginContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Teclas" unique_id=1912643951]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Teclas/Margin" unique_id=130357452]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="LblTitle" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Teclas/Margin/VBox" unique_id=2070900916]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "BINDEO DE TECLAS"
+horizontal_alignment = 1
+
+[node name="LblHint" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Teclas/Margin/VBox" unique_id=424646884]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "Haz clic en el boton de la accion que quieras cambiar y presiona la nueva tecla."
+autowrap_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Teclas/Margin/VBox" unique_id=1261228137]
+custom_minimum_size = Vector2(0, 260)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Grid" type="GridContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Teclas/Margin/VBox/ScrollContainer" unique_id=1722999595]
+layout_mode = 2
+columns = 2
+
+[node name="Mouse" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 4
+
+[node name="Margin" type="MarginContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="LblTitle" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "CONFIGURACION DE MOUSE"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+layout_mode = 2
+
+[node name="SensitivityLabel" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Sensibilidad: 0.0020"
+
+[node name="SensitivitySlider" type="HSlider" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0005
+max_value = 0.02
+step = 0.0005
+value = 0.002
+rounded = false
+tick_count = 10
+
+[node name="HSeparator2" type="HSeparator" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+layout_mode = 2
+
+[node name="InvertYCheck" type="CheckButton" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "Invertir Eje Y"
+button_pressed = false
+
+
+[node name="BtnCerrar" type="Button" parent="BgPanel/Panel/VBoxContainer" unique_id=758122266]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 16
+text = "CERRAR"

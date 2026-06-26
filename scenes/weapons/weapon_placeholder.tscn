@@ -1,33 +1,33 @@
-[gd_scene load_steps=5 format=3 uid="uid://df7w6u5x7w0t8"]
+[gd_scene format=3 uid="uid://df7w6u5x7w0t8"]
 
-[ext_resource type="Script" path="res://scripts/weapon.gd" id="1_weapon"]
+[ext_resource type="Script" uid="uid://cnv8nkpcbokax" path="res://scripts/weapon.gd" id="1_weapon"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_weapon"]
 size = Vector3(0.05, 0.05, 0.35)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_weapon"]
-albedo_color = Color(0.2, 0.6, 1.0, 1.0)
+albedo_color = Color(0.2, 0.6, 1, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_muzzle"]
 size = Vector3(0.04, 0.04, 0.12)
 
-[node name="Weapon" type="Node3D"]
+[node name="Weapon" type="Node3D" unique_id=494602246]
 script = ExtResource("1_weapon")
 
-[node name="WeaponMesh" type="MeshInstance3D" parent="."]
+[node name="WeaponMesh" type="MeshInstance3D" parent="." unique_id=1399895084]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.15, -0.45)
 mesh = SubResource("BoxMesh_weapon")
 surface_material_override/0 = SubResource("StandardMaterial3D_weapon")
 
-[node name="MuzzleMesh" type="MeshInstance3D" parent="."]
+[node name="MuzzleMesh" type="MeshInstance3D" parent="." unique_id=1049426470]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, -0.15, -0.65)
 mesh = SubResource("BoxMesh_muzzle")
 
-[node name="RayCast3D" type="RayCast3D" parent="."]
+[node name="RayCast3D" type="RayCast3D" parent="." unique_id=205940981]
 target_position = Vector3(0, 0, -50)
-collision_mask = 5
+collision_mask = 7
 
-[node name="MuzzleFlash" type="OmniLight3D" parent="."]
+[node name="MuzzleFlash" type="OmniLight3D" parent="." unique_id=712945429]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.65)
 visible = false
 light_color = Color(1, 0.8, 0.4, 1)

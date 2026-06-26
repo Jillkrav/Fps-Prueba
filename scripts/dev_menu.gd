@@ -1,7 +1,7 @@
 ## Menu de desarrollo. Se activa con Q desde hud.gd.
 extends Control
 
-const NPC_SCENE: String = "res://scenes/npcs/npc_base.tscn"
+const NPC_SCENE: String = "res://scenes/npcs/npc.tscn"
 
 @onready var panel_principal: Panel        = $PanelPrincipal
 @onready var panel_npc: Panel              = $PanelNPC
@@ -12,6 +12,7 @@ const NPC_SCENE: String = "res://scenes/npcs/npc_base.tscn"
 @onready var opt_relacion: OptionButton    = $PanelNPC/VBox/GridAtributos/OptRelacion
 @onready var opt_experiencia: OptionButton = $PanelNPC/VBox/GridAtributos/OptExperiencia
 @onready var opt_tipo_npc: OptionButton    = $PanelNPC/VBox/GridAtributos/OptArma
+@onready var opt_rol: OptionButton         = $PanelNPC/VBox/GridAtributos/OptRol
 @onready var lbl_status: Label             = $PanelPrincipal/VBox/LblStatus
 
 var _panel_armas: PanelContainer    = null
@@ -27,17 +28,25 @@ func _ready() -> void:
 	opt_relacion.clear()
 	for id in GameState.NOMBRE_EQUIPO.keys():
 		opt_relacion.add_item(GameState.nombre_equipo(id), id)
-	_seleccionar_opcion(opt_relacion, GameStateClass.Equipo.ROJO)
+	_seleccionar_opcion(opt_relacion, Enums.Equipo.ROJO)
 
 	# --- Experiencia ---
 	opt_experiencia.clear()
-	opt_experiencia.add_item("Baja",  NpcBase.Experiencia.BAJA)
-	opt_experiencia.add_item("Media", NpcBase.Experiencia.MEDIA)
-	opt_experiencia.add_item("Alta",  NpcBase.Experiencia.ALTA)
+	opt_experiencia.add_item("Baja",  Enums.Experiencia.BAJA)
+	opt_experiencia.add_item("Media", Enums.Experiencia.MEDIA)
+	opt_experiencia.add_item("Alta",  Enums.Experiencia.ALTA)
 
 	# --- Arma del NPC ---
 	opt_tipo_npc.clear()
 	_poblar_armas_en(opt_tipo_npc)
+
+	# --- Rol del NPC ---
+	opt_rol.clear()
+	opt_rol.add_item("Soldado",       Enums.Rol.SOLDADO)
+	opt_rol.add_item("Francotirador", Enums.Rol.FRANCOTIRADOR)
+	opt_rol.add_item("Apoyo",         Enums.Rol.APOYO)
+	opt_rol.add_item("Explorador",    Enums.Rol.EXPLORADOR)
+	opt_rol.add_item("Comandante",    Enums.Rol.COMANDANTE)
 
 	visible = false
 	panel_principal.visible = true
@@ -205,9 +214,9 @@ func _on_equipo_elegido(id: int) -> void:
 	var btn_eq: Button = get_node_or_null("PanelPrincipal/VBox/BtnCambiarEquipo")
 	if is_instance_valid(btn_eq):
 		btn_eq.text = "Cambiar Equipo [%s]" % GameState.nombre_equipo(id)
-	for npc in get_tree().get_nodes_in_group("npcs"):
+	for npc in get_tree().get_nodes_in_group("npc"):
 		if npc is NpcBase:
-			npc._pick_target()
+			npc._re_evaluar_enemigos()
 	_cerrar_panel_equipo()
 
 func _cerrar_panel_equipo() -> void:
@@ -294,14 +303,9 @@ func _on_invisible_pressed() -> void:
 	is_invisible = !is_invisible
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player:
-		if is_invisible:
-			player.add_to_group("invisible_to_npc")
-			btn_invisible.text = "Invisible: ON"
-			lbl_status.text    = "[INVISIBLE ACTIVO]"
-		else:
-			player.remove_from_group("invisible_to_npc")
-			btn_invisible.text = "Invisible: OFF"
-			lbl_status.text    = ""
+		player.is_invisible = is_invisible
+		btn_invisible.text = "Invisible: ON" if is_invisible else "Invisible: OFF"
+		lbl_status.text = "[INVISIBLE ACTIVO]" if is_invisible else ""
 
 func _on_generar_pressed() -> void:
 	panel_principal.visible = false
@@ -325,9 +329,9 @@ func _on_spawn_pressed() -> void:
 		push_error("DevMenu: la escena no instancio NpcBase")
 		return
 
-	npc._relacion_forzada = true
 	npc.equipo_id = opt_relacion.get_selected_id()
-	npc.experiencia = opt_experiencia.get_selected_id() as NpcBase.Experiencia
+	npc.experiencia = opt_experiencia.get_selected_id()
+	npc.rol = opt_rol.get_selected_id()
 	var idx: int = opt_tipo_npc.get_selected()
 	if idx >= 0 and idx < _armas_lista.size():
 		npc.nombre_arma = _armas_lista[idx]
@@ -344,9 +348,10 @@ func _on_spawn_pressed() -> void:
 	npc.global_transform.origin = spawn_pos
 
 	var arma_txt: String = npc.nombre_arma if npc.nombre_arma != "" else "Melee"
-	lbl_status.text = "NPC spawneado: %s | %s | Arma: %s" % [
+	lbl_status.text = "NPC spawneado: %s | %s | Rol: %s | Arma: %s" % [
 		GameState.nombre_equipo(npc.equipo_id),
 		opt_experiencia.get_item_text(opt_experiencia.get_selected()),
+		opt_rol.get_item_text(opt_rol.get_selected()),
 		arma_txt
 	]
 	panel_npc.visible       = false

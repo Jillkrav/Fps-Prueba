@@ -1,0 +1,31 @@
+[gd_scene load_steps=4 format=3 uid="uid://c5b3j7nqv6dnc"]
+
+[ext_resource type="Script" uid="uid://cq7m4bb0rniv5" path="res://scripts/core.gd" id="1_core"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jmd5y"]
+size = Vector3(2, 1.4, 1.4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_h6dp5"]
+size = Vector3(2, 1.4, 1.4)
+
+[node name="Core" type="StaticBody3D"]
+collision_layer = 3
+collision_mask = 0
+script = ExtResource("1_core")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+shape = SubResource("BoxShape3D_jmd5y")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+mesh = SubResource("BoxMesh_h6dp5")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, 0)
+text = "CORE"
+font_size = 24
+modulate = Color(1, 1, 1, 0.9)
+outline_modulate = Color(0, 0, 0, 0.8)
+outline_size = 2
+no_depth_test = true

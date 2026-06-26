@@ -15,7 +15,7 @@ extends CanvasLayer
 
 var _armas_lista: Array[String]   = []
 var _armas_buttons: Array[Button] = []
-var _selected_team_id: int        = GameStateClass.Equipo.ESPECTADOR
+var _selected_team_id: int        = int(Enums.Equipo.ESPECTADOR)
 var _scroll: ScrollContainer      = null
 var _list:   VBoxContainer        = null
 
@@ -78,7 +78,7 @@ func _poblar_armas() -> void:
 # --- Llamados desde la escena (conectados en el editor) ---
 
 func _on_team_rojo_pressed() -> void:
-	_selected_team_id = GameStateClass.Equipo.ROJO
+	_selected_team_id = int(Enums.Equipo.ROJO)
 	team_panel.visible   = false
 	weapon_panel.visible = true
 	if is_instance_valid(weapon_title):
@@ -86,7 +86,7 @@ func _on_team_rojo_pressed() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _on_team_azul_pressed() -> void:
-	_selected_team_id = GameStateClass.Equipo.AZUL
+	_selected_team_id = int(Enums.Equipo.AZUL)
 	team_panel.visible   = false
 	weapon_panel.visible = true
 	if is_instance_valid(weapon_title):
@@ -111,4 +111,15 @@ func _confirmar_seleccion(nombre_arma: String) -> void:
 	GameState.player_team     = _selected_team_id
 	GameState.selected_weapon = nombre_arma
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	# Equipar el arma en el jugador inmediatamente
+	var player: Player = get_tree().get_first_node_in_group("player") as Player
+	if player:
+		player.setup_weapon(nombre_arma)
+
+	# Re-evaluar NPCs tras cambio de equipo
+	for npc in get_tree().get_nodes_in_group("npc"):
+		if npc is NpcBase:
+			npc._re_evaluar_enemigos()
+
 	queue_free()

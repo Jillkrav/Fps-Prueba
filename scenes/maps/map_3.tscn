@@ -1,14 +1,14 @@
-[gd_scene load_steps=13 format=3 uid="uid://map3_fps"]
+[gd_scene format=3 uid="uid://roay1t6deq8t"]
 
 [ext_resource type="PackedScene" uid="uid://dg0u4rsk2u6o7" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://bsh2o1h3r4mno" path="res://scenes/pickups/resupply_box.tscn" id="2_resupply"]
-[ext_resource type="Script" path="res://scripts/spawner.gd" id="3_spawner"]
+[ext_resource type="Script" uid="uid://d3yndmro7e0lj" path="res://scripts/spawner.gd" id="3_spawner"]
 [ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/hud.tscn" id="4_hud"]
 [ext_resource type="PackedScene" path="res://scenes/team_weapon_selector.tscn" id="5_selector"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_map3"]
-sky_horizon_color = Color(0.75, 0.60, 0.45, 1)
-ground_horizon_color = Color(0.60, 0.50, 0.35, 1)
+sky_horizon_color = Color(0.75, 0.6, 0.45, 1)
+ground_horizon_color = Color(0.6, 0.5, 0.35, 1)
 
 [sub_resource type="Sky" id="Sky_map3"]
 sky_material = SubResource("ProceduralSkyMaterial_map3")
@@ -20,7 +20,7 @@ tonemap_mode = 2
 glow_enabled = true
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_map3"]
-agent_radius = 0.5
+vertices = PackedVector3Array(-36, 0, -36, 36, 0, -36, 36, 0, 36, -36, 0, 36)
 agent_height = 1.8
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
@@ -32,94 +32,102 @@ albedo_color = Color(0.6, 0.5, 0.3, 1)
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cover"]
 albedo_color = Color(0.45, 0.38, 0.28, 1)
 
-[node name="Map3" type="Node3D"]
+[node name="Map3" type="Node3D" unique_id=1988263036]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=981507467]
 environment = SubResource("Environment_map3")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1256199829]
 transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 12, 0)
 shadow_enabled = true
 
-[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=478091156]
 navigation_mesh = SubResource("NavigationMesh_map3")
 
-[node name="Geometry" type="Node3D" parent="NavigationRegion3D"]
+[node name="Geometry" type="Node3D" parent="NavigationRegion3D" unique_id=1992047010]
 
-[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=233803553]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 use_collision = true
 size = Vector3(80, 1, 80)
 material = SubResource("StandardMaterial3D_floor")
 
-[node name="OuterWalls" type="Node3D" parent="NavigationRegion3D/Geometry"]
+[node name="OuterWalls" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=2011715804]
 
-[node name="WallNorth" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls"]
+[node name="WallNorth" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls" unique_id=935484982]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -40)
 use_collision = true
 size = Vector3(80, 5, 1)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="WallSouth" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls"]
+[node name="WallSouth" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls" unique_id=466900209]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 40)
 use_collision = true
 size = Vector3(80, 5, 1)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="WallWest" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls"]
+[node name="WallWest" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls" unique_id=793667767]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 2.5, 0)
 use_collision = true
 size = Vector3(1, 5, 80)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="WallEast" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls"]
+[node name="WallEast" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls" unique_id=4688822]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 2.5, 0)
 use_collision = true
 size = Vector3(1, 5, 80)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="CoverObjects" type="Node3D" parent="NavigationRegion3D/Geometry"]
+[node name="CoverObjects" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=1480894849]
 
-[node name="Cover1" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1.0, -20)
+[node name="Cover1" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=361617334]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -20)
 use_collision = true
 size = Vector3(6, 2, 2)
 material = SubResource("StandardMaterial3D_cover")
 
-[node name="Cover2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1.0, -20)
+[node name="Cover2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=1680690773]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -20)
 use_collision = true
 size = Vector3(6, 2, 2)
 material = SubResource("StandardMaterial3D_cover")
 
-[node name="Cover3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1.0, 20)
+[node name="Cover3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=564351264]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 20)
 use_collision = true
 size = Vector3(6, 2, 2)
 material = SubResource("StandardMaterial3D_cover")
 
-[node name="Cover4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1.0, 20)
+[node name="Cover4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=655797725]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 20)
 use_collision = true
 size = Vector3(6, 2, 2)
 material = SubResource("StandardMaterial3D_cover")
 
-[node name="Cover5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+[node name="Cover5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=607394058]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 use_collision = true
 size = Vector3(4, 2, 4)
 material = SubResource("StandardMaterial3D_cover")
 
-[node name="Player" parent="." instance=ExtResource("1_player")]
+[node name="Player" parent="." unique_id=1140251784 instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 30)
 
-[node name="ResupplyBox" parent="." instance=ExtResource("2_resupply")]
+[node name="ResupplyBox" parent="." unique_id=1961235864 instance=ExtResource("2_resupply")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
 
-[node name="EnemySpawner" type="Node3D" parent="."]
+[node name="EnemySpawner" type="Node3D" parent="." unique_id=1983469206]
 script = ExtResource("3_spawner")
-disabled = true
 
-[node name="HUDLayer" parent="." groups=["hud"] instance=ExtResource("4_hud")]
+[node name="Spawn1" type="Marker3D" parent="EnemySpawner" unique_id=2074525763]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.5, -15)
 
-[node name="TeamWeaponSelector" parent="." instance=ExtResource("5_selector")]
+[node name="Spawn2" type="Marker3D" parent="EnemySpawner" unique_id=591536440]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.5, -15)
+
+[node name="Spawn3" type="Marker3D" parent="EnemySpawner" unique_id=1735434405]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 15)
+
+[node name="HUDLayer" parent="." unique_id=551558786 groups=["hud"] instance=ExtResource("4_hud")]
+
+[node name="TeamWeaponSelector" parent="." unique_id=1811718085 instance=ExtResource("5_selector")]

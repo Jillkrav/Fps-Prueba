@@ -2,9 +2,12 @@ extends Control
 
 @onready var menu_panel: Panel = $MenuPanel
 @onready var map_panel: Panel = $MapPanel
+@onready var options_menu: Control = $OptionsMenu
 
 func _ready() -> void:
 	show_panel("menu")
+	if options_menu:
+		options_menu.closed.connect(_on_options_closed)
 
 func show_panel(panel_name: String) -> void:
 	menu_panel.visible = (panel_name == "menu")
@@ -16,6 +19,18 @@ func _on_jugar_pressed() -> void:
 
 func _on_salir_pressed() -> void:
 	get_tree().quit()
+
+func _on_options_pressed() -> void:
+	"""Open the options menu from the main menu."""
+	if options_menu:
+		menu_panel.visible = false
+		options_menu.toggle()
+
+func _on_options_closed() -> void:
+	"""Go back to main menu when options are closed."""
+	if options_menu:
+		options_menu.visible = false
+	menu_panel.visible = true
 
 # --- SELECCION DE MAPA ---
 func _on_map_selected(map_path: String) -> void:

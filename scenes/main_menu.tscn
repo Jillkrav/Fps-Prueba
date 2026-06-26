@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://cxofon4e0u7h"]
 
 [ext_resource type="Script" uid="uid://bftdatwq5d40q" path="res://scripts/main_menu.gd" id="1_main_menu"]
+[ext_resource type="PackedScene" uid="uid://dgxv5pum0iw37" path="res://scenes/options_menu.tscn" id="2_options_menu"]
 
 [node name="MainMenu" type="Control" unique_id=307483974]
 layout_mode = 3
@@ -63,10 +64,19 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "JUGAR"
 
+[node name="BtnOptions" type="Button" parent="MenuPanel/Buttons" unique_id=1111111111]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "OPCIONES"
+
 [node name="BtnSalir" type="Button" parent="MenuPanel/Buttons" unique_id=1028488337]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "SALIR"
+
+[node name="OptionsMenu" parent="." unique_id=-2072745074 instance=ExtResource("2_options_menu")]
+visible = false
+layout_mode = 1
 
 [node name="MapPanel" type="Panel" parent="." unique_id=2060649838]
 visible = false
@@ -112,8 +122,8 @@ alignment = 1
 custom_minimum_size = Vector2(200, 150)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "MAPA 1
-(Laberíntico)"
+text = "2FORT
+(2 Torres)"
 
 [node name="Map2" type="Button" parent="MapPanel/MapsGrid" unique_id=1659651988]
 custom_minimum_size = Vector2(200, 150)
@@ -146,6 +156,7 @@ theme_override_font_sizes/font_size = 20
 text = "VOLVER"
 
 [connection signal="pressed" from="MenuPanel/Buttons/BtnJugar" to="." method="_on_jugar_pressed"]
+[connection signal="pressed" from="MenuPanel/Buttons/BtnOptions" to="." method="_on_options_pressed"]
 [connection signal="pressed" from="MenuPanel/Buttons/BtnSalir" to="." method="_on_salir_pressed"]
 [connection signal="pressed" from="MapPanel/MapsGrid/Map1" to="." method="_on_map_selected" binds= ["res://scenes/maps/map_1.tscn"]]
 [connection signal="pressed" from="MapPanel/MapsGrid/Map2" to="." method="_on_map_selected" binds= ["res://scenes/maps/map_2.tscn"]]
