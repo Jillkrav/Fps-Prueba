@@ -200,35 +200,81 @@ func _asignar_o_reemplazar_core(core_node: Node, team_id: int) -> void:
 func _configure_spawners() -> void:
 	if not _map_root:
 		return
-	# Configurar spawners con su equipo correspondiente y reducir intervalo
+	# Registrar puntos de spawn en MatchManager.
+	# Los spawners solo proporcionan puntos de spawn que el MatchManager usa
+	# para asignar equipos. Cada base tiene su propio spawner (BlueSpawner / RedSpawner).
 	var blue_spawner = _map_root.find_child("BlueSpawner", true, false)
 	var red_spawner = _map_root.find_child("RedSpawner", true, false)
 	
-	# Si los spawners no tienen el script (escena no modificada), asignarlo
+	# Fallback: si no se encuentran por nombre, buscar cualquier nodo
+	# que tenga script de spawner (para compatibilidad con mapas antiguos)
+	if not blue_spawner and not red_spawner:
+		for child in _map_root.get_children():
+			if child is Node3D and child.name.to_lower().find("spawn") >= 0:
+				if child.has_method("get_spawn_points"):
+					# Spawner mixto antiguo: asignar mitad al azul, mitad al rojo
+					blue_spawner = child
+					red_spawner = child
+					print("[MapManager] Spawner mixto encontrado: %s. Asignando puntos por mitades." % child.name)
+					break
+	
 	var spawner_script: Script = preload("res://scripts/spawner.gd")
 	
+	# ── Configurar BlueSpawner ──
+	var blue_points: Array[Marker3D] = []
 	if blue_spawner:
-		if not blue_spawner.has_method("reanudar_spawn"):
+		# Asignar script si es un Node3D plano (sin script)
+		# NOTA: set_script() ya activa _ready() -> _init_spawner() automaticamente
+		if not blue_spawner.has_method("get_spawn_points"):
 			blue_spawner.set_script(spawner_script)
-			# El script se asigno pero _ready() no se llama automaticamente
-			# en nodos ya agregados al arbol. Inicializamos manualmente.
-			blue_spawner.call_deferred("_init_spawner")
 			print("[MapManager] BlueSpawner: script asignado")
-		blue_spawner.spawn_interval = 12.0
+		# Forzar equipo AZUL en este spawner y validar que los puntos hijos
+		# pertenezcan a este spawner y no a otro.
 		blue_spawner.force_team = int(Enums.Equipo.AZUL)
-		print("[MapManager] BlueSpawner: team=Azul, intervalo=%.1f" % blue_spawner.spawn_interval)
-	if red_spawner:
-		if not red_spawner.has_method("reanudar_spawn"):
+		# Recolectar puntos de spawn directamente (SIEMPRE desde los hijos directos)
+		for child in blue_spawner.get_children():
+			if child is Marker3D:
+				blue_points.append(child)
+		print("[MapManager] BlueSpawner: %d puntos de spawn en %s" % [blue_points.size(), blue_spawner.name])
+	
+	# ── Configurar RedSpawner ──
+	var red_points: Array[Marker3D] = []
+	if red_spawner and red_spawner != blue_spawner:
+		if not red_spawner.has_method("get_spawn_points"):
 			red_spawner.set_script(spawner_script)
-			red_spawner.call_deferred("_init_spawner")
 			print("[MapManager] RedSpawner: script asignado")
-		red_spawner.spawn_interval = 12.0
 		red_spawner.force_team = int(Enums.Equipo.ROJO)
-		print("[MapManager] RedSpawner: team=Rojo, intervalo=%.1f" % red_spawner.spawn_interval)
+		for child in red_spawner.get_children():
+			if child is Marker3D:
+				red_points.append(child)
+		print("[MapManager] RedSpawner: %d puntos de spawn en %s" % [red_points.size(), red_spawner.name])
+	elif red_spawner == blue_spawner and blue_spawner:
+		# Mismo spawner para ambos: dividir puntos entre equipos
+		var all_markers: Array[Marker3D] = []
+		for child in blue_spawner.get_children():
+			if child is Marker3D:
+				all_markers.append(child)
+		# Repartir: la mitad al azul, la mitad al rojo
+		var marker_count: float = all_markers.size() as float
+		var half: int = int(marker_count * 0.5)
+		for i in all_markers.size():
+			if i < half:
+				blue_points.append(all_markers[i])
+			else:
+				red_points.append(all_markers[i])
+		print("[MapManager] Spawner mixto: %d puntos divididos (Azul=%d, Rojo=%d)" % [all_markers.size(), blue_points.size(), red_points.size()])
+	
+	# ── Validacion: asegurar que ambos equipos tengan al menos 1 punto ──
+	if blue_points.is_empty():
+		push_warning("[MapManager] BlueSpawner no tiene puntos de spawn!")
+	if red_points.is_empty():
+		push_warning("[MapManager] RedSpawner no tiene puntos de spawn!")
+	
+	# Registrar todos los puntos en MatchManager
+	MatchManager.registrar_spawn_points(blue_points, red_points)
+	print("[MapManager] Spawn points registrados en MatchManager: Azul=%d, Rojo=%d" % [blue_points.size(), red_points.size()])
 
 func _on_match_ended(winning_team: int) -> void:
 	print("[MapManager] Partida terminada! Ganador: %s" % GameState.nombre_equipo(winning_team))
-	# Pausar spawners
-	for spawner in get_tree().get_nodes_in_group("spawner"):
-		if spawner.has_method("pausar_spawn"):
-			spawner.pausar_spawn()
+	# Limpiar estado de MatchManager
+	MatchManager.reset_match()

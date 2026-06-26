@@ -14,6 +14,7 @@ extends CanvasLayer
 @onready var pause_screen: Control     = $PauseScreen
 @onready var death_screen: Control     = $DeathScreen
 @onready var options_menu: Control     = $OptionsMenu
+@onready var scoreboard:   Control     = $Scoreboard
 
 # Core HP bars (en el HUD, parte superior)
 @onready var core_blue_bar:  ProgressBar = $CoreBars/BlueCoreBar
@@ -65,6 +66,20 @@ func _configurar_pausa() -> void:
 		btn_options.pressed.connect(_on_btn_options_pressed)
 	if options_menu and not options_menu.is_connected("closed", _on_options_closed):
 		options_menu.closed.connect(_on_options_closed)
+
+func _process(_delta: float) -> void:
+	# Manejo de Scoreboard (TAB mantenido)
+	if not _menu_abierto and not get_tree().paused:
+		if Input.is_action_pressed("scoreboard"):
+			if scoreboard and not scoreboard.visible:
+				scoreboard.show_scoreboard()
+		else:
+			if scoreboard and scoreboard.visible:
+				scoreboard.hide_scoreboard()
+	else:
+		# Asegurar que el scoreboard se oculte si hay un menu abierto
+		if scoreboard and scoreboard.visible:
+			scoreboard.hide_scoreboard()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
@@ -133,14 +148,44 @@ func _on_player_died() -> void:
 	if death_screen:
 		death_screen.visible = true
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		# Autorespawn tras el tiempo configurado (si el MatchManager lo permite)
+		if is_instance_valid(_player):
+			var respawn_timer: Timer = Timer.new()
+			respawn_timer.one_shot = true
+			respawn_timer.wait_time = MatchManager.respawn_time
+			respawn_timer.timeout.connect(_auto_respawn_player)
+			add_child(respawn_timer)
+			respawn_timer.start()
+
+func _auto_respawn_player() -> void:
+	if not is_instance_valid(_player):
+		return
+	_player.respawn()
+	death_screen.visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _on_btn_reintentar_pressed() -> void:
-	get_tree().paused = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	get_tree().reload_current_scene()
+	# NUEVO: En lugar de recargar la escena, hacemos respawn del jugador
+	if is_instance_valid(_player):
+		_player.respawn()
+		death_screen.visible = false
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	else:
+		# Fallback: recargar escena
+		_cleanup_match_state()
+		get_tree().paused = false
+		get_tree().reload_current_scene()
+
+func _cleanup_match_state() -> void:
+	"""Limpia todo el estado de la partida antes de salir al menu principal."""
+	if is_instance_valid(MatchManager):
+		MatchManager.reset_match()
+	if is_instance_valid(GameState):
+		GameState.reset_match()
 
 func _on_btn_death_menu_pressed() -> void:
 	get_tree().paused = false
+	_cleanup_match_state()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 func _on_btn_options_pressed() -> void:
@@ -167,6 +212,7 @@ func _on_btn_continuar_pressed() -> void:
 
 func _on_btn_menu_pressed() -> void:
 	get_tree().paused = false
+	_cleanup_match_state()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 func update_health(current: float, maximum: float) -> void:

@@ -16,7 +16,8 @@ const ACTION_LABELS: Dictionary = {
 	"reload": "Recargar",
 	"crouch": "Agacharse",
 	"pause_menu": "Menú de Pausa",
-	"dev_menu": "Menú Dev"
+	"dev_menu": "Menú Dev",
+	"scoreboard": "Scoreboard / Tabla"
 }
 
 # Default key mappings (action_name -> physical_keycode or mouse button)
@@ -29,7 +30,8 @@ const DEFAULT_KEYS: Dictionary = {
 	"reload": KEY_R,
 	"crouch": KEY_C,
 	"pause_menu": KEY_ESCAPE,
-	"dev_menu": KEY_Q
+	"dev_menu": KEY_Q,
+	"scoreboard": KEY_TAB
 }
 
 # Default mouse button mappings (action_name -> button_index)

@@ -113,13 +113,15 @@ func _confirmar_seleccion(nombre_arma: String) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 	# Equipar el arma en el jugador inmediatamente
-	var player: Player = get_tree().get_first_node_in_group("player") as Player
-	if player:
-		player.setup_weapon(nombre_arma)
+	var player_ref: Player = get_tree().get_first_node_in_group("player") as Player
+	if player_ref:
+		player_ref.setup_weapon(nombre_arma)
 
-	# Re-evaluar NPCs tras cambio de equipo
-	for npc in get_tree().get_nodes_in_group("npc"):
-		if npc is NpcBase:
-			npc._re_evaluar_enemigos()
+	# ── NUEVO: Iniciar la partida a traves de MatchManager ──
+	# El MatchManager crea todos los bots necesarios para alcanzar
+	# el maximo de jugadores, los asigna a equipos, y los coloca
+	# en los puntos de spawn correspondientes.
+	if is_instance_valid(player_ref):
+		MatchManager.iniciar_partida(player_ref, _selected_team_id)
 
 	queue_free()

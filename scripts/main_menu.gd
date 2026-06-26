@@ -5,6 +5,11 @@ extends Control
 @onready var options_menu: Control = $OptionsMenu
 
 func _ready() -> void:
+	# Limpiar estado de partida previa (por si la transicion no lo hizo)
+	if is_instance_valid(MatchManager):
+		MatchManager.reset_match()
+	if is_instance_valid(GameState):
+		GameState.reset_match()
 	show_panel("menu")
 	if options_menu:
 		options_menu.closed.connect(_on_options_closed)

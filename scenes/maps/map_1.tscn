@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://bsh2o1h3r4mno" path="res://scenes/pickups/resupply_box.tscn" id="2_resupply"]
 [ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/hud.tscn" id="4_hud"]
 [ext_resource type="PackedScene" path="res://scenes/team_weapon_selector.tscn" id="5_selector"]
+[ext_resource type="Script" uid="uid://bw3ij83oucfv3" path="res://scripts/spawner.gd" id="6"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_2f"]
 sky_horizon_color = Color(0.45, 0.55, 0.7, 1)
@@ -434,41 +435,47 @@ material = SubResource("Mat_cover")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.038398, 0.62036204, 25.321007)
 
 [node name="BlueSpawner" type="Node3D" parent="." unique_id=877986520]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9160976, 0, -11.5371895)
+script = ExtResource("6")
+force_team = 1
 
 [node name="SpawnBlue1" type="Marker3D" parent="BlueSpawner" unique_id=272947656]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.009642, 1.665173, -72.086)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.013012, 1.67, -63.981518)
 
 [node name="SpawnBlue2" type="Marker3D" parent="BlueSpawner" unique_id=1196609004]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.7919216, 1.9763846, -72.17468)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.79, 2.8433166, -64.39636)
 
 [node name="SpawnBlue3" type="Marker3D" parent="BlueSpawner" unique_id=1885734771]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.957077, 2.2939754, -68.71296)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.957077, 3.0407224, -65.989944)
 
 [node name="SpawnBlue4" type="Marker3D" parent="BlueSpawner" unique_id=1853349256]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.009642, 1.4197568, -63.03217)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.25823, 3.8448648, -60.372677)
 
 [node name="SpawnBlue5" type="Marker3D" parent="BlueSpawner" unique_id=247397253]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.009642, 2.5718887, -25.721684)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.960053, 3.2154026, -60.499996)
 
 [node name="SpawnBlue6" type="Marker3D" parent="BlueSpawner" unique_id=1410198323]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.819866, 2.912527, -25.274837)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.85474205, 2, -53.623966)
 
 [node name="RedSpawner" type="Node3D" parent="." unique_id=458952401]
+transform = Transform3D(0.54298985, 0, 0, 0, 0.8536035, 0, 0, 0, 0.42884386, 0, 0, 75.19469)
+script = ExtResource("6")
+force_team = 2
 
 [node name="SpawnRed1" type="Marker3D" parent="RedSpawner" unique_id=1868255199]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.347302, 0.73204935, 125.10719)
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 1, -5.3473015, 0.7320493, 119.536865)
 
 [node name="SpawnRed2" type="Marker3D" parent="RedSpawner" unique_id=300602753]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15758663, 0.89821804, 123.44923)
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 1, 0.15758662, 0.8982179, 109.572784)
 
 [node name="SpawnRed3" type="Marker3D" parent="RedSpawner" unique_id=1625630383]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.433814, 1.0407856, 123.80269)
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 1, 5.4338136, 1.0407854, 117.78726)
 
 [node name="SpawnRed4" type="Marker3D" parent="RedSpawner" unique_id=149342481]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.246017, 1.7890784, 87.6157)
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 1, -13.664668, 1.7890782, 87.61569)
 
 [node name="SpawnRed5" type="Marker3D" parent="RedSpawner" unique_id=1423101901]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.164999, 0.69304967, 89.98265)
+transform = Transform3D(0.9999997, 0, 0, 0, 0.9999997, 0, 0, 0, 1, 12.930895, 1.2657564, 88.91855)
 
 [node name="HUDLayer" parent="." unique_id=1215791023 groups=["hud"] instance=ExtResource("4_hud")]
 

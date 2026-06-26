@@ -43,6 +43,16 @@ var mouse_invert_y: bool = false:
 
 const MOUSE_SETTINGS_PATH: String = "user://mouse_settings.cfg"
 
+# ── Match Config ───────────────────────────────────────────────────────
+
+## Maximo total de jugadores en la partida (bots + jugador humano)
+## Este valor se usa al iniciar MatchManager. Cambiable desde el inspector
+## en el autoload MatchManager (propiedad max_players_total).
+var max_players_total: int = 24
+
+## Maximo de jugadores por equipo (se calcula como max_players_total / 2)
+var max_per_team: int = 12
+
 # ── Match State ────────────────────────────────────────────────────────
 
 ## Indica si la partida esta activa (true desde que inicia hasta que un core muere)

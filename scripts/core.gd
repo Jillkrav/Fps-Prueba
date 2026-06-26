@@ -73,7 +73,7 @@ func _apply_team_appearance() -> void:
 	# Tamaño del core según equipo (visual)
 	mesh_instance.scale = Vector3(1.2, 1.0, 1.0)
 
-func take_damage(amount: float, _zone: String = "Torso") -> void:
+func take_damage(amount: float, _zone: String = "Torso", _killer_id: int = -1) -> void:
 	if is_destroyed:
 		return
 	current_health -= amount

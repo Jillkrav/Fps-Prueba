@@ -137,6 +137,9 @@ func shoot() -> void:
 		return
 	if active_weapon.can_fire():
 		var hits: Array = active_weapon.fire()
+		var killer_id: int = -1
+		if is_instance_valid(MatchManager):
+			killer_id = MatchManager.get_player_id_by_pawn(self)
 		for hit in hits:
 			var target_node: Node = hit["collider"]
 			if not target_node:
@@ -152,11 +155,11 @@ func shoot() -> void:
 					parent = parent.get_parent()
 			if target_node.has_method("take_damage"):
 				if target_node is Player:
-					target_node.take_damage(hit["damage_vs_player"])
+					target_node.take_damage(hit["damage_vs_player"], "Torso", killer_id)
 				else:
-					target_node.take_damage(hit["damage_vs_npc"])
+					target_node.take_damage(hit["damage_vs_npc"], "Torso", killer_id)
 
-func take_damage(amount: float, zona: String = "Torso") -> void:
+func take_damage(amount: float, zona: String = "Torso", killer_id: int = -1) -> void:
 	if is_dead:
 		return
 	var multiplicador: float = 1.0
@@ -167,12 +170,37 @@ func take_damage(amount: float, zona: String = "Torso") -> void:
 	current_health = clamp(current_health, 0.0, max_health)
 	health_changed.emit(current_health, max_health)
 	if current_health <= 0.0:
-		die()
+		die(killer_id)
 
-func die() -> void:
+func die(killer_id: int = -1) -> void:
 	is_dead = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	player_died.emit()
+	# Reportar la muerte al MatchManager para estadisticas
+	if is_instance_valid(MatchManager):
+		MatchManager.reportar_muerte(self, killer_id)
+
+func respawn() -> void:
+	is_dead = false
+	current_health = max_health
+	
+	# Teletransportar al spawn point del equipo actual
+	if is_instance_valid(MatchManager):
+		var spawn: Marker3D = MatchManager.obtener_spawn_point(GameState.player_team)
+		if spawn:
+			global_position = spawn.global_position
+	
+	# Re-habilitar controles
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	health_changed.emit(current_health, max_health)
+
+func change_team(new_team: int) -> bool:
+	if not is_instance_valid(MatchManager):
+		return false
+	var success: bool = MatchManager.cambiar_equipo_jugador(new_team)
+	if success:
+		respawn()
+	return success
 
 func resupply() -> void:
 	current_health = max_health

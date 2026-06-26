@@ -270,11 +270,12 @@ func _on_arma_seleccionada(nombre_arma: String) -> void:
 	_panel_armas.visible = false
 	visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	var spawners: Array = get_tree().get_nodes_in_group("spawner")
-	if not spawners.is_empty():
-		var sp = spawners[0]
-		if sp.has_method("reanudar_spawn"):
-			sp.reanudar_spawn()
+	# Los spawners ya no gestionan timers de spawn.
+	# El MatchManager maneja toda la logica de respawn.
+	if MatchManager.get("player") != null:
+		print("[DevMenu] MatchManager activo - %d bots en pool, %d activos azul, %d activos rojo" % [
+			MatchManager.bot_pool.size(), MatchManager.blue_bots_active, MatchManager.red_bots_active
+		])
 
 # ── Helpers generales ─────────────────────────────────────────────────────────
 func _poblar_armas_en(opt: OptionButton) -> void:

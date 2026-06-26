@@ -8,7 +8,7 @@
 
 config_version=5
 
-autoload="MapManager=\"*res://scripts/map_manager.gd\""
+autoload="MatchManager=\"*res://scripts/match_manager.gd\""
 
 [application]
 
@@ -24,6 +24,7 @@ GameState="*res://scripts/game_state.gd"
 TeamAI="*res://scripts/team_ai.gd"
 InputManager="*res://scripts/input_manager.gd"
 MapManager="*res://scripts/map_manager.gd"
+MatchManager="*res://scripts/match_manager.gd"
 
 [display]
 

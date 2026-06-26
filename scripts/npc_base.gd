@@ -101,7 +101,8 @@ func _start_roaming() -> void:
 	_change_state(State.ROAMING)
 
 func _physics_process(delta: float) -> void:
-	if is_dead: return
+	if is_dead or not is_inside_tree():
+		return
 	
 	_update_perception()
 	_check_core_proximity()
@@ -200,7 +201,7 @@ func _state_idle(_delta: float) -> void:
 
 func _state_roaming(delta: float) -> void:
 	# Si tenemos un core enemigo, navegar hacia el
-	if _enemy_core and is_instance_valid(_enemy_core) and not _enemy_core.is_destroyed:
+	if _enemy_core and is_instance_valid(_enemy_core) and _enemy_core.is_inside_tree() and not _enemy_core.is_destroyed:
 		var dist_to_core: float = global_position.distance_to(_enemy_core.global_position)
 		if dist_to_core < 4.0:
 			_objective_reached = true
@@ -363,6 +364,10 @@ func _move_to_target(delta: float, speed: float, target: Vector3 = Vector3.ZERO)
 func _shoot() -> void:
 	if not _weapon: return
 	
+	var killer_id: int = -1
+	if is_instance_valid(MatchManager):
+		killer_id = MatchManager.get_player_id_by_pawn(self)
+	
 	var hits: Array = _weapon.fire()
 	for hit in hits:
 		var col: Node = hit["collider"]
@@ -373,14 +378,14 @@ func _shoot() -> void:
 			target = target.get_parent()
 		
 		if target and target.has_method("take_damage"):
-			if target is Player: target.take_damage(hit["damage_vs_player"])
-			else: target.take_damage(hit["damage_vs_npc"])
+			if target is Player: target.take_damage(hit["damage_vs_player"], "Torso", killer_id)
+			else: target.take_damage(hit["damage_vs_npc"], "Torso", killer_id)
 
 # ─────────────────────────────────────────
 # SISTEMA DE DAÑO & EQUIPOS
 # ─────────────────────────────────────────
 
-func take_damage(amount: float, zone: String = "Torso") -> void:
+func take_damage(amount: float, zone: String = "Torso", killer_id: int = -1) -> void:
 	if is_dead: return
 	var mult: float = 1.0
 	if zone == "Cabeza": mult = 2.0
@@ -391,13 +396,35 @@ func take_damage(amount: float, zone: String = "Torso") -> void:
 		_change_state(State.ATTACKING)
 		
 	if current_health <= 0:
-		die()
+		die(killer_id)
 
-func die() -> void:
+func die(killer_id: int = -1) -> void:
 	if is_dead: return
 	is_dead = true
 	_drop_weapon()
-	queue_free()
+	
+	# Reportar muerte al MatchManager
+	if is_instance_valid(MatchManager):
+		MatchManager.reportar_muerte(self, killer_id)  # Estadisticas
+		MatchManager.reportar_muerte_bot(self)          # Respawn timer + contadores
+	
+	# ── Nuevo comportamiento: NO destruir el bot ──
+	# Deshabilitar fisicas, proceso, colisiones y visibilidad
+	# El MatchManager se encarga del respawn reutilizando esta misma instancia
+	set_physics_process(false)
+	set_process(false)
+	hide()
+	
+	# Deshabilitar colision
+	var cs: CollisionShape3D = find_child("CollisionShape3D") as CollisionShape3D
+	if cs:
+		cs.disabled = true
+	
+	# Detener navegacion
+	if navigation_agent:
+		navigation_agent.target_position = global_position
+	
+	_debug("MUERTO - esperando respawn...")
 
 func _drop_weapon() -> void:
 	if not DROPPED_WEAPON or not _weapon:
@@ -447,7 +474,7 @@ func _find_enemy_core() -> void:
 	get_tree().create_timer(1.0).timeout.connect(_find_enemy_core)
 
 func _check_core_proximity() -> void:
-	if not _enemy_core or not is_instance_valid(_enemy_core):
+	if not _enemy_core or not is_instance_valid(_enemy_core) or not _enemy_core.is_inside_tree():
 		_find_enemy_core()
 		return
 	if _enemy_core.get("is_destroyed") == true:
@@ -560,6 +587,38 @@ func _aplicar_color_a_mesh(mesh: MeshInstance3D, color: Color) -> void:
 	mat = mat.duplicate()
 	mat.albedo_color = color
 	mesh.set_surface_override_material(0, mat)
+
+## Llamado por MatchManager para reutilizar esta instancia tras un respawn.
+## Restaura el bot a su estado operativo completo.
+func respawn() -> void:
+	is_dead = false
+	current_health = max_health
+	
+	# Re-habilitar proceso y visibilidad
+	set_physics_process(true)
+	set_process(true)
+	show()
+	
+	# Re-habilitar colision
+	var cs: CollisionShape3D = find_child("CollisionShape3D") as CollisionShape3D
+	if cs:
+		cs.disabled = false
+	
+	# Restaurar estado de la FSM
+	_change_state(State.IDLE)
+	target_enemy = null
+	_is_attacking_core = false
+	_stuck_timer = 0.0
+	
+	# Re-equipar arma
+	_equipar_arma()
+	_aplicar_color_equipo()
+	
+	# Buscar core enemigo y re-evaluar
+	call_deferred("_find_enemy_core")
+	get_tree().create_timer(0.5).timeout.connect(_start_roaming)
+	
+	_debug("RESPAWNEADO")
 
 func _debug(msg: String) -> void:
 	print("[NPC #%d | %s] %s" % [_npc_id, GameState.nombre_equipo(equipo_id), msg])

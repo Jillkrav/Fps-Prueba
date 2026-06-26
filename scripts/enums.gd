@@ -54,3 +54,4 @@ enum Rol {
 	EXPLORADOR    = 3,  # Rápido, corta distancia, agresivo
 	COMANDANTE    = 4   # Líder, buffea aliados (futuro)
 }
+
