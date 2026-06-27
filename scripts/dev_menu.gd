@@ -20,6 +20,7 @@ var _weapon_list: VBoxContainer     = null
 var _panel_equipo: PanelContainer   = null
 var _armas_lista: Array[String]     = []
 var is_invisible: bool              = false
+var ai_disabled: bool               = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -95,6 +96,16 @@ func _agregar_botones_extras() -> void:
 	btn_equipo.pressed.connect(_on_cambiar_equipo_pressed)
 	vbox.add_child(btn_equipo)
 	vbox.move_child(btn_equipo, insert_idx + 1)
+
+	# Boton AI disable
+	var btn_ai := Button.new()
+	btn_ai.name = "BtnAiDisable"
+	btn_ai.text = "Ai disable [OFF]"
+	btn_ai.custom_minimum_size = Vector2(0, 36)
+	btn_ai.add_theme_font_size_override("font_size", 16)
+	btn_ai.pressed.connect(_on_ai_disable_pressed)
+	vbox.add_child(btn_ai)
+	vbox.move_child(btn_ai, insert_idx + 2)
 
 # ── Panel flotante selector de armas ─────────────────────────────────────────
 # FIX: se usa PRESET_CENTER_TOP + offset para que el panel NO se salga de pantalla.
@@ -210,13 +221,20 @@ func _build_panel_equipo() -> void:
 	vbox.add_child(btn_cerrar)
 
 func _on_equipo_elegido(id: int) -> void:
-	GameState.player_team = id
+	# Solo permitir cambio de equipo si la partida ya empezo.
+	# Antes de eso, el jugador usa team_weapon_selector para elegir equipo.
+	if is_instance_valid(MatchManager) and MatchManager.is_match_started():
+		MatchManager.cambiar_equipo_jugador(id)
+	else:
+		# No hacer nada — el jugador no deberia cambiar equipo antes de empezar
+		push_warning("[DevMenu] No se puede cambiar equipo: la partida no ha empezado")
+		_cerrar_panel_equipo()
+		return
+	
+	# Actualizar texto del boton
 	var btn_eq: Button = get_node_or_null("PanelPrincipal/VBox/BtnCambiarEquipo")
 	if is_instance_valid(btn_eq):
 		btn_eq.text = "Cambiar Equipo [%s]" % GameState.nombre_equipo(id)
-	for npc in get_tree().get_nodes_in_group("npc"):
-		if npc is NpcBase:
-			npc._re_evaluar_enemigos()
 	_cerrar_panel_equipo()
 
 func _cerrar_panel_equipo() -> void:
@@ -307,6 +325,27 @@ func _on_invisible_pressed() -> void:
 		player.is_invisible = is_invisible
 		btn_invisible.text = "Invisible: ON" if is_invisible else "Invisible: OFF"
 		lbl_status.text = "[INVISIBLE ACTIVO]" if is_invisible else ""
+
+func _on_ai_disable_pressed() -> void:
+	ai_disabled = !ai_disabled
+	var btn: Button = get_node_or_null("PanelPrincipal/VBox/BtnAiDisable")
+	if not btn:
+		return
+
+	if ai_disabled:
+		for bot in MatchManager.bot_pool:
+			if is_instance_valid(bot) and not bot.is_dead:
+				bot.process_mode = Node.PROCESS_MODE_DISABLED
+				if bot is CharacterBody3D:
+					bot.velocity = Vector3.ZERO
+		btn.text = "Ai disable [ON]"
+		lbl_status.text = "[AI DISABLE ACTIVO]"
+	else:
+		for bot in MatchManager.bot_pool:
+			if is_instance_valid(bot):
+				bot.process_mode = Node.PROCESS_MODE_INHERIT
+		btn.text = "Ai disable [OFF]"
+		lbl_status.text = ""
 
 func _on_generar_pressed() -> void:
 	panel_principal.visible = false

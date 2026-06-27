@@ -446,6 +446,9 @@ func _drop_weapon() -> void:
 func _re_evaluar_enemigos() -> void:
 	target_enemy = null
 	_is_attacking_core = false
+	_enemy_core = null
+	_team_objective = Vector3.ZERO
+	_nav_target = Vector3.ZERO
 	_change_state(State.ROAMING)
 
 # ─────────────────────────────────────────
@@ -604,10 +607,13 @@ func respawn() -> void:
 	if cs:
 		cs.disabled = false
 	
-	# Restaurar estado de la FSM
+	# Restaurar estado de la FSM — resetear TODO lo que dependa del equipo
 	_change_state(State.IDLE)
 	target_enemy = null
 	_is_attacking_core = false
+	_enemy_core = null
+	_team_objective = Vector3.ZERO
+	_nav_target = Vector3.ZERO
 	_stuck_timer = 0.0
 	
 	# Re-equipar arma

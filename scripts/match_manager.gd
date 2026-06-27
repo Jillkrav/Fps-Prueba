@@ -19,11 +19,26 @@ signal match_started()
 # es el que usan hud.gd y map_manager.gd para detectar fin de partida.
 signal team_changed(pawn: Node, old_team: int, new_team: int)
 signal bot_respawned(bot: Node, team: int)
+## Señal emitida cuando el jugador humano respawnea automaticamente.
+signal player_respawned()
 signal team_sizes_updated(blue_size: int, red_size: int)
 
 ## Señal emitida cuando cambian los datos de los jugadores (kills, muertes, etc.)
 ## El Scoreboard se conecta a esta senal para refrescarse.
 signal players_data_changed()
+
+# ═══════════════════════════════════════════
+# AUTO BALANCE — SEÑALES
+# ═══════════════════════════════════════════
+
+## Se emite cada segundo durante la cuenta regresiva del Auto Balance.
+signal auto_balance_countdown(time_left: int)
+
+## Se emite cuando el Auto Balance se cancela (los equipos se balancearon solos).
+signal auto_balance_cancelled()
+
+## Se emite cuando el Auto Balance mueve un jugador de equipo.
+signal auto_balance_executed(pawn: Node, old_team: int, new_team: int)
 
 # ═══════════════════════════════════════════
 # EXPORTS — Configurables desde el inspector
@@ -37,6 +52,16 @@ signal players_data_changed()
 
 ## Tiempo de respawn en segundos
 @export var respawn_time: float = 5.0
+
+# ═══════════════════════════════════════════
+# AUTO BALANCE — CONFIGURACION
+# ═══════════════════════════════════════════
+
+## Tiempo de gracia en segundos antes de ejecutar el Auto Balance.
+@export var auto_balance_grace_period: float = 5.0
+
+## Si es true, el Auto Balance esta habilitado durante la partida.
+@export var auto_balance_enabled: bool = true
 
 ## Prefab del bot NPC
 @export var npc_scene: PackedScene = preload("res://scenes/npcs/npc.tscn")
@@ -77,6 +102,19 @@ func is_match_started() -> bool:
 var _respawn_timers: Dictionary = {}  # bot -> tiempo restante
 
 # ═══════════════════════════════════════════
+# AUTO BALANCE — ESTADOS INTERNOS
+# ═══════════════════════════════════════════
+
+## Timer de cuenta regresiva para Auto Balance (en segundos).
+var _auto_balance_timer: float = 0.0
+
+## Indica si la cuenta regresiva de Auto Balance esta activa.
+var _auto_balance_active: bool = false
+
+## Cache del ultimo segundo mostrado para evitar emitir la senal innecesariamente.
+var _last_countdown_second: int = -1
+
+# ═══════════════════════════════════════════
 # REGISTRO CENTRALIZADO DE JUGADORES (PlayerData)
 # ═══════════════════════════════════════════
 
@@ -106,8 +144,14 @@ func _actualizar_limites() -> void:
 # ═══════════════════════════════════════════
 
 func registrar_spawn_points(blue_points: Array[Marker3D], red_points: Array[Marker3D]) -> void:
-	spawn_points_blue = blue_points.duplicate()
-	spawn_points_red = red_points.duplicate()
+	# SOLO sobrescribir si el array entrante NO esta vacio.
+	# Esto evita que _configure_spawners() destruya puntos registrados
+	# por _auto_register_match_manager() de los spawners cuando
+	# find_child("RedSpawner") falla.
+	if not blue_points.is_empty():
+		spawn_points_blue = blue_points.duplicate()
+	if not red_points.is_empty():
+		spawn_points_red = red_points.duplicate()
 	print("[MatchManager] Spawn points registrados: Azul=%d, Rojo=%d" % [spawn_points_blue.size(), spawn_points_red.size()])
 
 ## Registra puntos de spawn para un equipo especifico (registro incremental).
@@ -133,6 +177,9 @@ func obtener_spawn_point(team: int, exclude_positions: Array = []) -> Marker3D:
 			points = spawn_points_red
 		_:
 			return null
+	
+	# Filtrar referencias invalidas (dangling tras reset_match + cambio de escena)
+	points = points.filter(func(p): return is_instance_valid(p))
 	
 	if points.is_empty():
 		push_warning("[MatchManager] No hay puntos de spawn para %s!" % GameState.nombre_equipo(team))
@@ -300,6 +347,10 @@ func _activar_bot(bot: NpcBase, team: int) -> void:
 	bot.set_process(true)
 	bot.show()
 	
+	# Asegurar que el bot no quede en la lista de inactivos
+	if bot in _inactive_bots:
+		_inactive_bots.erase(bot)
+	
 	# Re-habilitar colisiones
 	var collision_shape: CollisionShape3D = bot.find_child("CollisionShape3D") as CollisionShape3D
 	if collision_shape:
@@ -362,31 +413,75 @@ func reportar_muerte_bot(bot: NpcBase) -> void:
 		GameState.nombre_equipo(bot.equipo_id), respawn_time, blue_bots_active, red_bots_active
 	])
 
+## Registra la muerte del jugador humano en el sistema de respawn unificado.
+## A partir de ahora, el MatchManager gestiona el timer de respawn del jugador
+## (como ya hace con los bots), y el HUD solo escucha la senal player_respawned.
+func reportar_muerte_player() -> void:
+	if not is_instance_valid(player):
+		return
+	if player.is_dead:
+		_respawn_timers[player] = respawn_time
+		# Actualizar PlayerData: pasar a estado RESPAWNING
+		var pid: int = _pawn_to_player_id.get(player, -1)
+		if pid >= 0 and _players_data.has(pid):
+			var pd: PlayerData = _players_data[pid]
+			pd.status = PlayerData.Status.RESPAWNING
+			pd.respawn_time_left = respawn_time
+			pd.health = 0.0
+			_sync_player_data_from_pawn(pd)
+			players_data_changed.emit()
+		print("[MatchManager] Jugador murio. Respawn en %.1f s" % respawn_time)
+
 func _process(delta: float) -> void:
 	if not _match_started:
 		return
 	
-	# Gestionar timers de respawn
-	var bots_a_respawn: Array[NpcBase] = []
-	for bot in _respawn_timers.keys():
-		if not is_instance_valid(bot):
-			_respawn_timers.erase(bot)
+	# Auto Balance: detectar desbalances y gestionar cuenta regresiva
+	_check_team_balance(delta)
+	
+	# ── Gestionar timers de respawn (UNIFICADO: jugador + bots) ──
+	var pawns_a_respawn: Array[Node] = []
+	for pawn in _respawn_timers.keys():
+		if not is_instance_valid(pawn):
+			_respawn_timers.erase(pawn)
 			continue
-		_respawn_timers[bot] -= delta
-		if _respawn_timers[bot] <= 0.0:
-			bots_a_respawn.append(bot)
+		_respawn_timers[pawn] -= delta
+		if _respawn_timers[pawn] <= 0.0:
+			pawns_a_respawn.append(pawn)
 		
 		# Actualizar respawn_time_left en PlayerData para los contadores en vivo
-		var pid: int = _pawn_to_player_id.get(bot, -1)
+		var pid: int = _pawn_to_player_id.get(pawn, -1)
 		if pid >= 0 and _players_data.has(pid):
-			_players_data[pid].respawn_time_left = _respawn_timers.get(bot, 0.0)
+			_players_data[pid].respawn_time_left = _respawn_timers.get(pawn, 0.0)
 	
-	for bot in bots_a_respawn:
-		_respawn_timers.erase(bot)
-		_respawnear_bot(bot)
+	for pawn in pawns_a_respawn:
+		_respawn_timers.erase(pawn)
+		if pawn == player:
+			_respawnear_player()
+		else:
+			_respawnear_bot(pawn as NpcBase)
 	
 	# Sincronizar estados de todos los jugadores
 	_sync_all_players_status()
+
+## Respawnea al jugador humano cuando su timer de respawn expira.
+func _respawnear_player() -> void:
+	if not is_instance_valid(player):
+		return
+	
+	player.respawn()
+	
+	# Actualizar PlayerData
+	var pid: int = _pawn_to_player_id.get(player, -1)
+	if pid >= 0 and _players_data.has(pid):
+		var pd: PlayerData = _players_data[pid]
+		pd.status = PlayerData.Status.ALIVE
+		pd.respawn_time_left = 0.0
+		_sync_player_data_from_pawn(pd)
+		players_data_changed.emit()
+	
+	player_respawned.emit()
+	print("[MatchManager] Jugador respawneado en %s" % GameState.nombre_equipo(GameState.player_team))
 
 func _respawnear_bot(bot: NpcBase) -> void:
 	if not is_instance_valid(bot):
@@ -461,69 +556,27 @@ func _desactivar_bot(bot: NpcBase) -> void:
 # ═══════════════════════════════════════════
 
 func cambiar_equipo_jugador(nuevo_equipo: int) -> bool:
+	"""Cambia al jugador humano de equipo.
+	
+	DELEGA en _cambiar_equipo_pawn() — la unica funcion de cambio de equipo.
+	Mantiene esta funcion publica para compatibilidad con el codigo existente.
+	"""
 	if not is_instance_valid(player):
 		return false
 	if player_team == nuevo_equipo:
 		return false  # Ya esta en ese equipo
 	
 	var old_team: int = player_team
+	var success: bool = _cambiar_equipo_pawn(player, nuevo_equipo)
 	
-	# Verificar que el nuevo equipo no este lleno
-	var new_team_count: int = _contar_activos_por_equipo(nuevo_equipo)
-	if new_team_count >= max_per_team:
-		# El equipo esta lleno. Necesitamos intercambiar un bot.
-		# Buscar un bot en el nuevo equipo para desactivarlo
-		var bot_to_deactivate: NpcBase = _encontrar_bot_activo_en_equipo(nuevo_equipo)
-		if not bot_to_deactivate:
-			push_warning("[MatchManager] No hay bot disponible para intercambiar en %s" % GameState.nombre_equipo(nuevo_equipo))
-			return false
-		
-		# Desactivar ese bot (sale de su equipo)
-		_desactivar_bot(bot_to_deactivate)
-		if nuevo_equipo == int(Enums.Equipo.AZUL):
-			blue_bots_active -= 1
-		else:
-			red_bots_active -= 1
-		
-		# El bot inactivo se reutilizara para el equipo contrario si hay espacio
-		bot_to_deactivate.equipo_id = old_team
+	if success:
+		print("[MatchManager] Jugador cambio de %s a %s. Azul=%d, Rojo=%d" % [
+			GameState.nombre_equipo(old_team),
+			GameState.nombre_equipo(nuevo_equipo),
+			blue_bots_active, red_bots_active
+		])
 	
-	# Mover al jugador al nuevo equipo
-	player_team = nuevo_equipo
-	GameState.player_team = nuevo_equipo
-	
-	# Actualizar PlayerData del jugador humano
-	var human_id: int = _pawn_to_player_id.get(player, -1)
-	if human_id >= 0 and _players_data.has(human_id):
-		_players_data[human_id].team = nuevo_equipo
-		_sync_player_data_from_pawn(_players_data[human_id])
-		players_data_changed.emit()
-	
-	# Si el equipo anterior perdio un jugador humano, compensar con un bot inactivo
-	if old_team != int(Enums.Equipo.ESPECTADOR):
-		var old_team_count_after: int = _contar_activos_por_equipo(old_team)
-		if old_team_count_after < max_per_team:
-			# Hay espacio en el equipo anterior, rellenar con bot inactivo si hay
-			_rellenar_equipo_con_bot_inactivo(old_team)
-	
-	# Re-evaluar enemigos del jugador
-	if player.has_method("_re_evaluar_enemigos"):
-		# Los NPCs se re-evaluaran solos
-		pass
-	
-	# Re-evaluar enemigos de todos los NPCs
-	for bot in bot_pool:
-		if is_instance_valid(bot) and not bot.is_dead and bot.has_method("_re_evaluar_enemigos"):
-			bot._re_evaluar_enemigos()
-	
-	team_changed.emit(player, old_team, nuevo_equipo)
-	emit_team_sizes()
-	print("[MatchManager] Jugador cambio de %s a %s. Azul=%d, Rojo=%d" % [
-		GameState.nombre_equipo(old_team), 
-		GameState.nombre_equipo(nuevo_equipo),
-		blue_bots_active, red_bots_active
-	])
-	return true
+	return success
 
 func _rellenar_equipo_con_bot_inactivo(team: int) -> void:
 	if _inactive_bots.is_empty():
@@ -568,6 +621,322 @@ func _contar_activos_por_equipo(team: int) -> int:
 	if is_instance_valid(player) and player_team == team and not player.is_dead:
 		count += 1
 	return count
+
+## Cuenta jugadores activos totales (vivos, no inactivos) en un equipo, incluyendo muertos.
+func _contar_miembros_por_equipo(team: int) -> int:
+	var count: int = 0
+	for pd in _players_data.values():
+		if pd.team == team and pd.status != PlayerData.Status.INACTIVE:
+			count += 1
+	return count
+
+# ═══════════════════════════════════════════
+# CAMBIO DE EQUIPO UNIFICADO
+# ═══════════════════════════════════════════
+
+## Funcion UNICA de cambio de equipo.
+## Tanto cambiar_equipo_jugador() como el Auto Balance pasan por aqui.
+## Recibe cualquier pawn (Player o NpcBase) y lo mueve al nuevo equipo.
+##
+## NUEVO COMPORTAMIENTO (TF2-style):
+## 1. Cambia el equipo internamente.
+## 2. Mata al pawn usando el flujo de muerte existente (die()).
+## 3. Entra en la cola de respawn normal.
+## 4. Cuando el timer de respawn expire, respawnea en el spawn del NUEVO equipo.
+##
+## Devuelve true si el cambio se realizo con exito.
+func _cambiar_equipo_pawn(pawn: Node, nuevo_equipo: int) -> bool:
+	if not is_instance_valid(pawn):
+		return false
+	
+	var is_player: bool = (pawn == player)
+	var old_team: int
+	
+	if is_player:
+		if player_team == nuevo_equipo:
+			return false
+		old_team = player_team
+	else:
+		var bot := pawn as NpcBase
+		if not bot or bot not in bot_pool:
+			return false
+		if bot.equipo_id == nuevo_equipo:
+			return false
+		old_team = bot.equipo_id
+	
+	# ── Verificar capacidad del nuevo equipo ──
+	var new_team_total: int = _contar_miembros_por_equipo(nuevo_equipo)
+	if new_team_total >= max_per_team:
+		# El equipo esta lleno. Intercambiar: desactivar un bot del nuevo equipo.
+		var bot_to_deactivate: NpcBase = _encontrar_bot_activo_en_equipo(nuevo_equipo)
+		if not bot_to_deactivate:
+			push_warning("[MatchManager] No hay bot disponible para intercambiar en %s" % GameState.nombre_equipo(nuevo_equipo))
+			return false
+		
+		if nuevo_equipo == int(Enums.Equipo.AZUL):
+			blue_bots_active -= 1
+		elif nuevo_equipo == int(Enums.Equipo.ROJO):
+			red_bots_active -= 1
+		_desactivar_bot(bot_to_deactivate)
+		# _rellenar_equipo_con_bot_inactivo() lo activara para old_team si hay espacio
+	
+	# ── 1. ACTUALIZAR EQUIPO INTERNAMENTE ──
+	if is_player:
+		player_team = nuevo_equipo
+		GameState.player_team = nuevo_equipo
+	else:
+		var bot := pawn as NpcBase
+		# Decrementar contador del equipo ANTIGUO (el pawn sale de ese equipo)
+		if old_team == int(Enums.Equipo.AZUL):
+			blue_bots_active -= 1
+		elif old_team == int(Enums.Equipo.ROJO):
+			red_bots_active -= 1
+		# Asignar al NUEVO equipo (el contador se incrementara al respawnear)
+		bot.equipo_id = nuevo_equipo
+	
+	# ── 2. ACTUALIZAR PLAYERDATA ──
+	var pid: int = _pawn_to_player_id.get(pawn, -1)
+	if pid >= 0 and _players_data.has(pid):
+		_players_data[pid].team = nuevo_equipo
+		_sync_player_data_from_pawn(_players_data[pid])
+		players_data_changed.emit()
+	
+	# ── 3. MATAR AL PAWN (usando el flujo de muerte existente) ──
+	if is_player:
+		if player.has_method("die"):
+			player.die(-1)  # Sin asesino (cambio de equipo)
+	else:
+		var bot := pawn as NpcBase
+		_kill_pawn_for_team_change(bot)
+	
+	# ── 4. RELLENAR EQUIPO ANTIGUO si hace falta ──
+	if old_team != int(Enums.Equipo.ESPECTADOR):
+		var old_alive: int = _contar_activos_por_equipo(old_team)
+		if old_alive < max_per_team:
+			_rellenar_equipo_con_bot_inactivo(old_team)
+	
+	# ── 5. RE-EVALUAR ENEMIGOS ──
+	_re_evaluar_todos_los_enemigos()
+	
+	# ── 6. EMITIR SEÑALES ──
+	team_changed.emit(pawn, old_team, nuevo_equipo)
+	emit_team_sizes()
+	print("[MatchManager] Pawn %s cambio de %s a %s (muerto, respawn en %.1f s para %s). Azul=%d, Rojo=%d" % [
+		pawn.name,
+		GameState.nombre_equipo(old_team),
+		GameState.nombre_equipo(nuevo_equipo),
+		respawn_time,
+		GameState.nombre_equipo(nuevo_equipo),
+		blue_bots_active, red_bots_active
+	])
+	return true
+
+## Mata un bot especificamente para cambio de equipo.
+## NO llama a reportar_muerte_bot() porque los contadores ya se actualizaron
+## manualmente en _cambiar_equipo_pawn().
+## Solo reporta estadisticas (killer_id=-1, no cuenta como kill).
+func _kill_pawn_for_team_change(bot: NpcBase) -> void:
+	if bot.is_dead:
+		return
+	
+	bot.is_dead = true
+	
+	# Reportar estadisticas (killer_id=-1 para que nadie reciba kill)
+	if is_instance_valid(MatchManager):
+		MatchManager.reportar_muerte(bot, -1)
+	
+	# Soltar arma (efecto visual)
+	if bot.has_method("_drop_weapon"):
+		bot._drop_weapon()
+	
+	# Deshabilitar fisicas, proceso y visibilidad
+	bot.set_physics_process(false)
+	bot.set_process(false)
+	bot.hide()
+	
+	# Deshabilitar colision
+	var cs: CollisionShape3D = bot.find_child("CollisionShape3D") as CollisionShape3D
+	if cs:
+		cs.disabled = true
+	
+	# Detener navegacion
+	if bot.navigation_agent:
+		bot.navigation_agent.target_position = bot.global_position
+	
+	# Iniciar timer de respawn para el NUEVO equipo (equipo_id ya se actualizo)
+	_respawn_timers[bot] = respawn_time
+	
+	# Actualizar PlayerData a estado RESPAWNING
+	var pid: int = _pawn_to_player_id.get(bot, -1)
+	if pid >= 0 and _players_data.has(pid):
+		var pd: PlayerData = _players_data[pid]
+		pd.status = PlayerData.Status.RESPAWNING
+		pd.respawn_time_left = respawn_time
+		pd.health = 0.0
+		_sync_player_data_from_pawn(pd)
+		players_data_changed.emit()
+	
+	print("[MatchManager] Bot %s muerto por cambio de equipo. Respawn para %s en %.1f s" % [
+		bot.name,
+		GameState.nombre_equipo(bot.equipo_id),
+		respawn_time
+	])
+
+## Re-evalua los enemigos de todos los NPCs vivos.
+func _re_evaluar_todos_los_enemigos() -> void:
+	for bot in bot_pool:
+		if is_instance_valid(bot) and not bot.is_dead and bot.has_method("_re_evaluar_enemigos"):
+			bot._re_evaluar_enemigos()
+	# El jugador tambien re-evalua si tiene el metodo
+	if is_instance_valid(player) and player.has_method("_re_evaluar_enemigos"):
+		player._re_evaluar_enemigos()
+
+# ═══════════════════════════════════════════
+# AUTO BALANCE
+# ═══════════════════════════════════════════
+
+## Verifica si hay desbalance y gestiona la cuenta regresiva.
+## Se llama desde _process().
+func _check_team_balance(delta: float) -> void:
+	if not _match_started or not auto_balance_enabled:
+		return
+	if not is_instance_valid(GameState) or not GameState.match_active:
+		return
+	
+	var blue_count: int = _contar_miembros_por_equipo(int(Enums.Equipo.AZUL))
+	var red_count: int = _contar_miembros_por_equipo(int(Enums.Equipo.ROJO))
+	
+	# El desbalance se define como > 1 jugador de diferencia
+	var diff: int = abs(blue_count - red_count)
+	var is_unbalanced: bool = (diff > 1)
+	
+	if is_unbalanced and not _auto_balance_active:
+		# Iniciar cuenta regresiva
+		_start_auto_balance_countdown()
+	elif not is_unbalanced and _auto_balance_active:
+		# Los equipos se balancearon solos, cancelar
+		_cancel_auto_balance()
+	
+	# Si la cuenta regresiva esta activa, actualizarla
+	if _auto_balance_active:
+		_auto_balance_timer -= delta
+		
+		# Emitir senal cada segundo
+		var current_second: int = int(ceil(_auto_balance_timer))
+		if current_second != _last_countdown_second and current_second >= 0:
+			_last_countdown_second = current_second
+			auto_balance_countdown.emit(current_second)
+		
+		# Si el tiempo se acabo, ejecutar
+		if _auto_balance_timer <= 0.0:
+			_execute_auto_balance()
+
+func _start_auto_balance_countdown() -> void:
+	_auto_balance_timer = auto_balance_grace_period
+	_auto_balance_active = true
+	_last_countdown_second = int(ceil(auto_balance_grace_period))
+	# Emitir el primer tick inmediatamente
+	auto_balance_countdown.emit(_last_countdown_second)
+	print("[MatchManager] Auto Balance iniciado. Cuenta regresiva: %.0f s" % auto_balance_grace_period)
+
+func _cancel_auto_balance() -> void:
+	_auto_balance_active = false
+	_auto_balance_timer = 0.0
+	_last_countdown_second = -1
+	auto_balance_cancelled.emit()
+	print("[MatchManager] Auto Balance cancelado — los equipos se balancearon solos.")
+
+## Ejecuta el Auto Balance: mueve un jugador del equipo con mas integrantes
+## al equipo con menos integrantes.
+func _execute_auto_balance() -> void:
+	_auto_balance_active = false
+	_auto_balance_timer = 0.0
+	_last_countdown_second = -1
+	
+	var blue_count: int = _contar_miembros_por_equipo(int(Enums.Equipo.AZUL))
+	var red_count: int = _contar_miembros_por_equipo(int(Enums.Equipo.ROJO))
+	
+	if blue_count == red_count:
+		print("[MatchManager] Auto Balance cancelado — equipos ya estan balanceados.")
+		auto_balance_cancelled.emit()
+		return
+	
+	# Determinar equipo sobrepoblado y subpoblado
+	var from_team: int
+	var to_team: int
+	if blue_count > red_count:
+		from_team = int(Enums.Equipo.AZUL)
+		to_team = int(Enums.Equipo.ROJO)
+	else:
+		from_team = int(Enums.Equipo.ROJO)
+		to_team = int(Enums.Equipo.AZUL)
+	
+	# Seleccionar que jugador mover (usa la estrategia actual)
+	var pawn_to_move: Node = _select_player_to_move(from_team)
+	if not pawn_to_move:
+		push_warning("[MatchManager] No se pudo seleccionar un jugador para Auto Balance desde %s" % GameState.nombre_equipo(from_team))
+		auto_balance_cancelled.emit()
+		return
+	
+	var old_team_of_pawn: int = from_team
+	var success: bool = _cambiar_equipo_pawn(pawn_to_move, to_team)
+	
+	if success:
+		auto_balance_executed.emit(pawn_to_move, old_team_of_pawn, to_team)
+		print("[MatchManager] Auto Balance ejecutado: %s movido de %s a %s" % [
+			pawn_to_move.name,
+			GameState.nombre_equipo(old_team_of_pawn),
+			GameState.nombre_equipo(to_team)
+		])
+	else:
+		push_warning("[MatchManager] Fallo al ejecutar Auto Balance para %s" % pawn_to_move.name)
+		auto_balance_cancelled.emit()
+
+## Selecciona que jugador mover del equipo sobrepoblado.
+## Esta funcion esta DISENADA para ser facilmente intercambiable en el futuro.
+## Estrategias futuras posibles:
+##   - Mover solo bots (excluir humanos)
+##   - Mover al jugador con menor puntaje (kills-deaths)
+##   - No mover jugadores que aparecieron hace pocos segundos
+##   - Balancear solo al finalizar una ronda
+##
+## Actual: seleccion aleatoria entre los miembros del equipo.
+func _select_player_to_move(team: int) -> Node:
+	var candidates: Array[Node] = []
+	
+	# Recolectar candidatos del equipo
+	for pd in _players_data.values():
+		if pd.team == team and pd.status != PlayerData.Status.INACTIVE and is_instance_valid(pd.pawn):
+			candidates.append(pd.pawn)
+	
+	if candidates.is_empty():
+		return null
+	
+	# ESTRATEGIA ACTUAL: seleccion aleatoria
+	return candidates[randi() % candidates.size()]
+	#
+	# ESTRATEGIAS FUTURAS (ejemplos):
+	#
+	# Estrategia 1: Solo bots, excluir humano
+	#   var human_filtered: Array[Node] = []
+	#   for c in candidates:
+	#       if c != player: human_filtered.append(c)
+	#   if human_filtered.is_empty(): return null
+	#   return human_filtered[randi() % human_filtered.size()]
+	#
+	# Estrategia 2: Peor puntaje (menos kills - deaths)
+	#   candidates.sort_custom(func(a, b): return _get_score(a) < _get_score(b))
+	#   return candidates[0]
+	#
+	# Estrategia 3: Peor rendimiento + evitar recien aparecidos
+	#   var now: float = Time.get_ticks_msec()
+	#   var filtered: Array[Node] = []
+	#   for c in candidates:
+	#       var pd := _players_data.get(_pawn_to_player_id.get(c, -1))
+	#       if pd and (now - pd.spawn_time_ms > 5000.0): filtered.append(c)
+	#   if filtered.is_empty(): filtered = candidates
+	#   filtered.sort_custom(func(a, b): return _get_score(a) < _get_score(b))
+	#   return filtered[0]
 
 # ═══════════════════════════════════════════
 # UTILIDADES
@@ -676,7 +1045,9 @@ func _sync_all_players_status() -> void:
 		_sync_player_data_from_pawn(pd)
 		
 		# Determinar estado
-		if pawn in _inactive_bots:
+		# NOTA: _inactive_bots es Array[NpcBase], solo verificamos si pawn es NpcBase
+		# para evitar errores de TypedArray con el jugador (Player).
+		if pawn is NpcBase and pawn in _inactive_bots:
 			pd.status = PlayerData.Status.INACTIVE
 		elif is_dead_val and _respawn_timers.has(pawn):
 			pd.status = PlayerData.Status.RESPAWNING
@@ -720,11 +1091,15 @@ func reset_match() -> void:
 	bot_pool.clear()
 	_inactive_bots.clear()
 	_respawn_timers.clear()
-	spawn_points_blue.clear()
-	spawn_points_red.clear()
+	# ★ PRESERVAR spawn points para que "Reintentar" funcione sin recargar escena.
+	# _configure_spawners() los sobrescribira al iniciar una nueva partida real.
 	blue_bots_active = 0
 	red_bots_active = 0
 	_match_started = false
+	# Limpiar estado de Auto Balance
+	_auto_balance_timer = 0.0
+	_auto_balance_active = false
+	_last_countdown_second = -1
 	player = null
 	player_team = int(Enums.Equipo.ESPECTADOR)
 	# Limpiar registro de jugadores
@@ -734,4 +1109,4 @@ func reset_match() -> void:
 	# Limpiar estado de GameState
 	if is_instance_valid(GameState):
 		GameState.reset_match()
-	print("[MatchManager] Partida reseteada")
+	print("[MatchManager] Partida reseteada (spawn points preservados: Azul=%d, Rojo=%d)" % [spawn_points_blue.size(), spawn_points_red.size()])

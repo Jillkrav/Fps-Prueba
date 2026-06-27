@@ -173,12 +173,15 @@ func take_damage(amount: float, zona: String = "Torso", killer_id: int = -1) -> 
 		die(killer_id)
 
 func die(killer_id: int = -1) -> void:
+	if is_dead:
+		return
 	is_dead = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	player_died.emit()
-	# Reportar la muerte al MatchManager para estadisticas
+	# Reportar la muerte al MatchManager para estadisticas + respawn unificado
 	if is_instance_valid(MatchManager):
 		MatchManager.reportar_muerte(self, killer_id)
+		MatchManager.reportar_muerte_player()
 
 func respawn() -> void:
 	is_dead = false
@@ -195,12 +198,14 @@ func respawn() -> void:
 	health_changed.emit(current_health, max_health)
 
 func change_team(new_team: int) -> bool:
+	"""
+	Cambia de equipo usando el sistema unificado del MatchManager.
+	El flujo es: cambiar equipo internamente -> morir -> respawn automatico
+	Esto asegura que el jugador reaparezca en la base del nuevo equipo.
+	"""
 	if not is_instance_valid(MatchManager):
 		return false
-	var success: bool = MatchManager.cambiar_equipo_jugador(new_team)
-	if success:
-		respawn()
-	return success
+	return MatchManager.cambiar_equipo_jugador(new_team)
 
 func resupply() -> void:
 	current_health = max_health

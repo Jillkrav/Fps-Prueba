@@ -100,7 +100,15 @@ func _update_team_info() -> void:
 		btn_team_info.add_theme_color_override("font_color", GameState.color_equipo(GameState.player_team))
 
 func _on_team_selected(team_id: int) -> void:
-	GameState.player_team = team_id
+	# Usar el sistema unificado de cambio de equipo del MatchManager
+	if is_instance_valid(MatchManager) and MatchManager.is_match_started():
+		if is_instance_valid(MatchManager.player):
+			MatchManager.cambiar_equipo_jugador(team_id)
+		else:
+			push_warning("[OptionsMenu] No hay jugador para cambiar de equipo")
+	else:
+		# Si la partida no ha empezado, cambiar directamente (escena menu)
+		GameState.player_team = team_id
 	_update_team_info()
 	# Re-evaluar enemigos de los NPCs
 	for npc in get_tree().get_nodes_in_group("npc"):

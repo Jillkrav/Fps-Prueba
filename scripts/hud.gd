@@ -27,6 +27,9 @@ extends CanvasLayer
 @onready var match_result:  Label   = $MatchOver/Label
 @onready var match_sub:     Label   = $MatchOver/SubLabel
 
+# Auto Balance label (parte superior central)
+@onready var auto_balance_label: Label = $AutoBalanceLabel
+
 var _player:       Player     = null
 var _menu_abierto: bool       = false
 
@@ -37,6 +40,7 @@ func _ready() -> void:
 	_configurar_pausa()
 	_configurar_death_screen()
 	_conectar_core_hud()
+	_conectar_auto_balance()
 	_conectar_match_end()
 	_configurar_match_over_buttons()
 
@@ -52,6 +56,10 @@ func _conectar_player() -> void:
 		_player.ammo_changed.connect(update_ammo)
 	if not _player.player_died.is_connected(_on_player_died):
 		_player.player_died.connect(_on_player_died)
+	# Conectar al sistema de respawn unificado del MatchManager
+	if is_instance_valid(MatchManager):
+		if not MatchManager.player_respawned.is_connected(_on_player_respawned):
+			MatchManager.player_respawned.connect(_on_player_respawned)
 	update_health(_player.current_health, _player.max_health)
 
 func _configurar_pausa() -> void:
@@ -148,21 +156,15 @@ func _on_player_died() -> void:
 	if death_screen:
 		death_screen.visible = true
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		# Autorespawn tras el tiempo configurado (si el MatchManager lo permite)
-		if is_instance_valid(_player):
-			var respawn_timer: Timer = Timer.new()
-			respawn_timer.one_shot = true
-			respawn_timer.wait_time = MatchManager.respawn_time
-			respawn_timer.timeout.connect(_auto_respawn_player)
-			add_child(respawn_timer)
-			respawn_timer.start()
+	# El respawn automatico lo gestiona el MatchManager ahora.
+	# La pantalla de muerte se ocultara cuando llegue la senal player_respawned.
 
-func _auto_respawn_player() -> void:
-	if not is_instance_valid(_player):
-		return
-	_player.respawn()
-	death_screen.visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+func _on_player_respawned() -> void:
+	"""El MatchManager respawneara al jugador y emitira esta senal."""
+	if death_screen and death_screen.visible:
+		death_screen.visible = false
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _on_btn_reintentar_pressed() -> void:
 	# NUEVO: En lugar de recargar la escena, hacemos respawn del jugador
@@ -266,6 +268,34 @@ func _update_core_bar(bar: ProgressBar, label: Label, current: float, max_val: f
 			"AZUL": bar.modulate = Color(0.2, 0.5, 1.0)
 			"ROJO": bar.modulate = Color(1.0, 0.2, 0.2)
 			_: bar.modulate = Color.WHITE
+
+# ─────────────────────────────────────────
+# AUTO BALANCE — MENSAJE EN PANTALLA
+# ─────────────────────────────────────────
+
+func _conectar_auto_balance() -> void:
+	if not is_instance_valid(MatchManager):
+		return
+	if not MatchManager.auto_balance_countdown.is_connected(_on_auto_balance_countdown):
+		MatchManager.auto_balance_countdown.connect(_on_auto_balance_countdown)
+	if not MatchManager.auto_balance_cancelled.is_connected(_on_auto_balance_cancelled):
+		MatchManager.auto_balance_cancelled.connect(_on_auto_balance_cancelled)
+	if not MatchManager.auto_balance_executed.is_connected(_on_auto_balance_executed):
+		MatchManager.auto_balance_executed.connect(_on_auto_balance_executed)
+
+func _on_auto_balance_countdown(time_left: int) -> void:
+	if not auto_balance_label:
+		return
+	auto_balance_label.visible = true
+	auto_balance_label.text = "Auto Balance en %d..." % time_left
+
+func _on_auto_balance_cancelled() -> void:
+	if auto_balance_label:
+		auto_balance_label.visible = false
+
+func _on_auto_balance_executed(_pawn: Node, _old_team: int, _new_team: int) -> void:
+	if auto_balance_label:
+		auto_balance_label.visible = false
 
 # ─────────────────────────────────────────
 # MATCH END — VICTORIA / DERROTA
