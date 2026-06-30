@@ -300,24 +300,63 @@ func _asignar_bots_a_equipos(player_team_id: int, count_player_team: int, count_
 	var blue_count: int = count_player_team if player_team_id == int(Enums.Equipo.AZUL) else count_other_team
 	var red_count: int = count_other_team if player_team_id == int(Enums.Equipo.AZUL) else count_player_team
 	
+	# ── Generar distribucion equitativa de roles para cada equipo ──
+	# Los roles se reparten uniformemente entre los bots de cada equipo.
+	var blue_roles: Array[int] = _generar_roles_para_equipo(blue_count)
+	var red_roles: Array[int] = _generar_roles_para_equipo(red_count)
+	
 	var blue_assigned: int = 0
 	var red_assigned: int = 0
 	
 	for bot in bot_pool:
 		var team: int
+		var rol_asignado: int
 		if blue_assigned < blue_count:
 			team = int(Enums.Equipo.AZUL)
+			rol_asignado = blue_roles[blue_assigned]
 			blue_assigned += 1
 		elif red_assigned < red_count:
 			team = int(Enums.Equipo.ROJO)
+			rol_asignado = red_roles[red_assigned]
 			red_assigned += 1
 		else:
 			break  # No deberia ocurrir si la pool tiene el tamano correcto
 		
+		bot.rol = rol_asignado
 		_activar_bot(bot, team)
 	
 	blue_bots_active = blue_assigned
 	red_bots_active = red_assigned
+
+
+## Genera un array de roles equitativamente distribuidos para un equipo
+## de N bots. Los roles se reparten de forma que ningun rol tenga mas de 1
+## de diferencia con otro, y se barajan para que no esten agrupados.
+func _generar_roles_para_equipo(cantidad: int) -> Array[int]:
+	var roles_disponibles: Array[int] = [
+		int(Enums.Rol.SOLDADO),
+		int(Enums.Rol.FRANCOTIRADOR),
+		int(Enums.Rol.APOYO),
+		int(Enums.Rol.EXPLORADOR),
+		int(Enums.Rol.COMANDANTE),
+	]
+	var resultado: Array[int] = []
+	
+	# Repartir equitativamente: cada rol aparece floor(cantidad / N) veces,
+	# y los primeros (cantidad % N) roles aparecen una vez mas.
+	var base: int = floori(cantidad / float(roles_disponibles.size()))
+	var extra: int = cantidad % roles_disponibles.size()
+	
+	for i in range(roles_disponibles.size()):
+		var veces: int = base
+		if i < extra:
+			veces += 1
+		for _j in range(veces):
+			resultado.append(roles_disponibles[i])
+	
+	# Barajar para que no aparezcan todos los roles del mismo tipo juntos
+	resultado.shuffle()
+	return resultado
 
 func _activar_bot(bot: NpcBase, team: int) -> void:
 	# ── SEGURIDAD: Verificar que el spawner tiene puntos para este equipo ──
@@ -364,6 +403,9 @@ func _activar_bot(bot: NpcBase, team: int) -> void:
 	if not armas.is_empty():
 		bot.nombre_arma = armas[randi() % armas.size()]
 	
+	# Re-inicializar rol tactico (por si cambió respecto al default SOLDADO)
+	bot._tactical_role = TacticalRole.for_npc(bot)
+
 	# Re-equipar arma si el bot ya tiene el metodo
 	if bot.has_method("_equipar_arma"):
 		bot.call_deferred("_equipar_arma")
@@ -465,20 +507,16 @@ func _process(delta: float) -> void:
 	_sync_all_players_status()
 
 ## Respawnea al jugador humano cuando su timer de respawn expira.
+## Usa el mismo flujo unificado que los bots.
 func _respawnear_player() -> void:
 	if not is_instance_valid(player):
 		return
 	
+	# player.respawn() restaura salud, municion, cargador y teletransporta al spawn
 	player.respawn()
 	
-	# Actualizar PlayerData
-	var pid: int = _pawn_to_player_id.get(player, -1)
-	if pid >= 0 and _players_data.has(pid):
-		var pd: PlayerData = _players_data[pid]
-		pd.status = PlayerData.Status.ALIVE
-		pd.respawn_time_left = 0.0
-		_sync_player_data_from_pawn(pd)
-		players_data_changed.emit()
+	# Actualizar PlayerData usando el helper unificado (mismo que usan los bots)
+	_update_pawn_data_after_respawn(player)
 	
 	player_respawned.emit()
 	print("[MatchManager] Jugador respawneado en %s" % GameState.nombre_equipo(GameState.player_team))
@@ -498,8 +536,15 @@ func _respawnear_bot(bot: NpcBase) -> void:
 		_desactivar_bot(bot)
 		return
 	
+	# ── Asignar arma aleatoria al bot antes de reaparecer ──
+	# Esto asegura que no conserve el arma que tenia antes de morir.
+	var armas: Array[String] = ConfigManager.get_nombres_armas()
+	if not armas.is_empty():
+		bot.nombre_arma = armas[randi() % armas.size()]
+	
 	# Delegar la restauracion interna al propio bot (respawn() en npc_base.gd)
-	# Esto re-equipa arma, re-evalua enemigos, restaura FSM, etc.
+	# Esto re-equipa arma (usando el nuevo nombre aleatorio), re-evalua enemigos,
+	# restaura FSM, restaura salud y municion al maximo, etc.
 	bot.respawn()
 	
 	# Colocar en spawn point (MatchManager decide DÓNDE, no el bot)
@@ -513,18 +558,24 @@ func _respawnear_bot(bot: NpcBase) -> void:
 	elif team == int(Enums.Equipo.ROJO):
 		red_bots_active += 1
 	
-	# Actualizar PlayerData del bot respawneado
-	var pid: int = _pawn_to_player_id.get(bot, -1)
+	# Actualizar PlayerData usando el helper unificado
+	_update_pawn_data_after_respawn(bot)
+	
+	bot_respawned.emit(bot, team)
+	emit_team_sizes()
+	print("[MatchManager] Bot respawneado en %s (arma: %s)" % [GameState.nombre_equipo(team), bot.nombre_arma])
+
+## Helper UNIFICADO para actualizar PlayerData tras un respawn.
+## Usado tanto por _respawnear_player() como por _respawnear_bot()
+## para evitar duplicacion de logica.
+func _update_pawn_data_after_respawn(pawn: Node) -> void:
+	var pid: int = _pawn_to_player_id.get(pawn, -1)
 	if pid >= 0 and _players_data.has(pid):
 		var pd: PlayerData = _players_data[pid]
 		pd.status = PlayerData.Status.ALIVE
 		pd.respawn_time_left = 0.0
 		_sync_player_data_from_pawn(pd)
 		players_data_changed.emit()
-	
-	bot_respawned.emit(bot, team)
-	emit_team_sizes()
-	print("[MatchManager] Bot respawneado en %s" % GameState.nombre_equipo(team))
 
 func _desactivar_bot(bot: NpcBase) -> void:
 	if not is_instance_valid(bot):
@@ -1032,6 +1083,12 @@ func _sync_player_data_from_pawn(pd: PlayerData) -> void:
 		pd.health = pawn.current_health
 		pd.max_health = pawn.max_health
 		pd.team = pawn.equipo_id
+		# Sincronizar rol activo para debug (scoreboard y overlay)
+		var tactical_role = pawn.get("_tactical_role")
+		if tactical_role != null:
+			pd.tactical_role_name = tactical_role.display_name if "display_name" in tactical_role else ""
+		else:
+			pd.tactical_role_name = ""
 
 ## Actualiza el estado de todos los PlayerData basado en el estado real de los pawns.
 func _sync_all_players_status() -> void:

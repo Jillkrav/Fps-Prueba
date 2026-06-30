@@ -159,11 +159,6 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 15
 
-[node name="BtnReintentar" type="Button" parent="DeathScreen/Buttons" unique_id=792440975]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "REINTENTAR"
-
 [node name="BtnMenu" type="Button" parent="DeathScreen/Buttons" unique_id=244609178]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
@@ -227,28 +222,26 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "MENU PRINCIPAL"
 
-[node name="OptionsMenu" parent="." instance=ExtResource("4_options")]
+[node name="OptionsMenu" parent="." unique_id=753614561 instance=ExtResource("4_options")]
 visible = false
 
-[node name="CoreBars" type="HBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = 0
+[node name="CoreBars" type="HBoxContainer" parent="." unique_id=1518652912]
 offset_left = 100.0
 offset_top = 8.0
 offset_right = -100.0
 offset_bottom = 48.0
 theme_override_constants/separation = 30
 
-[node name="BlueCoreBar" type="ProgressBar" parent="CoreBars"]
+[node name="BlueCoreBar" type="ProgressBar" parent="CoreBars" unique_id=128975029]
+modulate = Color(0.2, 0.5, 1, 1)
 custom_minimum_size = Vector2(300, 28)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
 value = 100.0
 show_percentage = false
-modulate = Color(0.2, 0.5, 1.0, 1)
 
-[node name="Label" type="Label" parent="CoreBars/BlueCoreBar"]
+[node name="Label" type="Label" parent="CoreBars/BlueCoreBar" unique_id=980707161]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -265,16 +258,16 @@ text = "500 / 500"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="RedCoreBar" type="ProgressBar" parent="CoreBars"]
+[node name="RedCoreBar" type="ProgressBar" parent="CoreBars" unique_id=535179304]
+modulate = Color(1, 0.2, 0.2, 1)
 custom_minimum_size = Vector2(300, 28)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
 value = 100.0
 show_percentage = false
-modulate = Color(1.0, 0.2, 0.2, 1)
 
-[node name="Label" type="Label" parent="CoreBars/RedCoreBar"]
+[node name="Label" type="Label" parent="CoreBars/RedCoreBar" unique_id=854894554]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -291,10 +284,9 @@ text = "500 / 500"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="AutoBalanceLabel" type="Label" parent="."]
+[node name="AutoBalanceLabel" type="Label" parent="." unique_id=1465476323]
 visible = false
-anchors_preset = 1
-anchor_left = 0.0
+anchors_preset = 14
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
@@ -302,15 +294,14 @@ offset_top = -200.0
 offset_bottom = -160.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
-theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(1, 1, 0, 1)
-theme_override_constants/outline_size = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="MatchOver" type="Panel" parent="."]
+[node name="MatchOver" type="Panel" parent="." unique_id=697332749]
 visible = false
 self_modulate = Color(0, 0, 0, 0.85)
 anchors_preset = 15
@@ -321,7 +312,7 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_hud")
 
-[node name="Label" type="Label" parent="MatchOver"]
+[node name="Label" type="Label" parent="MatchOver" unique_id=1358340905]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -331,7 +322,6 @@ anchor_bottom = 0.5
 offset_left = -300.0
 offset_top = -100.0
 offset_right = 300.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 72
@@ -339,7 +329,7 @@ text = "VICTORIA"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SubLabel" type="Label" parent="MatchOver"]
+[node name="SubLabel" type="Label" parent="MatchOver" unique_id=45098095]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -357,23 +347,7 @@ text = "¡Tu equipo ha destruido el Core enemigo!"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="BtnReintentar" type="Button" parent="MatchOver"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -120.0
-offset_top = 100.0
-offset_right = 120.0
-offset_bottom = 160.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_font_sizes/font_size = 24
-text = "REINTENTAR"
-
-[node name="BtnMenu" type="Button" parent="MatchOver"]
+[node name="BtnMenu" type="Button" parent="MatchOver" unique_id=572155688]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -529,8 +503,69 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Volver"
 
-[node name="Scoreboard" parent="." instance=ExtResource("5_scoreboard")]
+[node name="WeaponPrompt" type="Control" parent="." unique_id=1893456789]
 visible = false
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = 80.0
+offset_right = 200.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[connection signal="pressed" from="DeathScreen/Buttons/BtnReintentar" to="." method="_on_btn_reintentar_pressed"]
+[node name="Background" type="Panel" parent="WeaponPrompt" unique_id=1893456790]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="PromptLabel" type="Label" parent="WeaponPrompt" unique_id=1893456791]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -25.0
+offset_right = 180.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ReplaceLabel" type="Label" parent="WeaponPrompt" unique_id=1893456792]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = 10.0
+offset_right = 180.0
+offset_bottom = 35.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Scoreboard" parent="." unique_id=957533299 instance=ExtResource("5_scoreboard")]
+visible = false
+layout_mode = 3
+
 [connection signal="pressed" from="PauseScreen/Buttons/BtnContinuar" to="." method="_on_btn_continuar_pressed"]

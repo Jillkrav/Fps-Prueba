@@ -16,6 +16,11 @@ extends CanvasLayer
 @onready var options_menu: Control     = $OptionsMenu
 @onready var scoreboard:   Control     = $Scoreboard
 
+# Weapon pickup prompt
+@onready var weapon_prompt:       Control = $WeaponPrompt
+@onready var prompt_label:        Label   = $WeaponPrompt/PromptLabel
+@onready var replace_label:       Label   = $WeaponPrompt/ReplaceLabel
+
 # Core HP bars (en el HUD, parte superior)
 @onready var core_blue_bar:  ProgressBar = $CoreBars/BlueCoreBar
 @onready var core_blue_text: Label       = $CoreBars/BlueCoreBar/Label
@@ -145,10 +150,7 @@ func _on_player_weapon_changed(weapon_name: String, current_ammo: int, max_ammo:
 	update_ammo(current_ammo, max_ammo)
 
 func _configurar_death_screen() -> void:
-	var btn_reintentar: Button = get_node_or_null("DeathScreen/Buttons/BtnReintentar")
-	var btn_menu:      Button = get_node_or_null("DeathScreen/Buttons/BtnMenu")
-	if btn_reintentar and not btn_reintentar.pressed.is_connected(_on_btn_reintentar_pressed):
-		btn_reintentar.pressed.connect(_on_btn_reintentar_pressed)
+	var btn_menu: Button = get_node_or_null("DeathScreen/Buttons/BtnMenu")
 	if btn_menu and not btn_menu.pressed.is_connected(_on_btn_death_menu_pressed):
 		btn_menu.pressed.connect(_on_btn_death_menu_pressed)
 
@@ -165,18 +167,6 @@ func _on_player_respawned() -> void:
 		death_screen.visible = false
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-func _on_btn_reintentar_pressed() -> void:
-	# NUEVO: En lugar de recargar la escena, hacemos respawn del jugador
-	if is_instance_valid(_player):
-		_player.respawn()
-		death_screen.visible = false
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	else:
-		# Fallback: recargar escena
-		_cleanup_match_state()
-		get_tree().paused = false
-		get_tree().reload_current_scene()
 
 func _cleanup_match_state() -> void:
 	"""Limpia todo el estado de la partida antes de salir al menu principal."""
@@ -308,10 +298,7 @@ func _conectar_match_end() -> void:
 		GameState.match_ended.connect(_on_match_ended)
 
 func _configurar_match_over_buttons() -> void:
-	var btn_reintentar: Button = get_node_or_null("MatchOver/BtnReintentar")
 	var btn_menu: Button = get_node_or_null("MatchOver/BtnMenu")
-	if btn_reintentar and not btn_reintentar.pressed.is_connected(_on_btn_reintentar_pressed):
-		btn_reintentar.pressed.connect(_on_btn_reintentar_pressed)
 	if btn_menu and not btn_menu.pressed.is_connected(_on_btn_menu_pressed):
 		btn_menu.pressed.connect(_on_btn_menu_pressed)
 
@@ -340,6 +327,32 @@ func _on_match_ended(winning_team: int) -> void:
 	_configurar_match_over_buttons()
 	
 	_debug("[HUD] Partida terminada. Ganador: %d | Victoria: %s" % [winning_team, str(is_victory)])
+
+# ─────────────────────────────────────────
+# WEAPON PICKUP PROMPT
+# ─────────────────────────────────────────
+
+## Muestra el prompt de recogida de arma.
+## new_weapon: nombre del arma en el suelo.
+## current_weapon: nombre del arma actual (vacío si no tiene).
+func show_weapon_prompt(new_weapon: String, current_weapon: String) -> void:
+	if not weapon_prompt or not prompt_label or not replace_label:
+		return
+	
+	if current_weapon != "":
+		prompt_label.text = "Presiona E para recoger %s" % new_weapon
+		replace_label.text = "(Reemplazará tu %s)" % current_weapon
+		replace_label.visible = true
+	else:
+		prompt_label.text = "Presiona E para recoger %s" % new_weapon
+		replace_label.visible = false
+	
+	weapon_prompt.visible = true
+
+## Oculta el prompt de recogida de arma.
+func hide_weapon_prompt() -> void:
+	if weapon_prompt:
+		weapon_prompt.visible = false
 
 func _debug(msg: String) -> void:
 	print(msg)

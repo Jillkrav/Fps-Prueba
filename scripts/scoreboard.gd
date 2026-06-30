@@ -30,9 +30,15 @@ const COL_HP: int = 1
 const COL_KILLS: int = 2
 const COL_DEATHS: int = 3
 const COL_STATUS: int = 4
+const COL_ROL: int = 5
 
-# Anchuras minimas de cada columna
-const COL_WIDTHS: Array[float] = [180.0, 50.0, 60.0, 70.0, 130.0]
+# Anchuras minimas de cada columna (px)
+# Se usan como custom_minimum_size para evitar que colapsen a 0.
+const COL_WIDTHS: Array[float] = [100.0, 35.0, 40.0, 45.0, 80.0, 75.0]
+
+# Proporciones de expansion: como se distribuye el espacio SOBRANTE.
+# La suma total de ratios determina que columna recibe mas espacio.
+const COL_STRETCH: Array[float] = [3.0, 1.0, 1.0, 1.0, 2.0, 2.0]
 
 const COLOR_AZUL: Color = Color(0.15, 0.35, 0.9, 0.9)
 const COLOR_ROJO: Color = Color(0.85, 0.15, 0.15, 0.9)
@@ -58,10 +64,11 @@ func _build_ui() -> void:
 	
 	var main_margin: MarginContainer = MarginContainer.new()
 	main_margin.anchors_preset = Control.PRESET_FULL_RECT
-	main_margin.add_theme_constant_override("margin_left", 80)
-	main_margin.add_theme_constant_override("margin_right", 80)
-	main_margin.add_theme_constant_override("margin_top", 40)
-	main_margin.add_theme_constant_override("margin_bottom", 40)
+	main_margin.add_theme_constant_override("margin_left", 40)
+	main_margin.add_theme_constant_override("margin_right", 40)
+	main_margin.add_theme_constant_override("margin_top", 25)
+	main_margin.add_theme_constant_override("margin_bottom", 25)
+	main_margin.clip_contents = true
 	add_child(main_margin)
 	
 	var main_vbox: VBoxContainer = VBoxContainer.new()
@@ -82,14 +89,17 @@ func _build_ui() -> void:
 	
 	# Encabezado de columnas
 	var column_header: HBoxContainer = HBoxContainer.new()
-	column_header.add_theme_constant_override("separation", 4)
-	column_header.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column_header.add_theme_constant_override("separation", 2)
+	column_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column_header.clip_contents = true
 	
-	var header_labels: Array[String] = ["Nombre", "HP", "Kills", "Muertes", "Estado"]
+	var header_labels: Array[String] = ["Nombre", "HP", "Kills", "Muertes", "Estado", "Rol activo"]
 	for i in range(header_labels.size()):
 		var hdr: Label = Label.new()
 		hdr.text = header_labels[i]
 		hdr.custom_minimum_size.x = COL_WIDTHS[i]
+		hdr.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hdr.size_flags_stretch_ratio = COL_STRETCH[i]
 		hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if i > 0 else HORIZONTAL_ALIGNMENT_LEFT
 		hdr.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 		hdr.add_theme_font_size_override("font_size", 14)
@@ -105,7 +115,7 @@ func _build_ui() -> void:
 	var teams_hbox: HBoxContainer = HBoxContainer.new()
 	teams_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	teams_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	teams_hbox.add_theme_constant_override("separation", 30)
+	teams_hbox.add_theme_constant_override("separation", 20)
 	main_vbox.add_child(teams_hbox)
 	
 	# Columna Azul
@@ -295,7 +305,7 @@ func _sort_players(players: Array[PlayerData]) -> void:
 
 func _create_row(pd: PlayerData) -> HBoxContainer:
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
+	row.add_theme_constant_override("separation", 2)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.set_meta("player_id", pd.player_id)
 	
@@ -309,7 +319,8 @@ func _create_row(pd: PlayerData) -> HBoxContainer:
 	lbl_name.name = "Name"
 	lbl_name.custom_minimum_size.x = COL_WIDTHS[COL_NAME]
 	lbl_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lbl_name.add_theme_font_size_override("font_size", 14)
+	lbl_name.size_flags_stretch_ratio = COL_STRETCH[COL_NAME]
+	lbl_name.add_theme_font_size_override("font_size", 13)
 	if pd.is_human:
 		lbl_name.add_theme_color_override("font_color", Color(1.0, 1.0, 0.5))
 	row.add_child(lbl_name)
@@ -317,32 +328,50 @@ func _create_row(pd: PlayerData) -> HBoxContainer:
 	var lbl_hp: Label = Label.new()
 	lbl_hp.name = "HP"
 	lbl_hp.custom_minimum_size.x = COL_WIDTHS[COL_HP]
+	lbl_hp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl_hp.size_flags_stretch_ratio = COL_STRETCH[COL_HP]
 	lbl_hp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_hp.add_theme_font_size_override("font_size", 14)
+	lbl_hp.add_theme_font_size_override("font_size", 13)
 	row.add_child(lbl_hp)
 	
 	var lbl_kills: Label = Label.new()
 	lbl_kills.name = "Kills"
 	lbl_kills.custom_minimum_size.x = COL_WIDTHS[COL_KILLS]
+	lbl_kills.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl_kills.size_flags_stretch_ratio = COL_STRETCH[COL_KILLS]
 	lbl_kills.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_kills.add_theme_font_size_override("font_size", 14)
+	lbl_kills.add_theme_font_size_override("font_size", 13)
 	lbl_kills.add_theme_color_override("font_color", Color(0.9, 0.5, 0.2))
 	row.add_child(lbl_kills)
 	
 	var lbl_deaths: Label = Label.new()
 	lbl_deaths.name = "Deaths"
 	lbl_deaths.custom_minimum_size.x = COL_WIDTHS[COL_DEATHS]
+	lbl_deaths.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl_deaths.size_flags_stretch_ratio = COL_STRETCH[COL_DEATHS]
 	lbl_deaths.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_deaths.add_theme_font_size_override("font_size", 14)
+	lbl_deaths.add_theme_font_size_override("font_size", 13)
 	lbl_deaths.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	row.add_child(lbl_deaths)
 	
 	var lbl_status: Label = Label.new()
 	lbl_status.name = "Status"
 	lbl_status.custom_minimum_size.x = COL_WIDTHS[COL_STATUS]
+	lbl_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl_status.size_flags_stretch_ratio = COL_STRETCH[COL_STATUS]
 	lbl_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_status.add_theme_font_size_override("font_size", 14)
+	lbl_status.add_theme_font_size_override("font_size", 13)
 	row.add_child(lbl_status)
+	
+	var lbl_rol: Label = Label.new()
+	lbl_rol.name = "Rol"
+	lbl_rol.custom_minimum_size.x = COL_WIDTHS[COL_ROL]
+	lbl_rol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl_rol.size_flags_stretch_ratio = COL_STRETCH[COL_ROL]
+	lbl_rol.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_rol.add_theme_font_size_override("font_size", 12)
+	lbl_rol.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
+	row.add_child(lbl_rol)
 	
 	_update_row_data(row, pd)
 	return row
@@ -369,6 +398,10 @@ func _update_row_data(row: HBoxContainer, pd: PlayerData) -> void:
 	var lbl_deaths: Label = row.get_node("Deaths") as Label
 	if lbl_deaths:
 		lbl_deaths.text = "%d" % pd.deaths
+	
+	var lbl_rol: Label = row.get_node("Rol") as Label
+	if lbl_rol:
+		lbl_rol.text = pd.tactical_role_name
 	
 	var lbl_status: Label = row.get_node("Status") as Label
 	if lbl_status:

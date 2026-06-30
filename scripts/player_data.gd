@@ -46,6 +46,12 @@ var kills: int = 0
 var deaths: int = 0
 # Futuro: ping, asistencias, damage_done, damage_taken, etc.
 
+# ── Rol táctico (solo bots) ────────────────
+
+## Nombre del rol táctico (ej: "Defensor", "Asalto", etc.).
+## Para humanos queda vacío.
+var tactical_role_name: String = ""
+
 # ── Respawn ────────────────────────────────
 
 ## Tiempo restante de respawn (solo relevante cuando status == RESPAWNING)

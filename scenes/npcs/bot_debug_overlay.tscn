@@ -1,0 +1,119 @@
+[gd_scene format=3 uid="uid://06oyc7b8fupg"]
+
+[ext_resource type="Script" uid="uid://daet4rgg5a1qa" path="res://scripts/bot_debug_overlay.gd" id="1_overlay"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
+bg_color = Color(0.05, 0.05, 0.08, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.3, 0.4, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_health_bg"]
+bg_color = Color(0.2, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_health_fill"]
+bg_color = Color(0.1, 0.8, 0.1, 1)
+
+[node name="BotDebugOverlay" type="Node3D" unique_id=933009611 groups=["bot_debug_overlay"]]
+script = ExtResource("1_overlay")
+
+[node name="Viewport" type="SubViewport" parent="." unique_id=1338830612]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(240, 100)
+
+[node name="UI" type="Control" parent="Viewport" unique_id=1784104786]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Background" type="Panel" parent="Viewport/UI" unique_id=1866615215]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="NameLabel" type="Label" parent="Viewport/UI" unique_id=1809777012]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 4.0
+offset_right = 234.0
+offset_bottom = 22.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_constants/outline_size = 1
+theme_override_font_sizes/font_size = 14
+text = "BotName"
+
+[node name="HealthBar" type="ProgressBar" parent="Viewport/UI" unique_id=801174560]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 26.0
+offset_right = 234.0
+offset_bottom = 42.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBox_health_bg")
+theme_override_styles/fill = SubResource("StyleBox_health_fill")
+value = 100.0
+show_percentage = false
+
+[node name="HealthLabel" type="Label" parent="Viewport/UI" unique_id=1442166126]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 26.0
+offset_right = 160.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "100 / 100"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AmmoLabel" type="Label" parent="Viewport/UI" unique_id=1270429561]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 46.0
+offset_right = 234.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(0.8, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Cargador: 30/30"
+
+[node name="ReserveLabel" type="Label" parent="Viewport/UI" unique_id=1595819149]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 64.0
+offset_right = 234.0
+offset_bottom = 82.0
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "Total: 120/120"
+
+[node name="RoleLabel" type="Label" parent="Viewport/UI" unique_id=1234567890]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 82.0
+offset_right = 234.0
+offset_bottom = 100.0
+theme_override_colors/font_color = Color(0.6, 0.8, 1.0, 1)
+theme_override_font_sizes/font_size = 12
+text = "Rol: --"
+
+[node name="Sprite" type="Sprite3D" parent="." unique_id=2135179019]
+transform = Transform3D(1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 1.4, 0)
+centered = false
+pixel_size = 0.0025
+billboard = 1

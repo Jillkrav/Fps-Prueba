@@ -1,6 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://dropped_weapon_scene"]
+[gd_scene format=3 uid="uid://bnre1cxahhdti"]
 
-[ext_resource type="Script" path="res://scripts/dropped_weapon.gd" id="1_dropped"]
+[ext_resource type="Script" uid="uid://dxe463fg4q7gh" path="res://scripts/weapon_pickup.gd" id="1_weapon_pickup"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_pickup"]
 size = Vector3(0.8, 0.4, 0.8)
@@ -8,35 +8,28 @@ size = Vector3(0.8, 0.4, 0.8)
 [sub_resource type="BoxMesh" id="BoxMesh_weapon"]
 size = Vector3(0.25, 0.08, 0.15)
 
-[node name="DroppedWeapon" type="RigidBody3D"]
-script = ExtResource("1_dropped")
-collision_layer = 0
-collision_mask = 0
-gravity_scale = 1.0
+[node name="DroppedWeapon" type="RigidBody3D" unique_id=260938457]
 mass = 0.5
+script = ExtResource("1_weapon_pickup")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=303484734]
 shape = SubResource("BoxShape_pickup")
 
-[node name="WeaponMesh" type="MeshInstance3D" parent="."]
+[node name="WeaponMesh" type="MeshInstance3D" parent="." unique_id=1398842276]
 mesh = SubResource("BoxMesh_weapon")
 
-[node name="Label3D" type="Label3D" parent="."]
-position = Vector3(0, 0.3, 0)
-font_size = 32
+[node name="Label3D" type="Label3D" parent="." unique_id=502060801]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 modulate = Color(1, 0.85, 0.2, 1)
-outline_size = 4
 outline_modulate = Color(0, 0, 0, 0.9)
-billboard = 0
+outline_size = 4
 
-[node name="PickupArea" type="Area3D" parent="."]
-collision_layer = 0
-collision_mask = 0
+[node name="PickupArea" type="Area3D" parent="." unique_id=1482857292]
 
-[node name="PickupCollision" type="CollisionShape3D" parent="PickupArea"]
+[node name="PickupCollision" type="CollisionShape3D" parent="PickupArea" unique_id=675931783]
 shape = SubResource("BoxShape_pickup")
 
-[node name="DespawnTimer" type="Timer" parent="."]
+[node name="DespawnTimer" type="Timer" parent="." unique_id=384310575]
 wait_time = 30.0
 one_shot = true
 autostart = true

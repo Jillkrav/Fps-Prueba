@@ -26,10 +26,18 @@ var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravi
 @onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var weapon_placeholder_scene: PackedScene = preload("res://scenes/weapons/weapon_placeholder.tscn")
+const BOT_DEBUG_OVERLAY: PackedScene = preload("res://scenes/npcs/bot_debug_overlay.tscn")
 
 var _original_height: float = 0.0
+var _debug_overlay: Node3D = null
 
 var active_weapon: Weapon = null
+
+# ─── Pickup confirmation system ──────────────────────────────────────────
+## Referencia al pickup pendiente de confirmación (arma diferente).
+var _pending_pickup: Node = null
+## Distancia máxima para mantener el prompt de confirmación.
+const _PICKUP_CONFIRM_RANGE: float = 3.0
 
 func _ready() -> void:
 	add_to_group("player")
@@ -42,6 +50,7 @@ func _ready() -> void:
 	# El arma se equipa externamente (DevMenu, team_weapon_selector, etc.)
 	active_weapon = null
 	health_changed.emit(current_health, max_health)
+	_setup_debug_overlay()
 
 func setup_weapon(nombre_arma: String) -> void:
 	for child in weapon_holder.get_children():
@@ -81,17 +90,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate_y(-event.relative.x * sens)
 		head.rotate_x(event.relative.y * sens * invert_y)
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-85), deg_to_rad(85))
-
-func _process(_delta: float) -> void:
-	if is_dead:
-		return
-	if not active_weapon:
-		return
-	if Input.is_action_pressed("reload"):
-		active_weapon.start_reload()
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		if Input.is_action_pressed("shoot"):
-			shoot()
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
@@ -187,6 +185,11 @@ func respawn() -> void:
 	is_dead = false
 	current_health = max_health
 	
+	# Restaurar municion al maximo (cargador + reserva)
+	if active_weapon:
+		active_weapon.resupply()
+		ammo_changed.emit(active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
+	
 	# Teletransportar al spawn point del equipo actual
 	if is_instance_valid(MatchManager):
 		var spawn: Marker3D = MatchManager.obtener_spawn_point(GameState.player_team)
@@ -196,6 +199,7 @@ func respawn() -> void:
 	# Re-habilitar controles
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	health_changed.emit(current_health, max_health)
+	_setup_debug_overlay()
 
 func change_team(new_team: int) -> bool:
 	"""
@@ -213,6 +217,129 @@ func resupply() -> void:
 	if active_weapon:
 		active_weapon.resupply()
 		ammo_changed.emit(active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
+
+# ─── Debug Overlay (Propiedades de unidad) ─────────────────────────────
+func _setup_debug_overlay() -> void:
+	if BotDebugOverlay.enabled:
+		_add_debug_overlay()
+	else:
+		_remove_debug_overlay()
+
+func _add_debug_overlay() -> void:
+	if _debug_overlay and is_instance_valid(_debug_overlay):
+		return
+	var overlay: Node3D = BOT_DEBUG_OVERLAY.instantiate()
+	add_child(overlay)
+	_debug_overlay = overlay
+
+func _remove_debug_overlay() -> void:
+	if _debug_overlay and is_instance_valid(_debug_overlay):
+		_debug_overlay.queue_free()
+		_debug_overlay = null
+
+# ─── Pickup System ─────────────────────────────────────────────────────
+## Llamado por el Pickup cuando el jugador entra en su área de recogida.
+func _on_pickup_area_entered(pickup: Node) -> void:
+	if is_dead:
+		return
+	if not is_instance_valid(pickup):
+		return
+	
+	# ── Solo interceptar pickups de armas ────────────────────────────
+	if pickup is WeaponPickup:
+		_handle_weapon_pickup_area(pickup)
+		return
+	
+	# ── Pickups no-arma: recoger inmediatamente ──────────────────────
+	pickup.pick_up(self)
+
+## Maneja la entrada al área de un arma en el suelo.
+func _handle_weapon_pickup_area(pickup: Node) -> void:
+	if not is_instance_valid(pickup):
+		return
+	
+	var weapon_name: String = pickup.pickup_data.get("tipo_arma", "")
+	if weapon_name == "":
+		return
+	
+	# ── Caso A: El jugador ya tiene esta misma arma → auto-recoger (munición)
+	var tiene_misma_arma: bool = false
+	if active_weapon and is_instance_valid(active_weapon):
+		tiene_misma_arma = active_weapon.weapon_name.to_lower() == weapon_name.to_lower()
+	
+	if tiene_misma_arma:
+		# Si hay un prompt pendiente de otra arma, cancelarlo
+		_cancel_pending_pickup()
+		# Recoger inmediatamente (solo suma munición)
+		pickup.pick_up(self)
+		return
+	
+	# ── Caso B: Arma diferente → mostrar prompt de confirmación
+	# Cancelar cualquier prompt anterior
+	_cancel_pending_pickup()
+	
+	_pending_pickup = pickup
+	
+	# Mostrar prompt en HUD
+	var current_weapon_name: String = ""
+	if active_weapon and is_instance_valid(active_weapon):
+		current_weapon_name = active_weapon.weapon_name
+	
+	var hud: Node = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_weapon_prompt"):
+		hud.show_weapon_prompt(weapon_name, current_weapon_name)
+
+## El jugador salió del área de recogida — cancelar el prompt.
+func _on_pickup_area_exited(pickup: Node) -> void:
+	if _pending_pickup == pickup:
+		_cancel_pending_pickup()
+
+## Cancela el prompt de recogida actual.
+func _cancel_pending_pickup() -> void:
+	if _pending_pickup:
+		_pending_pickup = null
+		var hud: Node = get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("hide_weapon_prompt"):
+			hud.hide_weapon_prompt()
+
+## Confirma la recogida del arma pendiente.
+func _confirm_pending_pickup() -> void:
+	if not _pending_pickup or not is_instance_valid(_pending_pickup):
+		_cancel_pending_pickup()
+		return
+	
+	var pickup: Node = _pending_pickup
+	_pending_pickup = null
+	
+	# Ocultar prompt
+	var hud: Node = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("hide_weapon_prompt"):
+		hud.hide_weapon_prompt()
+	
+	# Recoger el arma
+	pickup.pick_up(self)
+
+func _process(_delta: float) -> void:
+	if is_dead:
+		return
+	
+	# ── Manejar arma activa (disparo/recarga) ────────────────────────
+	if active_weapon:
+		if Input.is_action_pressed("reload"):
+			active_weapon.start_reload()
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			if Input.is_action_pressed("shoot"):
+				shoot()
+	
+	# ── Confirmar recogida pendiente ─────────────────────────────────
+	if _pending_pickup and Input.is_action_just_pressed("interact"):
+		_confirm_pending_pickup()
+	
+	# ── Verificar distancia al pickup pendiente ──────────────────────
+	if _pending_pickup and is_instance_valid(_pending_pickup):
+		var dist: float = global_position.distance_to(_pending_pickup.global_position)
+		if dist > _PICKUP_CONFIRM_RANGE:
+			_cancel_pending_pickup()
 
 func _on_weapon_fired(curr: int, mx: int) -> void:
 	ammo_changed.emit(curr, mx)

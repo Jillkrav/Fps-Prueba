@@ -106,6 +106,26 @@ func _agregar_botones_extras() -> void:
 	btn_ai.pressed.connect(_on_ai_disable_pressed)
 	vbox.add_child(btn_ai)
 	vbox.move_child(btn_ai, insert_idx + 2)
+	
+	# Boton debug overlay
+	var btn_debug_overlay := Button.new()
+	btn_debug_overlay.name = "BtnBotDebug"
+	btn_debug_overlay.text = "Bot Debug Info [OFF]"
+	btn_debug_overlay.custom_minimum_size = Vector2(0, 36)
+	btn_debug_overlay.add_theme_font_size_override("font_size", 16)
+	btn_debug_overlay.pressed.connect(_on_bot_debug_pressed)
+	vbox.add_child(btn_debug_overlay)
+	vbox.move_child(btn_debug_overlay, insert_idx + 3)
+	
+	# Boton propiedades de unidad (Cargador, Total balas, Vida)
+	var btn_unit_props := Button.new()
+	btn_unit_props.name = "BtnUnitProps"
+	btn_unit_props.text = "Propiedades de unidad [OFF]"
+	btn_unit_props.custom_minimum_size = Vector2(0, 36)
+	btn_unit_props.add_theme_font_size_override("font_size", 16)
+	btn_unit_props.pressed.connect(_on_unit_props_pressed)
+	vbox.add_child(btn_unit_props)
+	vbox.move_child(btn_unit_props, insert_idx + 4)
 
 # ── Panel flotante selector de armas ─────────────────────────────────────────
 # FIX: se usa PRESET_CENTER_TOP + offset para que el panel NO se salga de pantalla.
@@ -354,6 +374,20 @@ func _on_generar_pressed() -> void:
 func _on_volver_pressed() -> void:
 	panel_npc.visible       = false
 	panel_principal.visible = true
+
+func _on_bot_debug_pressed() -> void:
+	NpcBase.toggle_debug_overlay_all()
+	var btn: Button = get_node_or_null("PanelPrincipal/VBox/BtnBotDebug")
+	if btn:
+		btn.text = "Bot Debug Info [ON]" if BotDebugOverlay.enabled else "Bot Debug Info [OFF]"
+	lbl_status.text = "Bot Debug %s" % ("ACTIVADO" if BotDebugOverlay.enabled else "DESACTIVADO")
+
+func _on_unit_props_pressed() -> void:
+	BotDebugOverlay.toggle_unit_properties_all()
+	var btn: Button = get_node_or_null("PanelPrincipal/VBox/BtnUnitProps")
+	if btn:
+		btn.text = "Propiedades de unidad [ON]" if BotDebugOverlay.enabled else "Propiedades de unidad [OFF]"
+	lbl_status.text = "Propiedades de unidad %s" % ("ACTIVADO" if BotDebugOverlay.enabled else "DESACTIVADO")
 
 func _on_cambiar_equipo_pressed() -> void:
 	visible = false
