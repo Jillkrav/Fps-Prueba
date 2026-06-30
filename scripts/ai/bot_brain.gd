@@ -70,8 +70,31 @@ var perception: Node = null:
 
 var _perception: Node = null
 
+## Referencia al sistema de memoria (hermano en el árbol)
+var memory: MemorySystem = null:
+	get:
+		if _memory == null:
+			_memory = get_node_or_null("../MemorySystem") as MemorySystem
+		return _memory
+
+var _memory: MemorySystem = null
+
+## Referencia al sistema de navegación (hermano en el árbol)
+var navigation: NavigationSystem = null:
+	get:
+		if _navigation == null:
+			_navigation = get_node_or_null("../NavigationSystem") as NavigationSystem
+		return _navigation
+
+var _navigation: NavigationSystem = null
+
 ## Tiempo acumulado en el comportamiento actual (para debug)
 var time_in_behavior: float = 0.0
+
+## Contexto de decisión compartido (DecisionContext).
+## Los behaviors escriben aquí sus intenciones durante execute().
+## BotBrain traduce estas intenciones en execute_context().
+var context: DecisionContext = null
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -80,6 +103,7 @@ var time_in_behavior: float = 0.0
 
 func _ready() -> void:
 	_register_behaviors()
+	context = DecisionContext.new()
 	_debug_brain("Brain listo con %d comportamientos" % behaviors.size())
 
 
@@ -107,12 +131,25 @@ func _register_behaviors() -> void:
 # ══════════════════════════════════════════════════════════════════
 
 ## Evalúa todos los comportamientos, selecciona el mejor y lo ejecuta.
+##
+## FLUJO ACTUALIZADO:
+##   1. Resetea context (intents transitorios)
+##   2. Evalúa prioridades (solo lectura del context)
+##   3. Transiciona si cambia el mejor behavior
+##   4. Ejecuta behavior activo → ESCRIBE en context
+##   5. Resolve: valida coherencia del context
+##   6. Execute: traduce context a llamadas a sistemas
+##
 ## Retorna el nombre del comportamiento activo (para debug).
 func process(delta: float) -> String:
 	if bot == null or bot.is_dead:
 		return "dead"
 	
-	# ── Fase 1: Evaluar prioridades ─────────────────────────────
+	# ── Fase 0: Resetear intents transitorios ─────────────────
+	if context != null:
+		context.reset_frame()
+	
+	# ── Fase 1: Evaluar prioridades (solo lectura) ─────────────
 	var best_behavior: BotBehavior = null
 	var best_priority: float = -1.0
 	
@@ -126,13 +163,24 @@ func process(delta: float) -> String:
 	if best_behavior != current_behavior:
 		_switch_behavior(current_behavior, best_behavior)
 	
-	# ── Fase 3: Ejecutar comportamiento activo ──────────────────
+	# ── Fase 3: Ejecutar comportamiento activo → ESCRIBE context ──
 	if current_behavior != null:
 		time_in_behavior += delta
 		current_behavior.execute(self, delta)
-		return current_behavior.behavior_name
+		
+		# Sincronizar flags del contexto
+		if context != null:
+			context.flags.behavior_name = current_behavior.behavior_name
+			context.flags.time_in_behavior = time_in_behavior
 	
-	return "none"
+	# ── Fase 4: Resolver contexto (validar coherencia) ─────────
+	if context != null:
+		_resolve_context()
+		
+		# ── Fase 5: Ejecutar contexto (traducir a sistemas) ──
+		_execute_context()
+	
+	return current_behavior.behavior_name if current_behavior else "none"
 
 
 ## Realiza la transición entre comportamientos.
@@ -164,6 +212,77 @@ func _get_priority_for(behavior: BotBehavior) -> float:
 		if b == behavior:
 			return b.get_priority(self)
 	return -1.0
+
+
+# ══════════════════════════════════════════════════════════════════
+# RESOLUCIÓN Y EJECUCIÓN DEL CONTEXTO
+# ══════════════════════════════════════════════════════════════════
+# Fase 4: resolve_context() — valida coherencia del DecisionContext
+# Fase 5: execute_context() — traduce context a llamadas a sistemas
+#
+# Durante la migración (Fase 5 de la refactorización), los behaviors
+# pueden usar la API antigua (wrappers abajo) O escribir en context.
+# execute_context() solo actúa si el behavior escribió en context.
+# ══════════════════════════════════════════════════════════════════
+
+## Valida y normaliza el DecisionContext antes de ejecutarlo.
+## Delega en context.resolve() que contiene las reglas de validación.
+func _resolve_context() -> void:
+	if context == null:
+		return
+	context.resolve()
+
+
+## Traduce las intenciones del DecisionContext a llamadas a sistemas.
+## Solo actúa si el behavior escribió en context (movement.mode != NONE).
+## Los behaviors que usen la API antigua (wrappers) no tocan el context,
+## por lo que esta función no interfiere.
+func _execute_context() -> void:
+	if context == null:
+		return
+	
+	var m: DecisionContext.MovementIntent = context.movement
+	var c: DecisionContext.CombatIntent = context.combat
+	
+	# ── Movimiento ─────────────────────────────────────────────
+	if navigation != null:
+		match m.mode:
+			DecisionContext.MovementIntent.Mode.NAVIGATE:
+				# Pathfinding hacia un destino
+				navigation.move_to(m.target, m.speed)
+			
+			DecisionContext.MovementIntent.Mode.DIRECT:
+				# Vector directo (strafe, retreat, etc.)
+				navigation.move_direction(m.vector, m.speed)
+			
+			DecisionContext.MovementIntent.Mode.HOLD:
+				# Quieto intencional — frenar suavemente
+				navigation.hold_position()
+			
+			# NONE: el behavior usó la API antigua, no intervenir
+	else:
+		# Fallback: si no hay NavigationSystem, usar métodos antiguos
+		match m.mode:
+			DecisionContext.MovementIntent.Mode.NAVIGATE:
+				if bot:
+					bot._move_to_target(0.0, m.speed, m.target)
+			DecisionContext.MovementIntent.Mode.DIRECT:
+				if bot and m.vector != Vector3.ZERO:
+					var dir: Vector3 = m.vector.normalized()
+					bot.velocity.x = dir.x * m.speed
+					bot.velocity.z = dir.z * m.speed
+			DecisionContext.MovementIntent.Mode.HOLD:
+				if bot:
+					bot.velocity.x = move_toward(bot.velocity.x, 0.0, 10.0)
+					bot.velocity.z = move_toward(bot.velocity.z, 0.0, 10.0)
+	
+	# ── Apuntar ────────────────────────────────────────────────
+	if c.aim_target != Vector3.ZERO and bot:
+		bot._aim_at_target(c.aim_target)
+	
+	# ── Disparar ───────────────────────────────────────────────
+	if c.wants_to_shoot and bot:
+		bot._shoot()
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -319,6 +438,34 @@ func ammo_pct() -> float:
 		var max_total: float = float(bot._weapon.max_ammo + bot._weapon.clip_size)
 		return total / max_total
 	return 0.0
+
+
+# ══════════════════════════════════════════════════════════════════
+# API DE MEMORIA — Wrappers a MemorySystem
+# ══════════════════════════════════════════════════════════════════
+
+## ¿Hay memoria de posición enemiga?
+func has_enemy_memory() -> bool:
+	return memory != null and memory.has_enemy_memory()
+
+
+## Retorna la última posición conocida de un enemigo.
+func get_last_enemy_position() -> Vector3:
+	if memory != null:
+		return memory.get_last_enemy_position()
+	return Vector3.ZERO
+
+
+## Retorna la entrada más reciente de un tipo de memoria.
+func get_memory(type: int) -> MemorySystem.MemoryEntry:
+	if memory != null:
+		return memory.get_most_recent(type)
+	return null
+
+
+## ¿Hay una entrada del tipo especificado?
+func has_memory_type(type: int, max_age: float = -1.0) -> bool:
+	return memory != null and memory.has_type(type, max_age)
 
 
 ## Acceso al rol táctico del bot.

@@ -4,12 +4,21 @@
 #
 # Centraliza toda la detección sensorial del NPC:
 # - Visión (Area3D + RayCast3D)
-# - Memoria de posiciones enemigas (última posición conocida)
 # - Evaluación de prioridad de enemigos
-# - (Futuro) Detección de sonidos (disparos, explosiones)
-# - (Futuro) Conocimiento de posición de aliados
+# - Selección de objetivo actual
 #
-# Este nodo se añade como hijo de NpcBase, junto al BotBrain.
+# ── CAMBIO IMPORTANTE (Refactorización) ──
+# La MEMORIA ya no está aquí. Se ha extraído a MemorySystem.
+# PerceptionSystem solo DETECTA. MemorySystem solo RECUERDA.
+#
+# ── FLUJO ──
+# 1. Escanea AreaVision por cuerpos enemigos
+# 2. Verifica línea de visión con RayCast3D
+# 3. Calcula prioridad de cada enemigo visible
+# 4. Registra en MemorySystem: "enemigo visto en posición X"
+# 5. Selecciona el mejor objetivo
+# 6. Sincroniza con NpcBase (target_enemy, last_seen_position)
+# ──────────────────────────────────────────────────────────────────
 # ──────────────────────────────────────────────────────────────────
 extends Node
 class_name PerceptionSystem
@@ -18,9 +27,6 @@ class_name PerceptionSystem
 # ══════════════════════════════════════════════════════════════════
 # CONSTANTES
 # ══════════════════════════════════════════════════════════════════
-
-## Tiempo máximo (segundos) que recordamos una posición enemiga
-const MEMORY_DURATION: float = 10.0
 
 ## Distancia máxima para considerar que un enemigo está "cerca
 ## del core enemigo"
@@ -39,15 +45,14 @@ var bot: NpcBase:
 		return _bot
 var _bot: NpcBase = null
 
+## Referencia al MemorySystem (hermano en el árbol)
+var memory: MemorySystem = null
+
 ## Objetivo enemigo actual (puede ser un CharacterBody3D o Core)
 var target_enemy: Node3D = null
 
 ## Última posición conocida del enemigo (para HUNT)
 var last_seen_position: Vector3 = Vector3.ZERO
-
-## Lista de todas las posiciones recordadas de enemigos
-## { "position": Vector3, "time": float, "enemy": Node3D }
-var memory: Array[Dictionary] = []
 
 ## Tiempo acumulado con el mismo objetivo
 var time_on_target: float = 0.0
@@ -65,14 +70,17 @@ var visible_enemies: Array[Dictionary] = []
 
 func _ready() -> void:
 	_bot = get_parent() as NpcBase
+	# Buscar MemorySystem como hermano
+	if bot:
+		memory = bot.get_node_or_null("MemorySystem") as MemorySystem
 
 
 # ══════════════════════════════════════════════════════════════════
-# CICLO PRINCIPAL — Llamado cada frame desde BotBrain o NpcBase
+# CICLO PRINCIPAL — Llamado cada frame desde NpcBase._physics_process()
 # ══════════════════════════════════════════════════════════════════
 
 ## Actualiza la percepción: escanea enemigos, verifica LOS, calcula
-## prioridades y actualiza la memoria. Debe llamarse cada frame.
+## prioridades y registra en MemorySystem. Debe llamarse cada frame.
 func update(delta: float) -> void:
 	if bot == null or bot.is_dead:
 		return
@@ -141,19 +149,17 @@ func update(delta: float) -> void:
 		
 		visible_enemies.append({ "body": body, "score": score, "dist": dist })
 		
-		# Actualizar memoria: siempre recordamos la última posición
-		_add_to_memory(body, body.global_position)
+		# ── Registrar en MemorySystem ──
+		if memory != null:
+			memory.record_enemy_position(body, body.global_position)
 	
-	# ── Fase 2: Actualizar memoria (decaimiento) ─────────────────
-	_decay_memory(delta)
-	
-	# ── Fase 3: Decidir objetivo actual ──────────────────────────
+	# ── Fase 2: Decidir objetivo actual ──────────────────────────
 	_select_target(role)
 	
-	# ── Fase 4: Sincronizar con variables del bot ────────────────
+	# ── Fase 3: Sincronizar con variables del bot ────────────────
 	_sync_to_bot()
 	
-	# ── Fase 5: Actualizar timer de objetivo ─────────────────────
+	# ── Fase 4: Actualizar timer de objetivo ─────────────────────
 	if target_enemy != null and is_instance_valid(target_enemy):
 		time_on_target += delta
 	else:
@@ -169,6 +175,9 @@ func _select_target(role: TacticalRole) -> void:
 			# actualizar last_seen_position para HUNT
 			if target_enemy is CharacterBody3D and not target_enemy.get("is_dead"):
 				last_seen_position = target_enemy.global_position
+				# Registrar en memoria para HUNT
+				if memory != null:
+					memory.record_enemy_position(target_enemy, last_seen_position)
 			elif target_enemy.get("is_destroyed") == true or target_enemy.get("is_dead") == true:
 				target_enemy = null
 				is_attacking_core = false
@@ -212,59 +221,42 @@ func _sync_to_bot() -> void:
 
 
 # ══════════════════════════════════════════════════════════════════
-# MEMORIA
+# API DE MEMORIA (BACKWARD COMPATIBILITY)
+# ══════════════════════════════════════════════════════════════════
+# Estos métodos existían en PerceptionSystem y behaviors los usan.
+# Ahora delegan en MemorySystem. Cuando los behaviors se refactoricen
+# a FASE 5, estos métodos se eliminarán.
 # ══════════════════════════════════════════════════════════════════
 
-## Añade la posición de un enemigo a la memoria (o la actualiza).
-func _add_to_memory(enemy: Node3D, position: Vector3) -> void:
-	for entry in memory:
-		if entry.get("enemy") == enemy:
-			entry["position"] = position
-			entry["time"] = Time.get_ticks_msec() / 1000.0
-			return
-	
-	memory.append({
-		"enemy": enemy,
-		"position": position,
-		"time": Time.get_ticks_msec() / 1000.0
-	})
+## ¿Hay memoria de enemigos? (delega en MemorySystem)
+func has_memory() -> bool:
+	return memory != null and memory.has_enemy_memory()
 
 
-## Decae la memoria: elimina entradas antiguas.
-func _decay_memory(_delta: float) -> void:
-	var now: float = Time.get_ticks_msec() / 1000.0
-	memory = memory.filter(func(e): return (now - e.get("time", 0)) < MEMORY_DURATION)
-
-
-## Retorna la posición recordada más reciente de un enemigo,
-## o Vector3.ZERO si no hay memoria válida.
+## Retorna la última posición conocida de un enemigo (delega en MemorySystem).
 func get_last_known_enemy_position() -> Vector3:
-	if memory.is_empty():
-		return Vector3.ZERO
-	# La más reciente
-	memory.sort_custom(func(a, b): return a.get("time", 0) > b.get("time", 0))
-	return memory[0].get("position", Vector3.ZERO)
+	if memory != null:
+		return memory.get_last_enemy_position()
+	return Vector3.ZERO
 
 
-## Retorna el enemigo recordado más reciente (para HUNT).
+## Retorna el enemigo recordado más reciente (delega en MemorySystem).
 func get_last_known_enemy() -> Node3D:
-	if memory.is_empty():
+	if memory == null:
 		return null
-	memory.sort_custom(func(a, b): return a.get("time", 0) > b.get("time", 0))
-	var enemy: Node3D = memory[0].get("enemy", null)
-	if enemy != null and is_instance_valid(enemy) and enemy.is_inside_tree():
-		return enemy
+	var entry: MemorySystem.MemoryEntry = memory.get_most_recent(MemorySystem.MemoryType.ENEMY_POSITION)
+	if entry != null:
+		var enemy: Node3D = entry.data.get("enemy", null) as Node3D
+		if enemy != null and is_instance_valid(enemy) and enemy.is_inside_tree():
+			return enemy
 	return null
 
 
-## Retorna true si hay algún recuerdo de enemigos.
-func has_memory() -> bool:
-	return not memory.is_empty()
-
-
-## Retorna la cantidad de enemigos recordados.
+## Retorna la cantidad de enemigos recordados (delega en MemorySystem).
 func memory_count() -> int:
-	return memory.size()
+	if memory != null:
+		return memory.count_type(MemorySystem.MemoryType.ENEMY_POSITION)
+	return 0
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -290,4 +282,5 @@ func reset() -> void:
 	is_attacking_core = false
 	time_on_target = 0.0
 	visible_enemies.clear()
-	memory.clear()
+	# La memoria NO se resetea aquí. MemorySystem tiene su propio reset
+	# que se llama desde NpcBase.respawn().

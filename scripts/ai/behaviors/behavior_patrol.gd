@@ -12,6 +12,10 @@
 # - Pickups: busca armas y munición
 # - Rutas diversificadas: cada bot se aproxima desde ángulos distintos
 #
+# ── MIGRADO A DECISIONCONTEXT (FASE 5) ──
+# Escribe en DecisionContext para navegación.
+# BotBrain._execute_context() traduce a NavigationSystem.
+#
 # ── PRIORIDAD ──
 # 10 (siempre activo como comportamiento por defecto)
 # ──────────────────────────────────────────────────────────────────
@@ -31,6 +35,7 @@ const PRIORITY_PATROL: float = 10.0
 # ══════════════════════════════════════════════════════════════════
 
 var _objective_reached: bool = false
+var _nav_target: Vector3 = Vector3.ZERO
 
 
 func _init() -> void:
@@ -42,26 +47,27 @@ func _init() -> void:
 # ══════════════════════════════════════════════════════════════════
 
 func get_priority(_brain: BotBrain) -> float:
-	# Comportamiento por defecto: siempre disponible
 	return PRIORITY_PATROL
 
 
 func enter(brain: BotBrain) -> void:
 	_objective_reached = false
-	# Resetear nav target para que recalcule ruta al entrar
-	brain.bot._nav_target = Vector3.ZERO
-	brain.reset_stuck()
+	_nav_target = Vector3.ZERO
+	brain.context.movement.reset()
+	brain.context.flags.behavior_name = behavior_name
 
 
-func execute(brain: BotBrain, delta: float) -> void:
+func execute(brain: BotBrain, _delta: float) -> void:
 	var role: TacticalRole = brain.get_tactical_role()
 	
 	# ── 1. Verificar radio defensivo ───────────────────────────────
-	if _check_defense_radius(brain, role, delta):
+	if _check_defense_radius(brain, role):
 		return
 	
 	# ── 2. Verificar pickups cercanos ─────────────────────────────
-	if brain.check_pickups(delta):
+	# NOTA: check_pickups todavía usa API antigua internamente.
+	# Cuando se refactorice, reemplazar con context writes.
+	if brain.check_pickups(_delta):
 		return
 	
 	# ── 3. Decidir: ir al core enemigo o deambular ────────────────
@@ -69,26 +75,27 @@ func execute(brain: BotBrain, delta: float) -> void:
 	var should_patrol: bool = _should_patrol_instead(role)
 	
 	if has_core and not should_patrol:
-		_execute_advance_to_core(brain, delta, role)
+		_advance_to_core(brain, role)
 	else:
-		_execute_wander(brain, delta, role)
+		_wander(brain, role)
+	
+	# Escribir en el context para BotBrain._execute_context()
+	brain.context.flags.behavior_name = behavior_name
 
 
 # ══════════════════════════════════════════════════════════════════
 # RADIO DEFENSIVO
 # ══════════════════════════════════════════════════════════════════
 
-## Si el bot tiene radio defensivo y está muy lejos de la base,
-## redirige hacia ella.
-func _check_defense_radius(brain: BotBrain, role: TacticalRole, delta: float) -> bool:
+func _check_defense_radius(brain: BotBrain, _role: TacticalRole) -> bool:
+	var role: TacticalRole = brain.get_tactical_role()
 	if role and role.base_defense_radius > 0.0:
 		var own_core: Node = brain.get_own_core()
 		if own_core and is_instance_valid(own_core) and own_core.is_inside_tree():
 			var dist_to_base: float = brain.bot.global_position.distance_to(own_core.global_position)
 			if dist_to_base > role.base_defense_radius:
-				if brain.bot._nav_target == Vector3.ZERO or brain.bot.navigation_agent.is_navigation_finished():
-					brain.set_route_target(own_core.global_position)
-				brain.navigate_with_route(delta, brain.role_speed(4.5), own_core.global_position)
+				_nav_target = own_core.global_position
+				brain.context.movement.set_navigate(_nav_target, brain.role_speed(4.5))
 				return true
 	return false
 
@@ -97,14 +104,12 @@ func _check_defense_radius(brain: BotBrain, role: TacticalRole, delta: float) ->
 # DECISIÓN: PATRULLAR vs AVANZAR
 # ══════════════════════════════════════════════════════════════════
 
-## ¿El core enemigo es un objetivo válido?
 func _has_valid_core(brain: BotBrain) -> bool:
 	var core: Node = brain.get_enemy_core()
 	return core != null and is_instance_valid(core) and core.is_inside_tree() \
 		and not core.get("is_destroyed")
 
 
-## ¿Debemos patrullar en lugar de ir directamente al core?
 func _should_patrol_instead(role: TacticalRole) -> bool:
 	if role == null:
 		return randf() < 0.3
@@ -122,10 +127,10 @@ func _should_patrol_instead(role: TacticalRole) -> bool:
 # SUB-FASE: AVANZAR AL CORE ENEMIGO
 # ══════════════════════════════════════════════════════════════════
 
-func _execute_advance_to_core(brain: BotBrain, delta: float, role: TacticalRole) -> void:
+func _advance_to_core(brain: BotBrain, role: TacticalRole) -> void:
 	var core: Node = brain.get_enemy_core()
 	if core == null:
-		_execute_wander(brain, delta, role)
+		_wander(brain, role)
 		return
 	
 	var dist_to_core: float = brain.bot.global_position.distance_to(core.global_position)
@@ -133,41 +138,47 @@ func _execute_advance_to_core(brain: BotBrain, delta: float, role: TacticalRole)
 	if dist_to_core < 4.0:
 		_objective_reached = true
 	
-	# Establecer nuevo destino cuando: es la primera vez o llegamos
-	if brain.bot._nav_target == Vector3.ZERO or _objective_reached:
-		brain.set_route_target(core.global_position)
+	if _nav_target == Vector3.ZERO or _objective_reached:
+		_nav_target = core.global_position
 		_objective_reached = false
 	
 	var speed: float = brain.role_speed(4.5)
-	brain.navigate_with_route(delta, speed, core.global_position)
+	brain.context.movement.set_navigate(_nav_target, speed)
 
 
 # ══════════════════════════════════════════════════════════════════
 # SUB-FASE: DEAMBULAR / PATRULLAR
 # ══════════════════════════════════════════════════════════════════
 
-func _execute_wander(brain: BotBrain, delta: float, role: TacticalRole) -> void:
+func _wander(brain: BotBrain, role: TacticalRole) -> void:
 	var wander_radius: float = _get_wander_radius(role)
+	var nav: NavigationSystem = brain.navigation
 	
-	if brain.bot._nav_target == Vector3.ZERO or brain.bot.navigation_agent.is_navigation_finished():
-		var nav_map_rid: RID = brain.bot.navigation_agent.get_navigation_map()
+	if _nav_target == Vector3.ZERO or (nav != null and nav.is_navigation_finished()):
+		var nav_map_rid: RID
+		if nav != null and nav.agent != null:
+			nav_map_rid = nav.agent.get_navigation_map()
+		elif brain.bot.navigation_agent != null:
+			nav_map_rid = brain.bot.navigation_agent.get_navigation_map()
+		else:
+			nav_map_rid = RID()
+		
 		var raw_target: Vector3 = brain.bot.global_position + Vector3(
 			randf_range(-wander_radius, wander_radius), 0,
 			randf_range(-wander_radius, wander_radius))
-		if NavigationServer3D.map_is_active(nav_map_rid):
-			brain.bot._nav_target = NavigationServer3D.map_get_closest_point(nav_map_rid, raw_target)
+		
+		if nav_map_rid.is_valid() and NavigationServer3D.map_is_active(nav_map_rid):
+			_nav_target = NavigationServer3D.map_get_closest_point(nav_map_rid, raw_target)
 		else:
-			brain.bot._nav_target = raw_target
-		brain.bot.navigation_agent.target_position = brain.bot._nav_target
+			_nav_target = raw_target
 	
-	brain.navigate_to(brain.bot._nav_target, brain.role_speed(3.5), delta)
+	brain.context.movement.set_navigate(_nav_target, brain.role_speed(3.5))
 
 
 # ══════════════════════════════════════════════════════════════════
 # UTILIDADES
 # ══════════════════════════════════════════════════════════════════
 
-## Devuelve el radio de deambulación según el rol.
 func _get_wander_radius(role: TacticalRole) -> float:
 	if not role:
 		return 20.0

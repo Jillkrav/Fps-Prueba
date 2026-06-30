@@ -7,6 +7,11 @@
 # alta, pero sirve como estado seguro cuando el bot se inicializa
 # o después de un respawn.
 #
+# ── MIGRADO A DECISIONCONTEXT (FASE 5) ──
+# Escribe en DecisionContext. BotBrain._execute_context() traduce
+# a NavigationSystem. No usa la API antigua (brain.navigate_to,
+# brain.aim_at, etc.).
+#
 # ── PRIORIDAD ──
 # 0 (mínima, solo se activa si ningún otro behavior lo hace)
 # ──────────────────────────────────────────────────────────────────
@@ -22,12 +27,16 @@ func _init() -> void:
 
 
 func get_priority(_brain: BotBrain) -> float:
-	# Siempre disponible como fallback, pero con la prioridad
-	# más baja para que cualquier otro behavior lo reemplace
 	return PRIORITY_IDLE
 
 
+func enter(brain: BotBrain) -> void:
+	brain.context.movement.set_hold()
+	brain.context.flags.behavior_name = behavior_name
+
+
 func execute(brain: BotBrain, _delta: float) -> void:
-	# Frenar suavemente
-	brain.bot.velocity.x = move_toward(brain.bot.velocity.x, 0, 10.0)
-	brain.bot.velocity.z = move_toward(brain.bot.velocity.z, 0, 10.0)
+	brain.context.movement.set_hold()
+	brain.context.flags.behavior_name = behavior_name
+	brain.context.combat.wants_to_shoot = false
+	brain.context.combat.aim_target = Vector3.ZERO

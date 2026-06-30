@@ -7,10 +7,17 @@
 # Se activa cuando hay un enemigo visible y el rol decide atacar.
 #
 # ── SUB-FASES INTERNAS ──
-# - CHASE:     Persigue al enemigo si está fuera del rango de combate
-# - STRAFE:    Combate evasivo lateral dentro del rango preferido
-# - RETREAT:   Retirada táctica (poca vida, muy lejos de base)
+# - CHASE:     Persigue al enemigo (NAVEGACIÓN)
+# - STRAFE:    Combate evasivo lateral (MOVIMIENTO DIRECTO)
+# - RETREAT:   Retirada táctica (NAVEGACIÓN)
 # - CORE:      Ataca el core enemigo
+#
+# ── MIGRADO A DECISIONCONTEXT (FASE 5) ──
+# Cada sub-fase escribe en el DecisionContext:
+# - CHASE / RETREAT / CORE (lejos) → movimiento NAVEGAR
+# - STRAFE / CORE (cerca)          → movimiento DIRECTO o HOLD
+# La lógica de combate (strafe jumps, aim, shoot) sigue aquí,
+# solo cambia CÓMO se escribe la intención de movimiento.
 #
 # ── PRIORIDAD ──
 # 100 si hay enemigo visible y debemos atacar
@@ -26,6 +33,9 @@ class_name BehaviorCombat
 ## Prioridad de combate (la más alta del sistema)
 const PRIORITY_COMBAT: float = 100.0
 
+## Distancia mínima para recalcular ruta de persecución
+const CHASE_RECALC_DIST: float = 5.0
+
 
 # ══════════════════════════════════════════════════════════════════
 # ENUM — Sub-fases de combate
@@ -40,11 +50,18 @@ enum CombatPhase { CHASE, STRAFE, RETREAT, CORE_ATTACK }
 
 var phase: int = CombatPhase.CHASE
 
-# Variables de strafe
+# Strafe
 var _strafe_direction: int = 1
 var _last_strafe_change: float = 0.0
-var _jump_timer: float = 0.0
-var _route_initialized: bool = false
+
+# Core attack
+var _core_target_last: Vector3 = Vector3.ZERO
+
+# Chase
+var _chase_target_last: Vector3 = Vector3.ZERO
+
+# Retreat
+var _retreat_target: Vector3 = Vector3.ZERO
 
 
 func _init() -> void:
@@ -60,16 +77,12 @@ func get_priority(brain: BotBrain) -> float:
 	if perception == null:
 		return -1.0
 	
-	# Prioridad máxima si tenemos un enemigo vivo visible
 	if perception.has_visible_enemies():
 		return PRIORITY_COMBAT
 	
-	# También combatir si estamos atacando el core
 	if brain.is_attacking_core():
 		return PRIORITY_COMBAT
 	
-	# Si tenemos un objetivo vivo pero no visible (estamos en
-	# medio de una persecución), el HUNT lo maneja
 	return -1.0
 
 
@@ -77,25 +90,32 @@ func enter(brain: BotBrain) -> void:
 	phase = CombatPhase.CHASE
 	_strafe_direction = 1 if randi() % 2 == 0 else -1
 	_last_strafe_change = Time.get_ticks_msec() / 1000.0
-	_route_initialized = false
-	_jump_timer = 0.0
+	_chase_target_last = Vector3.ZERO
+	_core_target_last = Vector3.ZERO
+	_retreat_target = Vector3.ZERO
 	
-	# Si el objetivo es el core, ir directamente a CORE_ATTACK
 	if brain.is_attacking_core():
 		phase = CombatPhase.CORE_ATTACK
+	
+	brain.context.flags.behavior_name = behavior_name
 
 
 func execute(brain: BotBrain, delta: float) -> void:
+	# Resetear context para evitar arrastrar intenciones de frames
+	# anteriores si salimos temprano por validación fallida
+	brain.context.movement.reset()
+	brain.context.combat.reset()
+	
 	if not _validate_target(brain):
 		return
 	
 	var role: TacticalRole = brain.get_tactical_role()
 	
-	# ── Verificar retirada táctica ─────────────────────────────────
+	# ── Retirada táctica ──────────────────────────────────────────
 	if _check_retreat(brain, role, delta):
 		return
 	
-	# ── Actualizar sub-fase según la distancia ─────────────────────
+	# ── Actualizar sub-fase ───────────────────────────────────────
 	var dist: float = brain.dist_to_target()
 	var engage_min: float = role.preferred_engagement_min if role else 5.0
 	var engage_max: float = role.preferred_engagement_max if role else 15.0
@@ -107,30 +127,30 @@ func execute(brain: BotBrain, delta: float) -> void:
 	else:
 		phase = CombatPhase.STRAFE
 	
-	# ── Ejecutar sub-fase ──────────────────────────────────────────
+	# ── Ejecutar sub-fase ─────────────────────────────────────────
 	match phase:
 		CombatPhase.CHASE:
-			_execute_chase(brain, delta, role)
+			_execute_chase(brain, role)
 		CombatPhase.STRAFE:
-			_execute_strafe(brain, delta, role, dist, engage_min, engage_max)
+			_execute_strafe(brain, role, dist, engage_min, engage_max)
 		CombatPhase.CORE_ATTACK:
-			_execute_core_attack(brain, delta, role)
-		# RETREAT se maneja en _check_retreat
+			_execute_core_attack(brain, role)
+	
+	brain.context.flags.behavior_name = behavior_name
 
 
 func exit(_brain: BotBrain) -> void:
-	_route_initialized = false
+	_chase_target_last = Vector3.ZERO
+	_core_target_last = Vector3.ZERO
+	_retreat_target = Vector3.ZERO
 
 
 # ══════════════════════════════════════════════════════════════════
 # VALIDACIÓN DEL OBJETIVO
 # ══════════════════════════════════════════════════════════════════
 
-## Verifica que el objetivo siga siendo válido. Retorna false si
-## debemos salir del comportamiento.
 func _validate_target(brain: BotBrain) -> bool:
 	if brain.is_attacking_core():
-		# Verificar que el core sigue existiendo
 		var core: Node = brain.get_enemy_core()
 		if core == null or not is_instance_valid(core) or not core.is_inside_tree():
 			brain.reevaluate_enemies()
@@ -154,13 +174,11 @@ func _validate_target(brain: BotBrain) -> bool:
 # RETIRADA TÁCTICA
 # ══════════════════════════════════════════════════════════════════
 
-## Evalúa si el bot debe retirarse. Si lo hace, ejecuta la retirada
-## y retorna true.
-func _check_retreat(brain: BotBrain, role: TacticalRole, delta: float) -> bool:
+func _check_retreat(brain: BotBrain, _role: TacticalRole, _delta: float) -> bool:
+	var role: TacticalRole = brain.get_tactical_role()
 	if role == null:
 		return false
 	
-	# Salud muy baja + no muy agresivo = retirada
 	var hp: float = brain.health_pct()
 	var should_retreat: bool = role.should_retreat(
 		hp,
@@ -171,19 +189,19 @@ func _check_retreat(brain: BotBrain, role: TacticalRole, delta: float) -> bool:
 	if not should_retreat:
 		return false
 	
-	# Ejecutar retirada
 	var own_core: Node = brain.get_own_core()
 	if own_core and is_instance_valid(own_core):
 		var fallback: Vector3 = role.get_fallback_position(
 			own_core.global_position, brain.bot.global_position)
 		var dist_to_fb: float = brain.bot.global_position.distance_to(fallback)
 		
-		if brain.bot._nav_target == Vector3.ZERO:
-			brain.set_route_target(fallback)
-		brain.navigate_with_route(delta, brain.role_speed(5.0), fallback)
+		# Escribir en context: navegar hacia el punto de retirada
+		_retreat_target = fallback
+		brain.context.movement.set_navigate(_retreat_target, brain.role_speed(5.0))
+		brain.context.flags.behavior_name = behavior_name
 		
 		if dist_to_fb < 3.0:
-			phase = CombatPhase.CHASE  # Reset para cuando vuelva
+			phase = CombatPhase.CHASE
 			brain.reevaluate_enemies()
 		return true
 	
@@ -194,7 +212,7 @@ func _check_retreat(brain: BotBrain, role: TacticalRole, delta: float) -> bool:
 # SUB-FASE: CHASE (persecución)
 # ══════════════════════════════════════════════════════════════════
 
-func _execute_chase(brain: BotBrain, delta: float, role: TacticalRole) -> void:
+func _execute_chase(brain: BotBrain, role: TacticalRole) -> void:
 	var target: Node3D = brain.bot.target_enemy
 	if target == null:
 		return
@@ -205,28 +223,30 @@ func _execute_chase(brain: BotBrain, delta: float, role: TacticalRole) -> void:
 		aim_pos += Vector3.UP * 1.2
 	else:
 		aim_pos += Vector3.UP * 0.7
-	brain.aim_at(aim_pos)
+	brain.context.combat.aim_target = aim_pos
 	
-	# Disparar mientras perseguimos (si está en rango)
+	# Disparar mientras perseguimos
 	var dist: float = brain.dist_to_target()
 	var engage_max: float = role.preferred_engagement_max if role else 15.0
 	if dist <= engage_max * 1.5 and brain.bot._weapon and brain.bot._weapon.can_fire():
-		brain.shoot()
+		brain.context.combat.wants_to_shoot = true
 	
-	# Navegar hacia el enemigo
-	if brain.bot._route_target_pos == Vector3.ZERO or \
-	   target.global_position.distance_to(brain.bot._route_target_pos) > 5.0:
-		brain.set_route_target(target.global_position)
-		_route_initialized = false
+	# Navegar hacia el enemigo (recalcular ruta si se movió mucho)
+	var speed: float = brain.role_speed(5.5)
+	var current_target: Vector3 = target.global_position
 	
-	brain.navigate_with_route(delta, brain.role_speed(5.5), target.global_position)
+	if _chase_target_last == Vector3.ZERO or \
+	   current_target.distance_to(_chase_target_last) > CHASE_RECALC_DIST:
+		_chase_target_last = current_target
+	
+	brain.context.movement.set_navigate(_chase_target_last, speed)
 
 
 # ══════════════════════════════════════════════════════════════════
 # SUB-FASE: STRAFE (combate evasivo)
 # ══════════════════════════════════════════════════════════════════
 
-func _execute_strafe(brain: BotBrain, _delta: float, role: TacticalRole,
+func _execute_strafe(brain: BotBrain, role: TacticalRole,
 	dist: float, engage_min: float, engage_max: float) -> void:
 	
 	var target: Node3D = brain.bot.target_enemy
@@ -234,9 +254,9 @@ func _execute_strafe(brain: BotBrain, _delta: float, role: TacticalRole,
 		return
 	
 	# Apuntar
-	brain.aim_at(target.global_position + Vector3.UP * 1.2)
+	brain.context.combat.aim_target = target.global_position + Vector3.UP * 1.2
 	
-	# Cambio de strafe influenciado por el rol
+	# Cambio de strafe
 	var strafe_interval: float = role.strafe_change_interval if role else 2.0
 	var now: float = Time.get_ticks_msec() / 1000.0
 	if now - _last_strafe_change > randf_range(strafe_interval * 0.5, strafe_interval * 1.5):
@@ -246,49 +266,48 @@ func _execute_strafe(brain: BotBrain, _delta: float, role: TacticalRole,
 		if randf() < jump_chance and brain.bot.is_on_floor():
 			brain.bot.velocity.y = 5.0
 	
-	# Calcular movimiento lateral + ajuste de distancia
+	# Movimiento lateral + ajuste de distancia
 	var dir_to_enemy: Vector3 = (target.global_position - brain.bot.global_position).normalized()
 	var side_dir: Vector3 = dir_to_enemy.cross(Vector3.UP) * _strafe_direction
 	
 	var move_vec: Vector3 = side_dir
 	if dist < engage_min:
-		move_vec -= dir_to_enemy * 0.5   # Alejarse
+		move_vec -= dir_to_enemy * 0.5
 	elif dist > engage_max:
-		move_vec += dir_to_enemy * 0.5   # Acercarse
+		move_vec += dir_to_enemy * 0.5
 	
 	var speed: float = brain.role_speed(5.0)
-	brain.bot.velocity.x = move_vec.x * speed
-	brain.bot.velocity.z = move_vec.z * speed
 	
-	# Disparar mientras strafeamos
-	brain.try_shoot()
+	# STRAFE usa movimiento DIRECTO (no pathfinding) porque es
+	# movimiento táctico de combate. NavigationSystem solo pasa
+	# el vector a velocity sin intervenir.
+	brain.context.movement.set_direct(move_vec, speed)
+	
+	# Disparar
+	brain.context.combat.wants_to_shoot = true
 
 
 # ══════════════════════════════════════════════════════════════════
 # SUB-FASE: CORE_ATTACK (atacar objetivo principal)
 # ══════════════════════════════════════════════════════════════════
 
-func _execute_core_attack(brain: BotBrain, delta: float, role: TacticalRole) -> void:
+func _execute_core_attack(brain: BotBrain, role: TacticalRole) -> void:
 	var core: Node = brain.get_enemy_core()
 	if core == null or not is_instance_valid(core):
 		brain.reevaluate_enemies()
 		return
 	
 	var target_pos: Vector3 = core.global_position + Vector3.UP * 0.7
-	brain.aim_at(target_pos)
+	brain.context.combat.aim_target = target_pos
 	
 	var dist: float = brain.bot.global_position.distance_to(core.global_position)
 	var engage_max: float = role.preferred_engagement_max if role else 15.0
 	
 	if dist > engage_max:
-		# Navegar hacia el core con ruta diversificada
-		if not _route_initialized:
-			brain.set_route_target(core.global_position)
-			brain.bot._nav_target = core.global_position
-			_route_initialized = true
-		brain.navigate_with_route(delta, brain.role_speed(5.0), core.global_position)
+		# Lejos del core: navegar hacia él
+		_core_target_last = core.global_position
+		brain.context.movement.set_navigate(_core_target_last, brain.role_speed(5.0))
 	else:
 		# Cerca del core: disparar quieto
-		brain.try_shoot()
-		brain.bot.velocity.x = move_toward(brain.bot.velocity.x, 0, 10.0)
-		brain.bot.velocity.z = move_toward(brain.bot.velocity.z, 0, 10.0)
+		brain.context.combat.wants_to_shoot = true
+		brain.context.movement.set_hold()

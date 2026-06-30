@@ -29,6 +29,12 @@ var brain: BotBrain = null
 ## Referencia al sistema de percepción modular.
 var perception_sys: PerceptionSystem = null
 
+## Referencia al sistema de memoria modular.
+var memory_sys: MemorySystem = null
+
+## Referencia al sistema de navegación modular.
+var navigation_sys: NavigationSystem = null
+
 # Objetivo actual (sincronizado por PerceptionSystem)
 var target_enemy: Node3D = null
 var last_seen_position: Vector3 = Vector3.ZERO
@@ -153,6 +159,17 @@ func _ready() -> void:
 	perception_sys.name = "PerceptionSystem"
 	add_child(perception_sys)
 	
+	# Crear el sistema de memoria (independiente, disponible para
+	# PerceptionSystem y BotBrain).
+	memory_sys = MemorySystem.new()
+	memory_sys.name = "MemorySystem"
+	add_child(memory_sys)
+	
+	# Crear el sistema de navegación modular.
+	navigation_sys = NavigationSystem.new()
+	navigation_sys.name = "NavigationSystem"
+	add_child(navigation_sys)
+	
 	# Crear el cerebro modular que reemplaza la FSM tradicional
 	brain = BotBrain.new()
 	brain.name = "BotBrain"
@@ -173,9 +190,13 @@ func _physics_process(delta: float) -> void:
 	if is_dead or not is_inside_tree():
 		return
 	
-	# ── 1. Actualizar percepción (visión, memoria) ──────────────
+	# ── 1. Actualizar percepción (visión, detección) ────────────
 	if perception_sys:
 		perception_sys.update(delta)
+	
+	# ── 1b. Actualizar memoria (decaimiento automático) ─────────
+	if memory_sys:
+		memory_sys.update(delta)
 	
 	# ── 2. Verificar proximidad al core enemigo ──────────────────
 	_check_core_proximity()
@@ -184,13 +205,9 @@ func _physics_process(delta: float) -> void:
 	if brain:
 		brain.process(delta)
 	
-	# ── 4. Detección de atasco (maneja recuperación activa) ─────
-	var stuck_handled: bool = _check_stuck(delta)
-	
-	if not stuck_handled and brain and brain.current_behavior:
-		# El behavior ya ha ejecutado su movimiento. Solo
-		# actualizar si el behavior no manejó el movimiento.
-		pass
+	# ── 4. Navegación: detección y recuperación de atasco ───────
+	if navigation_sys:
+		navigation_sys.update(delta)
 	
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
@@ -563,11 +580,15 @@ func _re_evaluar_enemigos() -> void:
 	_is_attacking_core = false
 	_enemy_core = null
 	_team_objective = Vector3.ZERO
-	_nav_target = Vector3.ZERO
-	_route_waypoint = Vector3.ZERO
-	_route_phase = 0
-	_route_target_pos = Vector3.ZERO
-	_reset_stuck_state()
+	if navigation_sys:
+		navigation_sys.reset()
+	else:
+		# Fallback: limpia manual
+		_nav_target = Vector3.ZERO
+		_route_waypoint = Vector3.ZERO
+		_route_phase = 0
+		_route_target_pos = Vector3.ZERO
+		_reset_stuck_state()
 	if perception_sys:
 		perception_sys.reset()
 	# El BotBrain seleccionará automáticamente PATROL o IDLE
@@ -967,6 +988,14 @@ func respawn() -> void:
 	# Resetear percepción (olvidar enemigos)
 	if perception_sys:
 		perception_sys.reset()
+	
+	# Resetear memoria (olvidar todo al morir)
+	if memory_sys:
+		memory_sys.clear_all()
+	
+	# Resetear navegación (olvidar rutas y stuck state)
+	if navigation_sys:
+		navigation_sys.reset()
 	
 	# Re-inicializar rol táctico (por si cambió en caliente)
 	_tactical_role = TacticalRole.for_npc(self)
