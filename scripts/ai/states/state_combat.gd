@@ -266,9 +266,9 @@ func _execute_strafe() -> void:
 	if now - _last_strafe_change > randf_range(strafe_interval * 0.5, strafe_interval * 1.5):
 		_strafe_direction *= -1
 		_last_strafe_change = now
-		# Salto táctico durante strafe (opcional)
+		# Salto táctico durante strafe (solo en rango cerrado < 5m)
 		var jump_chance: float = role.jump_frequency if role else 0.0
-		if randf() < jump_chance and bot.is_on_floor():
+		if jump_chance > 0.0 and _get_target_distance() < 5.0 and randf() < jump_chance and bot.is_on_floor():
 			movement_cmd.request_jump()
 
 	# Movimiento lateral + ajuste de distancia

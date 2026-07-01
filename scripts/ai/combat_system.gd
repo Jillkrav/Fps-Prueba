@@ -108,6 +108,9 @@ var _last_debug_time: float = 0.0
 ## Dirección sugerida para la evasión.
 var dodge_direction: Vector3 = Vector3.ZERO
 
+## El dodge debería incluir salto (se activa al recibir daño en rango cercano).
+var dodge_with_jump: bool = false
+
 
 # ══════════════════════════════════════════════════════════════════
 # PROPIEDADES — INTERNAS
@@ -127,6 +130,11 @@ var _head_node: Node3D = null
 
 ## Temporizador de enfriamiento de dodge.
 var _dodge_cooldown_timer: float = 0.0
+
+## Tracking de daño recibido (para dodge reactivo).
+var _last_known_health: float = -1.0
+var _last_damage_time: float = -999.0
+const DAMAGE_DODGE_WINDOW: float = 1.0  # Segundos para reaccionar al daño
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -189,7 +197,10 @@ func process(_delta: float) -> void:
 		elif decision_sys.has_target():
 			_aim_at_target_entity()
 
-	# ── 4. Actualizar engagement_analysis ──
+	# ── 4. Trackear daño recibido para dodge reactivo ──
+	_track_damage()
+	
+	# ── 5. Actualizar engagement_analysis ──
 	_update_engagement_analysis()
 
 
@@ -505,6 +516,20 @@ func _update_dodge_cooldown(delta: float) -> void:
 			_dodge_cooldown_timer = 0.0
 
 
+## Detecta daño recibido comparando health actual con el último valor conocido.
+func _track_damage() -> void:
+	if bot == null:
+		return
+	if _last_known_health < 0.0:
+		_last_known_health = bot.current_health
+		return
+	
+	if bot.current_health < _last_known_health:
+		_last_damage_time = Time.get_ticks_msec() / 1000.0
+		_debug("Daño recibido: %.0f → %.0f" % [_last_known_health, bot.current_health])
+	_last_known_health = bot.current_health
+
+
 ## Evalúa si deberíamos solicitar una evasión.
 ## NO escribe velocity — solo marca wants_dodge para DecisionSystem.
 func _check_dodge_request() -> void:
@@ -519,12 +544,18 @@ func _check_dodge_request() -> void:
 	if dist > CLOSE_COMBAT_RANGE * 2.0:
 		return
 
-	# Probabilidad de dodge (mayor en combate cercano)
+	# Probabilidad de dodge base (mayor en combate cercano)
 	var dodge_chance: float = 0.0
 	if dist < CLOSE_COMBAT_RANGE:
-		dodge_chance = 0.15  # 15% por frame en rango cercano
+		dodge_chance = 0.10  # 10% por frame en rango cercano
 	elif dist < CLOSE_COMBAT_RANGE * 2.0:
-		dodge_chance = 0.05  # 5% en rango medio
+		dodge_chance = 0.03  # 3% en rango medio
+	
+	# Aumentar probabilidad si recibió daño recientemente
+	var now: float = Time.get_ticks_msec() / 1000.0
+	var recent_damage: bool = (now - _last_damage_time) < DAMAGE_DODGE_WINDOW
+	if recent_damage:
+		dodge_chance = max(dodge_chance, 0.25)  # Al menos 25% si recibió daño
 
 	if randf() > dodge_chance:
 		return
@@ -541,6 +572,9 @@ func _check_dodge_request() -> void:
 	dodge_direction = side.normalized()
 	dodge_state = DodgeState.DODGING
 
+	# Si recibió daño recientemente y está en rango muy cercano, saltar al esquivar
+	dodge_with_jump = recent_damage and dist < CLOSE_COMBAT_RANGE and bot.is_on_floor()
+
 	emit_signal("dodge_requested", dodge_direction)
 	_debug("Dodge solicitado: %s" % str(dodge_direction.round()))
 
@@ -550,6 +584,7 @@ func _check_dodge_request() -> void:
 func confirm_dodge() -> void:
 	wants_dodge = false
 	dodge_direction = Vector3.ZERO
+	dodge_with_jump = false
 	dodge_state = DodgeState.COOLDOWN
 	_dodge_cooldown_timer = DODGE_COOLDOWN_TIME
 
@@ -559,6 +594,7 @@ func confirm_dodge() -> void:
 func deny_dodge() -> void:
 	wants_dodge = false
 	dodge_direction = Vector3.ZERO
+	dodge_with_jump = false
 	dodge_state = DodgeState.COOLDOWN
 	_dodge_cooldown_timer = DODGE_COOLDOWN_TIME * 0.5  # Enfriamiento más corto
 

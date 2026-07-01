@@ -254,8 +254,8 @@ static func _build_configs() -> Dictionary:
 			# Velocidad normal, se mueve con cautela
 			"speed_multiplier": 0.9,
 
-			# Salta poco
-			"jump_frequency": 0.1,
+			# Salta muy raramente (solo en strafe táctico)
+			"jump_frequency": 0.02,
 
 			# Reacciona a enemigos en un radio de 25 uds
 			"reaction_range": 25.0,
@@ -302,7 +302,7 @@ static func _build_configs() -> Dictionary:
 			"speed_multiplier": 1.15,
 
 			# Salta moderadamente (para sortear obstáculos)
-			"jump_frequency": 0.3,
+			"jump_frequency": 0.05,
 
 			# Reacciona a enemigos en todo el mapa
 			"reaction_range": 99999.0,
@@ -350,7 +350,7 @@ static func _build_configs() -> Dictionary:
 			"speed_multiplier": 1.2,
 
 			# Salta mucho (busca ángulos, es evasivo)
-			"jump_frequency": 0.5,
+			"jump_frequency": 0.08,
 
 			# Reacciona a enemigos en todo el mapa
 			"reaction_range": 99999.0,
@@ -398,7 +398,7 @@ static func _build_configs() -> Dictionary:
 			"speed_multiplier": 1.0,
 
 			# Salta ocasionalmente
-			"jump_frequency": 0.2,
+			"jump_frequency": 0.03,
 
 			# Reacciona a enemigos en un radio amplio
 			"reaction_range": 35.0,

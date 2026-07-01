@@ -136,22 +136,25 @@ func update(delta: float) -> void:
 		if role and dist > role.reaction_range:
 			continue
 		
-		# Chequeo de LOS (Line of Sight)
+		# Chequeo de LOS (Line of Sight) — doble verificación
 		var local_target: Vector3 = bot.to_local(target_pos)
 		bot.raycast_vision.target_position = local_target
 		bot.raycast_vision.force_raycast_update()
 		
-		var collider = bot.raycast_vision.get_collider()
-		var has_los: bool = false
-		if collider == body:
-			has_los = true
-		elif collider:
-			var parent_check: Node = collider
-			while parent_check:
-				if parent_check == body:
-					has_los = true
-					break
-				parent_check = parent_check.get_parent()
+		# Raycast 1: desde el cuerpo (actual)
+		var collider_1: Node = bot.raycast_vision.get_collider()
+		
+		# Raycast 2: desde la cabeza (offset vertical)
+		var head_pos: Vector3 = bot.head.global_position if bot.head else bot.global_position + Vector3.UP * 0.9
+		var space_state: PhysicsDirectSpaceState3D = bot.get_world_3d().direct_space_state
+		var query = PhysicsRayQueryParameters3D.create(head_pos, target_pos)
+		query.collision_mask = bot.raycast_vision.collision_mask
+		query.exclude = [bot]
+		var result: Dictionary = space_state.intersect_ray(query)
+		var collider_2 = result.get("collider", null) if not result.is_empty() else null
+		
+		# LOS requiere que AMBOS rayos impacten al enemigo
+		var has_los: bool = _is_target(body, collider_1) and _is_target(body, collider_2)
 		
 		if not has_los:
 			continue
@@ -246,6 +249,20 @@ func _select_target(role: TacticalRole) -> void:
 		if previous_target != null:
 			emit_signal("entity_lost", previous_target)
 		emit_signal("entity_detected", _target_enemy, _last_seen_position)
+
+
+# ── HELPER: Verifica si un collider es el cuerpo objetivo ─────
+static func _is_target(body: Node3D, collider: Node) -> bool:
+	if collider == null:
+		return false
+	if collider == body:
+		return true
+	var parent_check: Node = collider
+	while parent_check:
+		if parent_check == body:
+			return true
+		parent_check = parent_check.get_parent()
+	return false
 
 
 # ══════════════════════════════════════════════════════════════════

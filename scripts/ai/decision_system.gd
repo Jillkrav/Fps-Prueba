@@ -180,6 +180,9 @@ func _evaluate_dodge_request() -> void:
 	if should_grant:
 		# Conceder dodge: establecer movement_command en modo DODGE
 		movement_command.set_dodge(combat_sys.dodge_direction, 10.0)
+		# Incluir salto si el CombatSystem lo indica (daño recibido en rango cercano)
+		if combat_sys.dodge_with_jump:
+			movement_command.request_jump(7.0)
 		combat_sys.confirm_dodge()
 		_debug_decision("Dodge CONCEDIDO: %s" % str(combat_sys.dodge_direction.round()))
 	else:

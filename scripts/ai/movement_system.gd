@@ -51,7 +51,7 @@ var _gravity: float = 9.8
 const STUCK_PROGRESS_THRESHOLD: Dictionary = {
 	"idle":   8.0,
 	"patrol": 2.5,
-	"combat": 4.0,
+	"combat": 2.5,
 	"hunt":   2.0,
 }
 
@@ -60,9 +60,8 @@ const RECOVERY_PHASE1_DURATION: float = 0.5
 const RECOVERY_PHASE2_DURATION: float = 0.3
 const ROUTE_WAYPOINT_REACHED_DIST: float = 5.0
 
-# Avoidance
-const AVOIDANCE_RADIUS: float = 3.5
-const AVOIDANCE_FORCE: float = 3.0
+# RVO avoidance (nativo de NavigationServer3D)
+var _rvo_safe_velocity: Vector3 = Vector3.ZERO
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -98,6 +97,11 @@ var stuck_blocked_duration: float = 0.0
 var stuck_reroute_count: int = 0
 var is_stuck_flag: bool = false
 
+# ── "Cede el paso" state ──
+var _yield_timer: float = 0.0
+var _is_yielding: bool = false
+const YIELD_DURATION: float = 0.5
+
 # ── Navigation tracking ──
 var nav_target: Vector3 = Vector3.ZERO
 var route_waypoint: Vector3 = Vector3.ZERO
@@ -116,6 +120,9 @@ func _ready() -> void:
 	nav_system = get_node_or_null("../NavigationSystem") as NavigationSystem
 	last_position = bot.global_position if bot else Vector3.ZERO
 	_gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+	# Conectar RVO avoidance signal
+	if agent:
+		agent.velocity_computed.connect(_on_agent_velocity_computed)
 
 
 ## Procesa el movimiento y ESCRIBE velocity (único lugar).
@@ -168,7 +175,15 @@ func process(delta: float) -> void:
 		bot.velocity.y = command.jump_velocity
 		command.jump = false  # Consumir el salto
 	
-	# ── 5. Aplicar stuck recovery si está activo ──
+	# ── 5. Aplicar "cede el paso" si está activo ──
+	if _is_yielding:
+		_yield_timer -= delta
+		bot.velocity.x = move_toward(bot.velocity.x, 0.0, 20.0 * delta)
+		bot.velocity.z = move_toward(bot.velocity.z, 0.0, 20.0 * delta)
+		if _yield_timer <= 0.0:
+			_is_yielding = false
+	
+	# ── 6. Aplicar stuck recovery si está activo ──
 	if stuck_recovery_phase > 0:
 		_handle_stuck_recovery(delta)
 	
@@ -228,11 +243,14 @@ func _execute_navigate(delta: float, target: Vector3, speed: float) -> void:
 	# Calcular velocidad
 	var desired: Vector3 = dir * speed
 	
-	# Aplicar avoidance entre bots
-	desired = _apply_avoidance(desired, speed)
-	
-	bot.velocity.x = desired.x
-	bot.velocity.z = desired.z
+	# RVO avoidance nativo (NavigationServer3D)
+	if agent.avoidance_enabled:
+		agent.set_velocity(desired)
+		bot.velocity.x = _rvo_safe_velocity.x
+		bot.velocity.z = _rvo_safe_velocity.z
+	else:
+		bot.velocity.x = desired.x
+		bot.velocity.z = desired.z
 
 
 ## Movimiento por vector directo (strafe, retreat).
@@ -245,9 +263,14 @@ func _execute_direct(delta: float, dir: Vector3, speed: float) -> void:
 	normalized_dir.y = 0.0
 	
 	var desired: Vector3 = normalized_dir * speed
-	desired = _apply_avoidance(desired, speed)
 	
-	bot.velocity.x = desired.x
+	# RVO avoidance nativo (NavigationServer3D)
+	if agent and agent.avoidance_enabled:
+		agent.set_velocity(desired)
+		bot.velocity.x = _rvo_safe_velocity.x
+		bot.velocity.z = _rvo_safe_velocity.z
+	else:
+		bot.velocity.x = desired.x
 	bot.velocity.z = desired.z
 
 
@@ -275,43 +298,17 @@ func _execute_stop(_delta: float) -> void:
 
 
 # ══════════════════════════════════════════════════════════════════
-# AVOIDANCE — Separación entre NPCs
+# RVO AVOIDANCE — Nativo de NavigationServer3D
 # ══════════════════════════════════════════════════════════════════
 
-func _apply_avoidance(desired: Vector3, speed: float) -> Vector3:
-	if bot == null or not bot.is_inside_tree():
-		return desired
-	
-	var space: PhysicsDirectSpaceState3D = bot.get_world_3d().direct_space_state
-	var query := PhysicsShapeQueryParameters3D.new()
-	var sphere := SphereShape3D.new()
-	sphere.radius = AVOIDANCE_RADIUS
-	query.shape = sphere
-	query.transform = Transform3D.IDENTITY.translated(bot.global_position)
-	query.collision_mask = 1  # Layer 1 = NPCs
-	
-	var results: Array[Dictionary] = space.intersect_shape(query)
-	var push: Vector3 = Vector3.ZERO
-	
-	for result in results:
-		var collider: Node = result.collider
-		if collider == bot:
-			continue
-		if collider is CharacterBody3D:
-			var away: Vector3 = (bot.global_position - collider.global_position).normalized()
-			away.y = 0.0
-			var dist: float = bot.global_position.distance_to(collider.global_position)
-			if dist > 0.01 and dist < AVOIDANCE_RADIUS:
-				var force: float = AVOIDANCE_FORCE * (1.0 - dist / AVOIDANCE_RADIUS)
-				push += away * force
-	
-	if push.length_squared() > 0.001:
-		desired += push
-		# No exceder la velocidad máxima
-		if desired.length() > speed:
-			desired = desired.normalized() * speed
-	
-	return desired
+## Recibe la velocidad segura calculada por el NavigationServer3D (RVO).
+## Se llama automáticamente cada frame cuando avoidance_enabled = true.
+func _on_agent_velocity_computed(safe_velocity: Vector3) -> void:
+	_rvo_safe_velocity = safe_velocity
+	# Aplicar al bot si está vivo y el movimiento lo usa
+	if bot and not bot.is_dead:
+		bot.velocity.x = safe_velocity.x
+		bot.velocity.z = safe_velocity.z
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -381,25 +378,34 @@ func _check_stuck(delta: float) -> void:
 
 func _handle_stuck_recovery(delta: float) -> void:
 	match stuck_recovery_phase:
-		1: # Retroceder
+		1: # Retroceder — buscar espacio libre
 			stuck_recovery_timer -= delta
 			var speed: float = 4.5
-			if stuck_blocking_bot and is_instance_valid(stuck_blocking_bot):
-				if bot.is_on_floor():
-					bot.velocity.y = 8.0
-				speed = 5.5
+			
+			# Buscar dirección libre con raycast (evitar paredes)
+			var free_dir: Vector3 = _find_free_direction(stuck_recovery_dir)
+			if free_dir != Vector3.ZERO:
+				stuck_recovery_dir = free_dir
+			
+			# Ya no salta automáticamente — el salto es solo para Problema 2
+			# si no hay espacio lateral tras 2s
 			bot.velocity.x = stuck_recovery_dir.x * speed
 			bot.velocity.z = stuck_recovery_dir.z * speed
 			if stuck_recovery_timer <= 0.0:
 				stuck_recovery_phase = 2
-				stuck_recovery_timer = 0.3
+				stuck_recovery_timer = 0.4
+				# Dirección lateral para fase 2 (alternar lado cada intento)
 				var side_dir: Vector3 = Vector3(-stuck_recovery_dir.z, 0.0, stuck_recovery_dir.x)
 				if stuck_reroute_count % 2 == 0:
 					side_dir = -side_dir
 				stuck_recovery_dir = side_dir.normalized()
 		
-		2: # Lateral
+		2: # Lateral — buscar espacio a los lados
 			stuck_recovery_timer -= delta
+			# Re-verificar dirección lateral con raycast
+			var lateral_free: Vector3 = _find_free_direction(stuck_recovery_dir)
+			if lateral_free != Vector3.ZERO:
+				stuck_recovery_dir = lateral_free
 			bot.velocity.x = stuck_recovery_dir.x * 3.5
 			bot.velocity.z = stuck_recovery_dir.z * 3.5
 			if stuck_recovery_timer <= 0.0:
@@ -426,7 +432,44 @@ func _init_recovery_direction() -> void:
 	away_dir.y = 0.0
 	if away_dir.length_squared() < 0.001:
 		away_dir = Vector3(1.0, 0.0, 0.0)
-	stuck_recovery_dir = away_dir.normalized()
+	
+	# Verificar con raycast que la dirección no tenga pared
+	var checked_dir: Vector3 = _find_free_direction(away_dir.normalized())
+	if checked_dir != Vector3.ZERO:
+		stuck_recovery_dir = checked_dir
+	else:
+		stuck_recovery_dir = away_dir.normalized()
+
+
+## Busca una dirección libre usando raycasts.
+## Prueba la dirección preferida y 4 alternativas en abanico (45°, 90°).
+## Retorna Vector3.ZERO si todo está bloqueado.
+func _find_free_direction(preferred_dir: Vector3) -> Vector3:
+	if bot == null or not bot.is_inside_tree():
+		return preferred_dir
+	
+	var space_state: PhysicsDirectSpaceState3D = bot.get_world_3d().direct_space_state
+	var origin: Vector3 = bot.global_position + Vector3.UP * 0.5
+	var check_distance: float = 2.0
+	
+	# Direcciones a probar: preferida, luego laterales en abanico
+	var directions: Array[Vector3] = [
+		preferred_dir,
+		preferred_dir.rotated(Vector3.UP, 0.785),  # 45°
+		preferred_dir.rotated(Vector3.UP, -0.785),  # -45°
+		preferred_dir.rotated(Vector3.UP, 1.571),   # 90°
+		preferred_dir.rotated(Vector3.UP, -1.571),  # -90°
+	]
+	
+	for dir in directions:
+		var query = PhysicsRayQueryParameters3D.create(origin, origin + dir * check_distance)
+		query.collision_mask = 1  # Capa 1 = paredes/obstáculos (excluye NPCs)
+		query.exclude = [bot]
+		var result: Dictionary = space_state.intersect_ray(query)
+		if result.is_empty():
+			return dir.normalized()
+	
+	return Vector3.ZERO
 
 
 func _force_path_recalculation() -> void:
@@ -444,6 +487,8 @@ func _reset_stuck_state() -> void:
 	stuck_blocking_bot = null
 	stuck_blocked_duration = 0.0
 	is_stuck_flag = false
+	_is_yielding = false
+	_yield_timer = 0.0
 
 
 func _check_bot_blocking(delta: float) -> void:
@@ -472,12 +517,53 @@ func _check_bot_blocking(delta: float) -> void:
 			if abs(stuck_blocked_duration - STUCK_BLOCKED_TRIGGER_TIME) < delta:
 				var dist: float = _get_stuck_goal_position().distance_to(bot.global_position) if _get_stuck_goal_position() != Vector3.ZERO else 0.0
 				path_blocked.emit(dist)
+			
+			# ── Sistema "cede el paso" ──
+			# Si llevamos > 1.5s bloqueados por otro bot, el de menor prioridad cede
+			if stuck_blocked_duration > 1.5 and not _is_yielding:
+				if _should_yield_to(closest):
+					_is_yielding = true
+					_yield_timer = YIELD_DURATION
 		else:
 			stuck_blocking_bot = closest
 			stuck_blocked_duration = 0.0
+			# Si estábamos cediendo pero el bloqueador cambió, resetear
+			if _is_yielding:
+				_is_yielding = false
 	else:
 		stuck_blocking_bot = null
 		stuck_blocked_duration = 0.0
+		if _is_yielding:
+			_is_yielding = false
+
+
+## Determina si este bot debería ceder el paso a otro bot.
+## Prioridad: el que está en combate tiene prioridad sobre el que no.
+## Si ambos están en el mismo estado, el de mayor _npc_id (spawneado después) cede.
+func _should_yield_to(other_bot: Node3D) -> bool:
+	if other_bot == null:
+		return false
+	
+	var my_combat: bool = _is_in_combat()
+	var other_combat: bool = other_bot.get("_in_combat") if "_in_combat" in other_bot else false
+	
+	# Si el otro está en combate y yo no, yo cedo
+	if other_combat and not my_combat:
+		return true
+	# Si yo estoy en combate y el otro no, no cedo
+	if my_combat and not other_combat:
+		return false
+	
+	# Ambos en mismo estado: el de mayor _npc_id (menos prioridad) cede
+	var my_id: int = bot._npc_id if "_npc_id" in bot else 0
+	var other_id: int = other_bot.get("_npc_id") if "_npc_id" in other_bot else 0
+	return my_id > other_id
+
+
+func _is_in_combat() -> bool:
+	if bot and bot.decision_sys and bot.decision_sys.current_state:
+		return bot.decision_sys.current_state.state_name == "combat"
+	return false
 
 
 func _get_stuck_goal_position() -> Vector3:
