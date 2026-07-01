@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_78smn"]
+
+[resource]
+script = ExtResource("1_78smn")
+weapon_name = "Recortada"
+ai_rating = 0.55
+preferred_range_min = 1.0
+preferred_range_max = 8.0
+splash_damage = false
+lead_target = false
+refire_rate = 0.5
+aim_error_base = 4000
+attack_style_modifier = 0.7
+is_melee = false
+is_instant_hit = true
+category = "Escopetas"

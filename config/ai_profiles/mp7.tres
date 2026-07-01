@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_4hfgg"]
+
+[resource]
+script = ExtResource("1_4hfgg")
+weapon_name = "MP7"
+ai_rating = 0.55
+preferred_range_min = 3.0
+preferred_range_max = 25.0
+lead_target = false
+refire_rate = 0.9
+aim_error_base = 2500
+attack_style_modifier = 0.3
+category = "Subfusiles"

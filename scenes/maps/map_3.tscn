@@ -20,7 +20,8 @@ tonemap_mode = 2
 glow_enabled = true
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_map3"]
-vertices = PackedVector3Array(-36, 0, -36, 36, 0, -36, 36, 0, 36, -36, 0, 36)
+vertices = PackedVector3Array(-38.75, 0.5, -10.25, -32.75, 0.5, -10.25, -32.5, 0.5, -12.5, -18, 0.5, -12.5, -18.25, 0.5, -18.25, -23.25, 0.5, -18.25, -23.5, 0.5, -21.25, -22, 0.5, -38.75, -38.75, 0.5, -38.75, -21.75, 0.5, -21.5, -18, 0.5, -21.5, -17.75, 0.5, -38.75, -16.75, 0.5, -18.25, -16.25, 0.5, -18.75, 14.25, 0.5, -12.5, 14.25, 0.5, -26.5, 14.75, 0.5, -26.75, 14.75, 0.5, -38.75, -16.25, 0.5, -21.25, 16.5, 0.5, -26.5, 16.5, 0.5, -22.75, 18.5, 0.5, -22.75, 18.5, 0.5, -27.5, 21.5, 0.5, -27.75, 23, 0.5, -38.75, 21.75, 0.5, -22.5, 23, 0.5, -22.25, 24, 7, -38.75, 24, 7, 31.75, 32.25, 7, 31.75, 32.25, 7, -38.75, 33.25, 0.5, 31, 39, 0.5, 31.25, 39, 0.5, -38.75, 33.25, 0.5, -38.75, 24.25, 0.5, -38.5, 24.25, 0.5, 31.5, 32, 0.5, 31.5, 32, 0.5, -38.5, 19.5, 3.5, -26.75, 19.5, 3.5, -21.5, 20.5, 3.5, -21.5, 20.5, 3.5, -26.75, 21.5, 0.5, -20.5, 23, 0.5, 30.5, 18.75, 0.5, -20.5, 16.5, 0.5, 30.5, -22.5, 2.5, -20.5, -22.5, 2.5, -19.5, -17.5, 2.5, -19.5, -17.5, 2.5, -20.5, -31.75, 8.25, -11.5, -31.75, 8.25, 0.75, 15.25, 8.25, 0.75, 15.25, 8.25, -11.5, -31.5, 0.5, -11.25, -31.5, 0.5, 0.5, 14.25, 0.5, 0.5, 14.25, 0.5, -11.25, -38.75, 0.5, -0.5, -32.75, 0.5, -0.5, -30.5, 0.5, 7.25, -30.5, 0.5, 1.75, -32.75, 0.5, 1.5, -38.75, 0.5, 7.25, 6.5, 0.5, 7.25, 6.5, 0.5, 1.75, 8.5, 0.5, 7.25, 8.75, 0.5, 9.5, 14.25, 0.5, 9.5, 14.25, 0.5, 1.75, 15, 5.5, 39.75, 15, 5.5, 40.25, 15.75, 5.5, 40.25, 15.5, 5.5, 1.75, -39, 8.25, 8.25, -39, 8.25, 20.5, 7.75, 8.25, 20.5, 7.75, 8.25, 8.25, -38.75, 0.5, 8.5, -38.75, 0.5, 20.5, 7.5, 0.5, 20.5, 7.5, 0.5, 8.5, 8.75, 0.5, 19.5, 14.25, 0.5, 19.5, 8.5, 0.5, 21.75, 14.25, 0.5, 39, -38.75, 0.5, 21.75, -38.75, 0.5, 39, 24.5, 0.5, 39, 24.75, 0.5, 32.75, 23, 0.5, 32.5, 16.5, 0.5, 39, 33, 0.5, 32.75, 31.5, 0.5, 32.75, 31.75, 0.5, 39, 39, 0.5, 39)
+polygons = [PackedInt32Array(2, 1, 0), PackedInt32Array(4, 3, 5), PackedInt32Array(5, 3, 2), PackedInt32Array(2, 0, 6), PackedInt32Array(6, 0, 7), PackedInt32Array(7, 0, 8), PackedInt32Array(6, 5, 2), PackedInt32Array(7, 9, 6), PackedInt32Array(9, 7, 10), PackedInt32Array(10, 7, 11), PackedInt32Array(3, 4, 12), PackedInt32Array(12, 13, 3), PackedInt32Array(3, 13, 14), PackedInt32Array(16, 15, 17), PackedInt32Array(17, 15, 18), PackedInt32Array(17, 18, 10), PackedInt32Array(17, 10, 11), PackedInt32Array(18, 15, 13), PackedInt32Array(13, 15, 14), PackedInt32Array(20, 19, 21), PackedInt32Array(21, 19, 22), PackedInt32Array(19, 16, 22), PackedInt32Array(22, 16, 17), PackedInt32Array(23, 22, 24), PackedInt32Array(24, 22, 17), PackedInt32Array(25, 23, 26), PackedInt32Array(26, 23, 24), PackedInt32Array(30, 29, 27), PackedInt32Array(27, 29, 28), PackedInt32Array(34, 33, 31), PackedInt32Array(31, 33, 32), PackedInt32Array(38, 37, 35), PackedInt32Array(35, 37, 36), PackedInt32Array(42, 41, 39), PackedInt32Array(39, 41, 40), PackedInt32Array(25, 26, 43), PackedInt32Array(43, 26, 44), PackedInt32Array(21, 45, 20), PackedInt32Array(20, 45, 46), PackedInt32Array(43, 44, 45), PackedInt32Array(45, 44, 46), PackedInt32Array(50, 49, 47), PackedInt32Array(47, 49, 48), PackedInt32Array(54, 53, 51), PackedInt32Array(51, 53, 52), PackedInt32Array(58, 57, 55), PackedInt32Array(55, 57, 56), PackedInt32Array(0, 1, 59), PackedInt32Array(59, 1, 60), PackedInt32Array(63, 62, 61), PackedInt32Array(59, 60, 63), PackedInt32Array(59, 63, 64), PackedInt32Array(64, 63, 61), PackedInt32Array(62, 66, 61), PackedInt32Array(61, 66, 65), PackedInt32Array(67, 65, 66), PackedInt32Array(69, 68, 67), PackedInt32Array(66, 70, 67), PackedInt32Array(67, 70, 69), PackedInt32Array(72, 71, 73), PackedInt32Array(73, 71, 74), PackedInt32Array(78, 77, 75), PackedInt32Array(75, 77, 76), PackedInt32Array(82, 81, 79), PackedInt32Array(79, 81, 80), PackedInt32Array(68, 69, 83), PackedInt32Array(83, 69, 84), PackedInt32Array(83, 84, 85), PackedInt32Array(85, 84, 86), PackedInt32Array(87, 85, 88), PackedInt32Array(88, 85, 86), PackedInt32Array(91, 90, 89), PackedInt32Array(46, 44, 91), PackedInt32Array(89, 92, 91), PackedInt32Array(91, 92, 46), PackedInt32Array(93, 31, 32), PackedInt32Array(95, 94, 93), PackedInt32Array(95, 93, 96), PackedInt32Array(96, 93, 32), PackedInt32Array(90, 94, 89), PackedInt32Array(89, 94, 95)]
 agent_height = 1.8
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
@@ -78,6 +79,12 @@ use_collision = true
 size = Vector3(1, 5, 80)
 material = SubResource("StandardMaterial3D_wall")
 
+[node name="WallSouth2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/OuterWalls" unique_id=689027883]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 15.469259, 2.5, 7.262516)
+use_collision = true
+size = Vector3(66.732544, 5, 1)
+material = SubResource("StandardMaterial3D_wall")
+
 [node name="CoverObjects" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=1480894849]
 
 [node name="Cover1" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=361617334]
@@ -86,28 +93,10 @@ use_collision = true
 size = Vector3(6, 2, 2)
 material = SubResource("StandardMaterial3D_cover")
 
-[node name="Cover2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=1680690773]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -20)
-use_collision = true
-size = Vector3(6, 2, 2)
-material = SubResource("StandardMaterial3D_cover")
-
-[node name="Cover3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=564351264]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 20)
-use_collision = true
-size = Vector3(6, 2, 2)
-material = SubResource("StandardMaterial3D_cover")
-
 [node name="Cover4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=655797725]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 20)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 20, 2.1092958, -24.209803)
 use_collision = true
 size = Vector3(6, 2, 2)
-material = SubResource("StandardMaterial3D_cover")
-
-[node name="Cover5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/CoverObjects" unique_id=607394058]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-use_collision = true
-size = Vector3(4, 2, 4)
 material = SubResource("StandardMaterial3D_cover")
 
 [node name="Player" parent="." unique_id=1140251784 instance=ExtResource("1_player")]
@@ -120,27 +109,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
 script = ExtResource("3_spawner")
 force_team = 1
 
-[node name="SpawnBlue1" type="Marker3D" parent="BlueSpawner" unique_id=311363644]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0.5, -28)
-
 [node name="SpawnBlue2" type="Marker3D" parent="BlueSpawner" unique_id=329526517]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.5, -28)
-
-[node name="SpawnBlue3" type="Marker3D" parent="BlueSpawner" unique_id=1501900271]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -32)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35.75434, 2.5995812, -34.513252)
 
 [node name="RedSpawner" type="Node3D" parent="." unique_id=25628469]
 script = ExtResource("3_spawner")
 force_team = 2
 
 [node name="SpawnRed1" type="Marker3D" parent="RedSpawner" unique_id=1341058881]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0.5, 28)
-
-[node name="SpawnRed2" type="Marker3D" parent="RedSpawner" unique_id=1715153086]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.5, 28)
-
-[node name="SpawnRed3" type="Marker3D" parent="RedSpawner" unique_id=718352023]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 32)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.97335, 0.5, 32.36466)
 
 [node name="HUDLayer" parent="." unique_id=551558786 groups=["hud"] instance=ExtResource("4_hud")]
 

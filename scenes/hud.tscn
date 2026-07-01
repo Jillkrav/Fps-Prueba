@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://c1tp7pqe622b5" path="res://icon.svg" id="2_crosshair"]
 [ext_resource type="Script" uid="uid://cq7s20sfsphw0" path="res://scripts/dev_menu.gd" id="3_devmenu"]
 [ext_resource type="PackedScene" uid="uid://dgxv5pum0iw37" path="res://scenes/options_menu.tscn" id="4_options"]
-[ext_resource type="PackedScene" path="res://scenes/scoreboard.tscn" id="5_scoreboard"]
+[ext_resource type="PackedScene" uid="uid://qklku4hs3cht" path="res://scenes/scoreboard.tscn" id="5_scoreboard"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hud"]
 
@@ -71,6 +71,12 @@ text = "Metralleta"
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "100 / 100"
+
+[node name="AmmoTypeLabel" type="Label" parent="HUD/MarginContainer/VBox" unique_id=1653123449]
+modulate = Color(0.7, 0.7, 0.8, 1)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Tipo: Bala"
 
 [node name="HealthBar" type="ProgressBar" parent="HUD/MarginContainer/VBox" unique_id=1052213112]
 custom_minimum_size = Vector2(300, 30)
@@ -566,6 +572,5 @@ vertical_alignment = 1
 
 [node name="Scoreboard" parent="." unique_id=957533299 instance=ExtResource("5_scoreboard")]
 visible = false
-layout_mode = 3
 
 [connection signal="pressed" from="PauseScreen/Buttons/BtnContinuar" to="." method="_on_btn_continuar_pressed"]

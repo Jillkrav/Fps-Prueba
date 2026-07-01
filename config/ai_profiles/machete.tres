@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_0kjsc"]
+
+[resource]
+script = ExtResource("1_0kjsc")
+weapon_name = "Machete"
+ai_rating = 0.35
+preferred_range_min = 0.5
+preferred_range_max = 3.5
+lead_target = false
+refire_rate = 0.4
+aim_error_base = 1200
+attack_style_modifier = 0.9
+is_melee = true
+is_instant_hit = false
+category = "Melee"

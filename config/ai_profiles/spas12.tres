@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_obbji"]
+
+[resource]
+script = ExtResource("1_obbji")
+weapon_name = "Spas12"
+ai_rating = 0.6
+preferred_range_min = 1.0
+preferred_range_max = 14.0
+lead_target = false
+refire_rate = 0.6
+aim_error_base = 2800
+attack_style_modifier = 0.4
+category = "Escopetas"

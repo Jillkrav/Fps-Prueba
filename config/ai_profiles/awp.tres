@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_r2bdb"]
+
+[resource]
+script = ExtResource("1_r2bdb")
+weapon_name = "AWP"
+ai_rating = 0.9
+preferred_range_min = 20.0
+preferred_range_max = 100.0
+lead_target = false
+refire_rate = 0.2
+aim_error_base = 300
+attack_style_modifier = -0.5
+category = "Francotiradores"

@@ -55,6 +55,8 @@ func _on_health_changed(current: float, max_val: float) -> void:
 func _on_core_destroyed(_team: int) -> void:
 	if is_instance_valid(GameState):
 		GameState.on_core_destroyed(_team)
+	if is_instance_valid(TeamAI):
+		TeamAI.on_core_destroyed(_team)
 
 func _apply_team_appearance() -> void:
 	if not mesh_instance:

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_h4b7r"]
+
+[resource]
+script = ExtResource("1_h4b7r")
+weapon_name = "Bazooka"
+ai_rating = 0.75
+preferred_range_min = 10.0
+preferred_range_max = 40.0
+splash_damage = true
+lead_target = true
+refire_rate = 0.15
+aim_error_base = 1500
+attack_style_modifier = 0.0
+is_melee = false
+is_instant_hit = false
+category = "Explosivas"

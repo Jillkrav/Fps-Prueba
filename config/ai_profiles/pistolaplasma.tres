@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_d8h6s"]
+
+[resource]
+script = ExtResource("1_d8h6s")
+weapon_name = "PistolaPlasma"
+ai_rating = 0.5
+preferred_range_min = 5.0
+preferred_range_max = 20.0
+splash_damage = false
+lead_target = true
+refire_rate = 0.8
+aim_error_base = 3000
+attack_style_modifier = 0.0
+is_melee = false
+is_instant_hit = false
+category = "Plasma"

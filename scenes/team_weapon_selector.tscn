@@ -1,12 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://team_weapon_selector"]
+[gd_scene format=3 uid="uid://dyutk26wqfg3y"]
 
-[ext_resource type="Script" path="res://scripts/team_weapon_selector.gd" id="1_selector"]
+[ext_resource type="Script" uid="uid://b3q8yvyou4pko" path="res://scripts/team_weapon_selector.gd" id="1_selector"]
 
-[node name="TeamWeaponSelector" type="CanvasLayer"]
+[node name="TeamWeaponSelector" type="CanvasLayer" unique_id=1765143374]
 script = ExtResource("1_selector")
 
-[node name="Background" type="ColorRect" parent="."]
-layout_mode = 1
+[node name="Background" type="ColorRect" parent="." unique_id=638991953]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -14,8 +13,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.05, 0.1, 0.85)
 
-[node name="TeamPanel" type="VBoxContainer" parent="."]
-layout_mode = 1
+[node name="TeamPanel" type="VBoxContainer" parent="." unique_id=984756805]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -30,29 +28,28 @@ grow_vertical = 2
 theme_override_constants/separation = 30
 alignment = 1
 
-[node name="Title" type="Label" parent="TeamPanel"]
+[node name="Title" type="Label" parent="TeamPanel" unique_id=1662949417]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "SELECCIONA TU EQUIPO"
 horizontal_alignment = 1
 
-[node name="BtnRojo" type="Button" parent="TeamPanel"]
+[node name="BtnRojo" type="Button" parent="TeamPanel" unique_id=1761582122]
 custom_minimum_size = Vector2(300, 80)
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
 theme_override_font_sizes/font_size = 28
-theme_override_colors/font_color = Color(1.0, 0.2, 0.2, 1)
 text = "🔴  EQUIPO ROJO"
 
-[node name="BtnAzul" type="Button" parent="TeamPanel"]
+[node name="BtnAzul" type="Button" parent="TeamPanel" unique_id=1606624595]
 custom_minimum_size = Vector2(300, 80)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.5, 1, 1)
 theme_override_font_sizes/font_size = 28
-theme_override_colors/font_color = Color(0.2, 0.5, 1.0, 1)
 text = "🔵  EQUIPO AZUL"
 
-[node name="WeaponPanel" type="VBoxContainer" parent="."]
+[node name="WeaponPanel" type="VBoxContainer" parent="." unique_id=1293253233]
 visible = false
-layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -67,18 +64,18 @@ grow_vertical = 2
 theme_override_constants/separation = 24
 alignment = 1
 
-[node name="Title" type="Label" parent="WeaponPanel"]
+[node name="Title" type="Label" parent="WeaponPanel" unique_id=1756953572]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "SELECCIONA TU ARMA"
 horizontal_alignment = 1
 
-[node name="WeaponsRow" type="HBoxContainer" parent="WeaponPanel"]
+[node name="WeaponsRow" type="HBoxContainer" parent="WeaponPanel" unique_id=851159275]
 layout_mode = 2
 theme_override_constants/separation = 40
 alignment = 1
 
-[node name="BtnMetralleta" type="Button" parent="WeaponPanel/WeaponsRow"]
+[node name="BtnMetralleta" type="Button" parent="WeaponPanel/WeaponsRow" unique_id=1353942267]
 custom_minimum_size = Vector2(240, 120)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
@@ -86,7 +83,7 @@ text = "METRALLETA
 (Fuego rápido,
 menos daño)"
 
-[node name="BtnEscopeta" type="Button" parent="WeaponPanel/WeaponsRow"]
+[node name="BtnEscopeta" type="Button" parent="WeaponPanel/WeaponsRow" unique_id=386800228]
 custom_minimum_size = Vector2(240, 120)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
@@ -94,7 +91,7 @@ text = "ESCOPETA
 (Fuego lento,
 ráfaga dispersa)"
 
-[node name="BtnVolver" type="Button" parent="WeaponPanel"]
+[node name="BtnVolver" type="Button" parent="WeaponPanel" unique_id=232221113]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20

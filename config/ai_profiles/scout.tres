@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_uaq5w"]
+
+[resource]
+script = ExtResource("1_uaq5w")
+weapon_name = "Scout"
+ai_rating = 0.8
+preferred_range_min = 15.0
+preferred_range_max = 80.0
+lead_target = false
+refire_rate = 0.3
+aim_error_base = 500
+attack_style_modifier = -0.3
+category = "Francotiradores"

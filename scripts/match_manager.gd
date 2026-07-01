@@ -227,6 +227,7 @@ func obtener_spawn_point(team: int, exclude_positions: Array = []) -> Marker3D:
 func iniciar_partida(player_ref: Player, team_id: int) -> void:
 	player = player_ref
 	player_team = team_id
+	player_ref.equipo_id = team_id
 	
 	# El jugador cuenta para su equipo
 	var player_team_count: int = 1

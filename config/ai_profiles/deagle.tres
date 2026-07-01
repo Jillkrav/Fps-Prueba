@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_e7616"]
+
+[resource]
+script = ExtResource("1_e7616")
+weapon_name = "Deagle"
+ai_rating = 0.6
+preferred_range_min = 5.0
+lead_target = false
+refire_rate = 0.5
+aim_error_base = 2500
+attack_style_modifier = 0.2
+category = "Pistolas"

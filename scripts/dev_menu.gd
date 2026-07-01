@@ -127,6 +127,37 @@ func _agregar_botones_extras() -> void:
 	vbox.add_child(btn_unit_props)
 	vbox.move_child(btn_unit_props, insert_idx + 4)
 
+	# ── Botones de TeamAI (FASE 6) ──
+	# Boton mostrar resumen de TeamAI
+	var btn_team_ai := Button.new()
+	btn_team_ai.name = "BtnTeamAI"
+	btn_team_ai.text = "Mostrar TeamAI"
+	btn_team_ai.custom_minimum_size = Vector2(0, 36)
+	btn_team_ai.add_theme_font_size_override("font_size", 16)
+	btn_team_ai.pressed.connect(_on_team_ai_pressed)
+	vbox.add_child(btn_team_ai)
+	vbox.move_child(btn_team_ai, insert_idx + 5)
+
+	# Boton re-asignar ordenes a todos los bots
+	var btn_reassign := Button.new()
+	btn_reassign.name = "BtnReassignOrders"
+	btn_reassign.text = "Re-asignar Ordenes"
+	btn_reassign.custom_minimum_size = Vector2(0, 36)
+	btn_reassign.add_theme_font_size_override("font_size", 16)
+	btn_reassign.pressed.connect(_on_reassign_orders_pressed)
+	vbox.add_child(btn_reassign)
+	vbox.move_child(btn_reassign, insert_idx + 6)
+
+	# ── Boton mostrar puntos semánticos (FASE 7) ──
+	var btn_semantic := Button.new()
+	btn_semantic.name = "BtnSemanticPoints"
+	btn_semantic.text = "Mostrar Puntos Semánticos [OFF]"
+	btn_semantic.custom_minimum_size = Vector2(0, 36)
+	btn_semantic.add_theme_font_size_override("font_size", 16)
+	btn_semantic.pressed.connect(_on_semantic_points_pressed)
+	vbox.add_child(btn_semantic)
+	vbox.move_child(btn_semantic, insert_idx + 7)
+
 # ── Panel flotante selector de armas ─────────────────────────────────────────
 # FIX: se usa PRESET_CENTER_TOP + offset para que el panel NO se salga de pantalla.
 # El panel se agrega al CanvasLayer raiz (HUDLayer) para que siempre quede en pantalla.
@@ -392,6 +423,132 @@ func _on_unit_props_pressed() -> void:
 func _on_cambiar_equipo_pressed() -> void:
 	visible = false
 	_panel_equipo.visible = true
+
+func _on_team_ai_pressed() -> void:
+	# Mostrar resumen del estado de TeamAI en la consola
+	if not is_instance_valid(TeamAI):
+		lbl_status.text = "[TeamAI NO DISPONIBLE]"
+		return
+
+	var summary: String = TeamAI.get_debug_summary()
+	print(summary)
+	lbl_status.text = "TeamAI: %d objetivos, %d bots con orden" % [
+		TeamAI.objectives.size(),
+		TeamAI.bot_orders.size()
+	]
+
+
+func _on_reassign_orders_pressed() -> void:
+	if not is_instance_valid(TeamAI):
+		lbl_status.text = "[TeamAI NO DISPONIBLE]"
+		return
+
+	TeamAI.assign_orders_all()
+	lbl_status.text = "[ORDENES RE-ASIGNADAS a todos los bots]"
+	print("[DevMenu] Ordenes re-asignadas a todos los bots via TeamAI")
+
+
+var _semantic_points_visible: bool = false
+
+func _on_semantic_points_pressed() -> void:
+	_semantic_points_visible = not _semantic_points_visible
+	
+	var btn: Button = get_node_or_null("PanelPrincipal/VBox/BtnSemanticPoints")
+	if btn:
+		btn.text = "Mostrar Puntos Semánticos [ON]" if _semantic_points_visible else "Mostrar Puntos Semánticos [OFF]"
+	
+	# Mostrar/ocultar marcadores de puntos semánticos en el mapa
+	if _semantic_points_visible:
+		var points: Array = NavigationSystem.all_semantic_points
+		if points.size() == 0:
+			NavigationSystem.load_semantic_points()
+			points = NavigationSystem.all_semantic_points
+		lbl_status.text = "Puntos semánticos: %d cargados" % points.size()
+		_debug_draw_semantic_points()
+	else:
+		_clear_semantic_point_debug()
+		lbl_status.text = "Puntos semánticos ocultos"
+
+
+## Dibuja marcadores 3D temporales para los puntos semánticos.
+func _debug_draw_semantic_points() -> void:
+	var points: Array = NavigationSystem.all_semantic_points
+	for sp in points:
+		_show_semantic_point_marker(sp)
+
+
+## Crea un marcador visual 3D para un punto semántico.
+func _show_semantic_point_marker(sp: SemanticPoint) -> void:
+	var marker := MeshInstance3D.new()
+	
+	# Color según tipo
+	var color: Color
+	match sp.point_type:
+		SemanticPoint.PointType.PATH:
+			color = Color(1, 1, 1)  # Blanco
+		SemanticPoint.PointType.AMBUSH:
+			color = Color(1, 0.5, 0)  # Naranja
+		SemanticPoint.PointType.DEFENSE:
+			color = Color(0, 0.5, 1)  # Azul claro
+		SemanticPoint.PointType.ALTERNATE:
+			color = Color(1, 0, 1)  # Magenta
+		SemanticPoint.PointType.LIFT:
+			color = Color(0, 1, 0.5)  # Verde agua
+		SemanticPoint.PointType.ITEM:
+			color = Color(1, 1, 0)  # Amarillo
+		SemanticPoint.PointType.SNIPER:
+			color = Color(1, 0, 0)  # Rojo
+		_:
+			color = Color(0.5, 0.5, 0.5)
+	
+	# Crear un cubo pequeño como marcador
+	var box := BoxMesh.new()
+	box.size = Vector3(0.5, 0.5, 0.5)
+	
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color * 0.5
+	mat.vertex_color_use_as_albedo = false
+	
+	box.material = mat
+	marker.mesh = box
+	
+	# Nombrarlo para poder limpiarlo después
+	var type_id: int = sp.point_type
+	marker.name = "SemPointDebug_%d" % type_id
+	
+	# Crear etiqueta de texto con el nombre del tipo
+	var label := Label3D.new()
+	var type_name: String = SemanticPoint.PointType.keys()[type_id] \
+		if type_id >= 0 and type_id < SemanticPoint.PointType.size() else "?"
+	label.text = type_name
+	label.font_size = 24
+	label.pixel_size = 0.008
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.modulate = color
+	label.outline_modulate = Color(0, 0, 0, 0.8)
+	label.outline_size = 2
+	label.name = "SemPointLabel_%d" % type_id
+	
+	# Añadir al nodo raíz PRIMERO, luego posicionar
+	var root: Node = get_tree().current_scene
+	if root:
+		root.add_child(marker)
+		marker.global_position = sp.position + Vector3.UP * 1.0
+		root.add_child(label)
+		label.global_position = sp.position + Vector3.UP * 1.8
+
+
+## Limpia los marcadores de debug de puntos semánticos.
+func _clear_semantic_point_debug() -> void:
+	var root: Node = get_tree().current_scene
+	if not root:
+		return
+	for child in root.get_children():
+		if child.name.begins_with("SemPointDebug_") or child.name.begins_with("SemPointLabel_"):
+			child.queue_free()
+
 
 func _on_spawn_pressed() -> void:
 	var packed: PackedScene = load(NPC_SCENE)

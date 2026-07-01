@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_t2v8c"]
+
+[resource]
+script = ExtResource("1_t2v8c")
+weapon_name = "LanzaGranadas"
+ai_rating = 0.65
+preferred_range_min = 8.0
+preferred_range_max = 30.0
+splash_damage = true
+lead_target = true
+refire_rate = 0.3
+aim_error_base = 2500
+attack_style_modifier = -0.1
+is_melee = false
+is_instant_hit = false
+category = "Explosivas"

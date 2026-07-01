@@ -1,15 +1,18 @@
 # scripts/ai/perception_system.gd
 # ──────────────────────────────────────────────────────────────────
-# SISTEMA DE PERCEPCIÓN MODULAR
+# SISTEMA DE PERCEPCIÓN MODULAR — FASE 1 REFACTORIZACIÓN
 #
 # Centraliza toda la detección sensorial del NPC:
 # - Visión (Area3D + RayCast3D)
 # - Evaluación de prioridad de enemigos
 # - Selección de objetivo actual
 #
-# ── CAMBIO IMPORTANTE (Refactorización) ──
-# La MEMORIA ya no está aquí. Se ha extraído a MemorySystem.
-# PerceptionSystem solo DETECTA. MemorySystem solo RECUERDA.
+# ── CAMBIO IMPORTANTE (Refactorización FASE 1) ──
+# PerceptionSystem ya NO escribe directamente en NpcBase.
+# En su lugar, PRODUCE sensor_data y EMITE señales.
+# - sensor_data: visible_enemies, heard_noises (solo lectura externa)
+# - Señales: entity_detected, entity_lost, threat_assessed
+# - DecisionSystem (BotBrain) se suscribe a estas señales
 #
 # ── FLUJO ──
 # 1. Escanea AreaVision por cuerpos enemigos
@@ -17,11 +20,24 @@
 # 3. Calcula prioridad de cada enemigo visible
 # 4. Registra en MemorySystem: "enemigo visto en posición X"
 # 5. Selecciona el mejor objetivo
-# 6. Sincroniza con NpcBase (target_enemy, last_seen_position)
-# ──────────────────────────────────────────────────────────────────
+# 6. EMITE señales (ya no escribe en NpcBase)
 # ──────────────────────────────────────────────────────────────────
 extends Node
 class_name PerceptionSystem
+
+
+# ══════════════════════════════════════════════════════════════════
+# SEÑALES (FASE 1: comunicación desacoplada)
+# ══════════════════════════════════════════════════════════════════
+
+## Se emite cuando se detecta un nuevo enemigo o cambia el objetivo principal.
+signal entity_detected(entity: Node3D, position: Vector3)
+
+## Se emite cuando se pierde de vista al objetivo actual.
+signal entity_lost(entity: Node3D)
+
+## Se emite cada frame con el array de enemigos visibles evaluados.
+signal threat_assessed(visible_enemies: Array)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -48,20 +64,30 @@ var _bot: NpcBase = null
 ## Referencia al MemorySystem (hermano en el árbol)
 var memory: MemorySystem = null
 
-## Objetivo enemigo actual (puede ser un CharacterBody3D o Core)
-var target_enemy: Node3D = null
+# ── DATOS SENSORIALES (sensor_data) ──
+# NADIE más escribe esto. Solo PerceptionSystem produce estos datos.
+# Otros sistemas (DecisionSystem, BotBrain) los LEEN.
 
-## Última posición conocida del enemigo (para HUNT)
-var last_seen_position: Vector3 = Vector3.ZERO
+## Enemigos visibles detectados este frame (ordenados por prioridad).
+## Este es el principal `sensor_data`. Contiene diccionarios con
+## { "body": Node3D, "score": float, "dist": float }
+var visible_enemies: Array[Dictionary] = []
+
+# ── TRACKING INTERNO (privado) ──
+# target_entity es PROPIEDAD de DecisionSystem.
+# PerceptionSystem solo SUGIERE a través de señales, no asigna.
+
+## Objetivo enemigo detectado (solo tracking interno para señales).
+var _target_enemy: Node3D = null
+
+## Última posición conocida del enemigo (para señales).
+var _last_seen_position: Vector3 = Vector3.ZERO
 
 ## Tiempo acumulado con el mismo objetivo
-var time_on_target: float = 0.0
+var _time_on_target: float = 0.0
 
 ## ¿Estamos atacando actualmente el core enemigo?
-var is_attacking_core: bool = false
-
-## Enemigos visibles detectados este frame (ordenados por prioridad)
-var visible_enemies: Array[Dictionary] = []
+var _detected_core: bool = false
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -156,31 +182,35 @@ func update(delta: float) -> void:
 	# ── Fase 2: Decidir objetivo actual ──────────────────────────
 	_select_target(role)
 	
-	# ── Fase 3: Sincronizar con variables del bot ────────────────
-	_sync_to_bot()
+	# ── Fase 3: Emitir señales de amenaza ────────────────────────
+	emit_signal("threat_assessed", visible_enemies)
 	
 	# ── Fase 4: Actualizar timer de objetivo ─────────────────────
-	if target_enemy != null and is_instance_valid(target_enemy):
-		time_on_target += delta
+	if _target_enemy != null and is_instance_valid(_target_enemy):
+		_time_on_target += delta
 	else:
-		time_on_target = 0.0
+		_time_on_target = 0.0
 
 
 ## Selecciona el mejor objetivo enemigo.
+## Ya NO escribe en NpcBase. Solo actualiza tracking interno y emite señales.
 func _select_target(role: TacticalRole) -> void:
 	if visible_enemies.is_empty():
 		# Sin enemigos visibles
-		if target_enemy != null and is_instance_valid(target_enemy):
+		if _target_enemy != null and is_instance_valid(_target_enemy):
 			# Si teníamos un objetivo y lo perdimos de vista,
 			# actualizar last_seen_position para HUNT
-			if target_enemy is CharacterBody3D and not target_enemy.get("is_dead"):
-				last_seen_position = target_enemy.global_position
+			if _target_enemy is CharacterBody3D and not _target_enemy.get("is_dead"):
+				_last_seen_position = _target_enemy.global_position
 				# Registrar en memoria para HUNT
 				if memory != null:
-					memory.record_enemy_position(target_enemy, last_seen_position)
-			elif target_enemy.get("is_destroyed") == true or target_enemy.get("is_dead") == true:
-				target_enemy = null
-				is_attacking_core = false
+					memory.record_enemy_position(_target_enemy, _last_seen_position)
+			
+			# Emitir señal de pérdida
+			var lost_entity: Node3D = _target_enemy
+			_target_enemy = null
+			_detected_core = false
+			emit_signal("entity_lost", lost_entity)
 		return
 	
 	# Ordenar por puntuación (mayor primero)
@@ -189,8 +219,8 @@ func _select_target(role: TacticalRole) -> void:
 	var best_body: Node3D = best_target.body as Node3D
 	
 	# Si es el mismo objetivo que ya tenemos, mantenerlo
-	if best_body == target_enemy and is_instance_valid(target_enemy):
-		last_seen_position = target_enemy.global_position
+	if best_body == _target_enemy and is_instance_valid(_target_enemy):
+		_last_seen_position = _target_enemy.global_position
 		return
 	
 	# Decisión del rol: ¿debemos realmente atacar?
@@ -206,18 +236,42 @@ func _select_target(role: TacticalRole) -> void:
 		):
 			return  # El rol dice que no debe atacar
 	
-	# Cambiar al nuevo objetivo
-	target_enemy = best_body
-	last_seen_position = best_body.global_position
-	is_attacking_core = false
+	# Cambiar al nuevo objetivo y emitir señal
+	var previous_target: Node3D = _target_enemy
+	_target_enemy = best_body
+	_last_seen_position = best_body.global_position
+	_detected_core = false
+	
+	if previous_target != _target_enemy:
+		if previous_target != null:
+			emit_signal("entity_lost", previous_target)
+		emit_signal("entity_detected", _target_enemy, _last_seen_position)
 
 
-## Sincroniza el estado de percepción con las variables del bot.
-func _sync_to_bot() -> void:
-	if bot:
-		bot.target_enemy = target_enemy
-		bot.last_seen_position = last_seen_position
-		bot._is_attacking_core = is_attacking_core
+# ══════════════════════════════════════════════════════════════════
+# API PÚBLICA — Consultas (sensor_data de solo lectura)
+# ══════════════════════════════════════════════════════════════════
+
+## ¿Hay enemigos visibles?
+func has_visible_enemies() -> bool:
+	return not visible_enemies.is_empty()
+
+
+## Retorna el mejor enemigo visible (el de mayor score).
+func get_best_visible_enemy() -> Node3D:
+	if visible_enemies.is_empty():
+		return null
+	return visible_enemies[0].get("body", null) as Node3D
+
+
+## Retorna el objetivo principal detectado (sugerencia para DecisionSystem).
+func get_suggested_target() -> Node3D:
+	return _target_enemy
+
+
+## Retorna la última posición conocida del objetivo.
+func get_last_known_position() -> Vector3:
+	return _last_seen_position
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -260,27 +314,20 @@ func memory_count() -> int:
 
 
 # ══════════════════════════════════════════════════════════════════
-# UTILIDADES
+# RESET
 # ══════════════════════════════════════════════════════════════════
-
-## ¿Hay enemigos visibles?
-func has_visible_enemies() -> bool:
-	return not visible_enemies.is_empty()
-
-
-## Retorna el mejor enemigo visible (el de mayor score).
-func get_best_visible_enemy() -> Node3D:
-	if visible_enemies.is_empty():
-		return null
-	return visible_enemies[0].get("body", null) as Node3D
-
 
 ## Resetea todo el estado de percepción (útil en respawn).
 func reset() -> void:
-	target_enemy = null
-	last_seen_position = Vector3.ZERO
-	is_attacking_core = false
-	time_on_target = 0.0
+	# Emitir pérdida si había un objetivo activo
+	if _target_enemy != null:
+		var lost: Node3D = _target_enemy
+		_target_enemy = null
+		emit_signal("entity_lost", lost)
+	
+	_last_seen_position = Vector3.ZERO
+	_detected_core = false
+	_time_on_target = 0.0
 	visible_enemies.clear()
 	# La memoria NO se resetea aquí. MemorySystem tiene su propio reset
 	# que se llama desde NpcBase.respawn().

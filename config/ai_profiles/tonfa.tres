@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_ir4pp"]
+
+[resource]
+script = ExtResource("1_ir4pp")
+weapon_name = "Tonfa"
+ai_rating = 0.25
+preferred_range_min = 0.5
+preferred_range_max = 2.5
+lead_target = false
+refire_rate = 0.7
+aim_error_base = 800
+attack_style_modifier = 0.6
+is_melee = true
+is_instant_hit = false
+category = "Melee"

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_q9w5x"]
+
+[resource]
+script = ExtResource("1_q9w5x")
+weapon_name = "Ballesta"
+ai_rating = 0.7
+preferred_range_min = 15.0
+preferred_range_max = 50.0
+splash_damage = false
+lead_target = true
+refire_rate = 0.2
+aim_error_base = 500
+attack_style_modifier = 0.0
+is_melee = false
+is_instant_hit = false
+category = "Arrojadizas"

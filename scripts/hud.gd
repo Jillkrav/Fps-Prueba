@@ -5,8 +5,9 @@ extends CanvasLayer
 # ─────────────────────────────────────────
 
 @onready var spawn_label:  Label       = $HUD/MarginContainer/VBox/SpawnLabel
-@onready var weapon_label: Label       = $HUD/MarginContainer/VBox/AmmoContainer/WeaponLabel
-@onready var ammo_label:   Label       = $HUD/MarginContainer/VBox/AmmoContainer/AmmoLabel
+@onready var weapon_label:    Label       = $HUD/MarginContainer/VBox/AmmoContainer/WeaponLabel
+@onready var ammo_label:      Label       = $HUD/MarginContainer/VBox/AmmoContainer/AmmoLabel
+@onready var ammo_type_label: Label       = $HUD/MarginContainer/VBox/AmmoTypeLabel
 @onready var health_bar:   ProgressBar = $HUD/MarginContainer/VBox/HealthBar
 @onready var health_text:  Label       = $HUD/MarginContainer/VBox/HealthBar/Label
 @onready var crosshair:    TextureRect = $HUD/Crosshair
@@ -148,6 +149,7 @@ func _esta_una_ui_abierta() -> bool:
 func _on_player_weapon_changed(weapon_name: String, current_ammo: int, max_ammo: int) -> void:
 	update_weapon_name(weapon_name)
 	update_ammo(current_ammo, max_ammo)
+	update_ammo_type(weapon_name)
 
 func _configurar_death_screen() -> void:
 	var btn_menu: Button = get_node_or_null("DeathScreen/Buttons/BtnMenu")
@@ -220,6 +222,39 @@ func update_ammo(current_ammo: int, max_ammo: int) -> void:
 func update_weapon_name(wname: String) -> void:
 	if weapon_label:
 		weapon_label.text = wname
+
+func update_ammo_type(weapon_name: String) -> void:
+	if not ammo_type_label:
+		return
+	if weapon_name.is_empty():
+		ammo_type_label.text = ""
+		return
+	var datos: Dictionary = ConfigManager.get_arma(weapon_name)
+	if datos.is_empty():
+		ammo_type_label.text = ""
+		return
+	var categoria: String = datos.get("CategoriaMunicion", "")
+	var num_perdigones: int = datos.get("NumeroPerdigones", 1)
+	var texto_tipo: String = _formatear_categoria_hud(categoria, num_perdigones)
+	ammo_type_label.text = "Tipo: %s" % texto_tipo
+
+## Convierte el codigo interno de CategoriaMunicion a texto legible para el HUD.
+func _formatear_categoria_hud(categoria: String, num_perdigones: int = 1) -> String:
+	match categoria:
+		"bala":
+			return "Bala"
+		"perdigones":
+			return "Perdigones (x%d)" % num_perdigones
+		"arrojadiza":
+			return "Arrojadiza"
+		"explosiva":
+			return "Explosiva"
+		"plasma":
+			return "Plasma"
+		"cuerpo_a_cuerpo":
+			return "Cuerpo a cuerpo"
+		_:
+			return categoria.capitalize()
 
 func update_spawn_timer(time_left: float) -> void:
 	if spawn_label:

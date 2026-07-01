@@ -48,7 +48,7 @@ func _poblar_armas() -> void:
 		child.queue_free()
 	_armas_lista.clear()
 	_armas_buttons.clear()
-	var categorias: Array[String] = ["Pistolas", "Escopetas", "Subfusiles", "Rifles", "Francotiradores", "Melee"]
+	var categorias: Array[String] = ["Pistolas", "Escopetas", "Subfusiles", "Rifles", "Francotiradores", "Melee", "Arrojadizas", "Explosivas", "Plasma"]
 	var hay_armas: bool = false
 	for categoria in categorias:
 		var armas_cat: Array[String] = ConfigManager.get_nombres_armas(categoria)
@@ -63,7 +63,9 @@ func _poblar_armas() -> void:
 		for nombre_arma in armas_cat:
 			_armas_lista.append(nombre_arma)
 			var btn := Button.new()
-			btn.text = nombre_arma
+			var datos_arma: Dictionary = ConfigManager.get_arma(nombre_arma)
+			var tag_tipo: String = _formatear_categoria_municion(datos_arma.get("CategoriaMunicion", ""), datos_arma.get("NumeroPerdigones", 1))
+			btn.text = "%s  [%s]" % [nombre_arma, tag_tipo]
 			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			btn.custom_minimum_size = Vector2(0, 38)
 			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -106,6 +108,25 @@ func _on_weapon_back_pressed() -> void:
 	weapon_panel.visible = false
 	team_panel.visible   = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+## Convierte el codigo interno de CategoriaMunicion a un texto legible.
+## Para perdigones incluye el numero de perdigones: "Perdigones (x8)".
+func _formatear_categoria_municion(categoria: String, num_perdigones: int = 1) -> String:
+	match categoria:
+		"bala":
+			return "Bala"
+		"perdigones":
+			return "Perdigones (x%d)" % num_perdigones
+		"arrojadiza":
+			return "Arrojadiza"
+		"explosiva":
+			return "Explosiva"
+		"plasma":
+			return "Plasma"
+		"cuerpo_a_cuerpo":
+			return "Cuerpo a cuerpo"
+		_:
+			return categoria.capitalize()
 
 func _confirmar_seleccion(nombre_arma: String) -> void:
 	GameState.player_team     = _selected_team_id

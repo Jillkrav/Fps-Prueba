@@ -25,7 +25,6 @@ var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravi
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
-@onready var weapon_placeholder_scene: PackedScene = preload("res://scenes/weapons/weapon_placeholder.tscn")
 const BOT_DEBUG_OVERLAY: PackedScene = preload("res://scenes/npcs/bot_debug_overlay.tscn")
 
 var _original_height: float = 0.0
@@ -55,9 +54,26 @@ func _ready() -> void:
 func setup_weapon(nombre_arma: String) -> void:
 	for child in weapon_holder.get_children():
 		child.queue_free()
-	var weapon_instance: Node = weapon_placeholder_scene.instantiate()
+
+	# Cargar la escena del arma en tiempo de ejecución (no preload)
+	# para evitar problemas de compilación encadenada con autoloads.
+	var weapon_scene: PackedScene = ResourceLoader.load(
+		"res://scenes/weapons/weapon_placeholder.tscn",
+		"PackedScene",
+		ResourceLoader.CACHE_MODE_REUSE
+	) as PackedScene
+	if not weapon_scene:
+		push_error("setup_weapon: No se pudo cargar weapon_placeholder.tscn")
+		return
+	var weapon_instance: Node = weapon_scene.instantiate()
+	if not weapon_instance:
+		push_error("setup_weapon: weapon_scene.instantiate() devolvió null")
+		return
 	weapon_holder.add_child(weapon_instance)
 	active_weapon = weapon_instance as Weapon
+	if not active_weapon:
+		push_error("setup_weapon: weapon_instance no es un Weapon (script no cargado?)")
+		return
 	active_weapon.initialize_from_name(nombre_arma)
 	if not active_weapon.weapon_fired.is_connected(_on_weapon_fired):
 		active_weapon.weapon_fired.connect(_on_weapon_fired)
@@ -134,28 +150,56 @@ func shoot() -> void:
 	if not active_weapon:
 		return
 	if active_weapon.can_fire():
+		var categoria: String = active_weapon.categoria_municion
+
+		# ── Proyectiles físicos: pasar posición de disparo desde la cámara ──
+		if categoria in ["arrojadiza", "explosiva", "plasma"]:
+			var shoot_pos: Vector3 = _get_shoot_position()
+			var shoot_dir: Vector3 = -camera.global_transform.basis.z
+			active_weapon.set_shoot_override(shoot_pos, shoot_dir)
+
 		var hits: Array = active_weapon.fire()
-		var killer_id: int = -1
-		if is_instance_valid(MatchManager):
-			killer_id = MatchManager.get_player_id_by_pawn(self)
-		for hit in hits:
-			var target_node: Node = hit["collider"]
-			if not target_node:
-				continue
-			# Si el collider es un Area3D (hitbox como HeadHitbox), buscar el
-			# NpcBase padre subiendo en el arbol.
-			if target_node is Area3D:
-				var parent: Node = target_node.get_parent()
-				while parent:
-					if parent.has_method("take_damage"):
-						target_node = parent
-						break
-					parent = parent.get_parent()
-			if target_node.has_method("take_damage"):
-				if target_node is Player:
-					target_node.take_damage(hit["damage_vs_player"], "Torso", killer_id)
-				else:
-					target_node.take_damage(hit["damage_vs_npc"], "Torso", killer_id)
+
+		# ── Hit-scan: procesar hits directamente ──────────────────────────
+		# (melee y proyectiles aplican su daño desde weapon.gd/projectile)
+		if categoria in ["bala", "perdigones"]:
+			_process_hits(hits)
+		# ── Proyectiles: el daño lo gestiona el proyectil al impactar ────
+		# (projectile_base.gd llama a target.take_damage en on_hit)
+
+# ─── Procesamiento de daño hit-scan ────────────────────────────────────
+func _process_hits(hits: Array) -> void:
+	var killer_id: int = -1
+	if is_instance_valid(MatchManager):
+		killer_id = MatchManager.get_player_id_by_pawn(self)
+	for hit in hits:
+		var target_node: Node = hit.get("collider")
+		if not target_node:
+			continue
+		# Si el collider es un Area3D (hitbox como HeadHitbox), buscar el
+		# NpcBase padre subiendo en el arbol.
+		if target_node is Area3D:
+			var parent: Node = target_node.get_parent()
+			while parent:
+				if parent.has_method("take_damage"):
+					target_node = parent
+					break
+				parent = parent.get_parent()
+		if target_node.has_method("take_damage"):
+			var dmg: float = hit.get("damage_vs_npc", 0.0)
+			if target_node is Player:
+				dmg = hit.get("damage_vs_player", 0.0)
+			target_node.take_damage(dmg, "Torso", killer_id)
+
+
+## Devuelve la posición desde donde debe salir un proyectil.
+## Usa la cámara como origen para que el disparo salga de frente al jugador.
+func _get_shoot_position() -> Vector3:
+	if not camera:
+		return global_position + Vector3(0, 0.5, 0)
+	# Delante de la cámara, no desde el centro del jugador
+	return camera.global_position - camera.global_transform.basis.z * 0.5
+
 
 func take_damage(amount: float, zona: String = "Torso", killer_id: int = -1) -> void:
 	if is_dead:

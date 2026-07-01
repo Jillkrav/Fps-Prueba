@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_m8n3p"]
+
+[resource]
+script = ExtResource("1_m8n3p")
+weapon_name = "Granada"
+ai_rating = 0.6
+preferred_range_min = 5.0
+preferred_range_max = 20.0
+splash_damage = true
+lead_target = true
+refire_rate = 0.5
+aim_error_base = 2500
+attack_style_modifier = -0.2
+is_melee = false
+is_instant_hit = false
+category = "Arrojadizas"

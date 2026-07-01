@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_ug4m3"]
+
+[resource]
+script = ExtResource("1_ug4m3")
+weapon_name = "USP"
+ai_rating = 0.45
+preferred_range_min = 3.0
+preferred_range_max = 20.0
+lead_target = false
+refire_rate = 0.75
+aim_error_base = 1800
+category = "Pistolas"

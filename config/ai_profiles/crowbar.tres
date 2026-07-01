@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_vhyw8"]
+
+[resource]
+script = ExtResource("1_vhyw8")
+weapon_name = "Crowbar"
+ai_rating = 0.3
+preferred_range_min = 0.5
+preferred_range_max = 3.0
+lead_target = false
+refire_rate = 0.5
+aim_error_base = 1000
+attack_style_modifier = 0.8
+is_melee = true
+is_instant_hit = false
+category = "Melee"

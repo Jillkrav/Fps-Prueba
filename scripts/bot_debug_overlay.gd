@@ -18,6 +18,9 @@ static var enabled: bool = false
 @onready var ammo_label: Label = $Viewport/UI/AmmoLabel
 @onready var reserve_label: Label = $Viewport/UI/ReserveLabel
 @onready var role_label: Label = $Viewport/UI/RoleLabel
+@onready var state_label: Label = $Viewport/UI/StateLabel
+@onready var order_label: Label = $Viewport/UI/OrderLabel
+@onready var sem_label: Label = $Viewport/UI/SemLabel
 
 # ─── Referencias al padre ─────────────────────────────────────────────
 var _npc: NpcBase = null
@@ -99,6 +102,15 @@ func _process(_delta: float) -> void:
 		var max_reserve: int = weapon.max_ammo
 		ammo_label.text = "Cargador: %d/%d" % [mag, clip]
 		reserve_label.text = "Total: %d/%d" % [reserve, max_reserve]
+
+		# Mostrar AI rating del arma (FASE 5)
+		if _npc and is_instance_valid(_npc):
+			var weapon_sys = _npc.get("weapon_sys")
+			if weapon_sys:
+				var profile = weapon_sys.get_current_profile()
+				if profile:
+					# Mostrar rating en una línea compacta
+					reserve_label.text += " | AI: %.2f" % profile.ai_rating
 	else:
 		ammo_label.text = "Sin arma"
 		reserve_label.text = ""
@@ -113,6 +125,47 @@ func _process(_delta: float) -> void:
 			role_label.text = "Rol: --"
 	elif _player and is_instance_valid(_player):
 		role_label.text = "Rol: Jugador"
+	
+	# ── Mostrar estado FSM (FASE 3) ─────────────────────────────
+	if _npc and is_instance_valid(_npc):
+		var decision_sys = _npc.get("decision_sys")
+		if decision_sys != null and decision_sys.current_state != null:
+			state_label.text = "FSM: %s" % decision_sys.current_state.state_name
+		else:
+			state_label.text = "State: --"
+	elif _player and is_instance_valid(_player):
+		state_label.text = "State: --"
+
+	# ── Mostrar orden actual de TeamAI (FASE 6) ──────────────
+	if _npc and is_instance_valid(_npc):
+		var order_name: String = _npc.get("current_order_name")
+		if order_name != null and order_name != "" and order_name != "—":
+			order_label.text = "Orden: %s" % order_name
+		else:
+			order_label.text = "Orden: --"
+	elif _player and is_instance_valid(_player):
+		order_label.text = "Orden: --"
+
+	# ── Mostrar punto semántico cercano (FASE 7) ──────────────
+	if _npc and is_instance_valid(_npc) and NavigationSystem._semantic_points_loaded:
+		var bot_pos: Vector3 = _npc.global_position
+		var nearest: SemanticPoint = NavigationSystem.get_nearest_point(
+			SemanticPoint.PointType.PATH, bot_pos, -1, 30.0)
+		if nearest == null:
+			nearest = NavigationSystem.get_nearest_point(
+				SemanticPoint.PointType.AMBUSH, bot_pos, -1, 30.0)
+		if nearest == null:
+			nearest = NavigationSystem.get_nearest_point(
+				SemanticPoint.PointType.DEFENSE, bot_pos, -1, 30.0)
+		if nearest:
+			var type_name: String = SemanticPoint.PointType.keys()[nearest.point_type] \
+				if nearest.point_type < SemanticPoint.PointType.size() else "?"
+			var dist: float = nearest.distance_from(bot_pos)
+			sem_label.text = "Sem: %s (%.0f)" % [type_name, dist]
+		else:
+			sem_label.text = "Sem: ninguno"
+	else:
+		sem_label.text = "Sem: --"
 
 # ─── Toggle global para Propiedades de unidad ─────────────────────────
 ## Alterna el estado global y actualiza TODAS las unidades (NPCs + Jugador).

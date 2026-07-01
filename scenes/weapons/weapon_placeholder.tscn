@@ -11,6 +11,9 @@ albedo_color = Color(0.2, 0.6, 1, 1)
 [sub_resource type="BoxMesh" id="BoxMesh_muzzle"]
 size = Vector3(0.04, 0.04, 0.12)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_melee"]
+size = Vector3(1.5, 1.5, 2)
+
 [node name="Weapon" type="Node3D" unique_id=494602246]
 script = ExtResource("1_weapon")
 
@@ -32,3 +35,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.65)
 visible = false
 light_color = Color(1, 0.8, 0.4, 1)
 omni_range = 3.0
+
+[node name="MeleeArea" type="Area3D" parent="." unique_id=1908374612]
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeleeArea" unique_id=1908374613]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
+shape = SubResource("BoxShape3D_melee")
+
+[node name="MeleeSwingSound" type="AudioStreamPlayer3D" parent="." unique_id=1908374614]
+
+[node name="MeleeHitSound" type="AudioStreamPlayer3D" parent="." unique_id=1908374615]

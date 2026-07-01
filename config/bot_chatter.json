@@ -1,0 +1,224 @@
+{
+  "game_events": {
+    "enemy_spotted": {
+      "cooldown": 6.0,
+      "priority": 3,
+      "phrases": [
+        {
+          "text": "Enemigo a la vista en %s.",
+          "audio_path": "res://audio/chatter/enemigo_01.wav"
+        },
+        {
+          "text": "Contacto en %s.",
+          "audio_path": "res://audio/chatter/enemigo_02.wav"
+        },
+        {
+          "text": "Veo a uno moviéndose por %s.",
+          "audio_path": "res://audio/chatter/enemigo_03.wav"
+        },
+        {
+          "text": "¡Mierda, me tienen acorralado en %s!",
+          "audio_path": "res://audio/chatter/enemigo_panico_01.wav"
+        },
+        {
+          "text": "¡Necesito ayuda en %s, son demasiados!",
+          "audio_path": "res://audio/chatter/enemigo_panico_02.wav"
+        }
+      ]
+    },
+    "kill_confirmed": {
+      "cooldown": 4.0,
+      "priority": 2,
+      "phrases": [
+        {
+          "text": "Objetivo eliminado.",
+          "audio_path": "res://audio/chatter/baja_01.wav"
+        },
+        {
+          "text": "Uno menos, zona despejada.",
+          "audio_path": "res://audio/chatter/baja_02.wav"
+        },
+        {
+          "text": "Enemigo abatido.",
+          "audio_path": "res://audio/chatter/baja_03.wav"
+        },
+        {
+          "text": "¡Uf, eso estuvo cerca!",
+          "audio_path": "res://audio/chatter/baja_alivio_01.wav"
+        },
+        {
+          "text": "¡Ja! No vas a volver a dispararme.",
+          "audio_path": "res://audio/chatter/baja_alivio_02.wav"
+        }
+      ]
+    },
+    "friendly_fire": {
+      "cooldown": 3.0,
+      "priority": 4,
+      "phrases": [
+        {
+          "text": "¡Oye! ¡Mismo equipo, idiota!",
+          "audio_path": "res://audio/chatter/fuego_aliado_01.wav"
+        },
+        {
+          "text": "¡Deja de dispararme o te devuelvo el tiro!",
+          "audio_path": "res://audio/chatter/fuego_aliado_02.wav"
+        },
+        {
+          "text": "¡Cuidado con dónde apuntas!",
+          "audio_path": "res://audio/chatter/fuego_aliado_03.wav"
+        }
+      ]
+    },
+    "low_health": {
+      "cooldown": 10.0,
+      "priority": 4,
+      "phrases": [
+        {
+          "text": "Estoy muy herido, me retiro temporalmente.",
+          "audio_path": "res://audio/chatter/poca_vida_01.wav"
+        },
+        {
+          "text": "¡Me dieron duro! Buscando cobertura...",
+          "audio_path": "res://audio/chatter/poca_vida_02.wav"
+        },
+        {
+          "text": "No me queda mucha salud, tengan cuidado.",
+          "audio_path": "res://audio/chatter/poca_vida_03.wav"
+        }
+      ]
+    },
+    "bot_death_radio": {
+      "cooldown": 0.0,
+      "priority": 5,
+      "phrases": [
+        {
+          "text": "¡Me dieron...! Caí en %s.",
+          "audio_path": "res://audio/chatter/muerte_01.wav"
+        },
+        {
+          "text": "Bot caído en %s.",
+          "audio_path": "res://audio/chatter/muerte_02.wav"
+        },
+        {
+          "text": "Agh... me eliminaron desde %s...",
+          "audio_path": "res://audio/chatter/muerte_03.wav"
+        }
+      ]
+    },
+    "round_start_chat": {
+      "cooldown": 0.0,
+      "priority": 1,
+      "phrases": [
+        {
+          "text": "vamos con todo",
+          "audio_path": "res://audio/chatter/inicio_01.wav"
+        },
+        {
+          "text": "buena suerte a todos",
+          "audio_path": "res://audio/chatter/inicio_02.wav"
+        },
+        {
+          "text": "glhf",
+          "audio_path": ""
+        },
+        {
+          "text": "esta es nuestra muchachos",
+          "audio_path": "res://audio/chatter/inicio_03.wav"
+        }
+      ]
+    },
+    "round_win_chat": {
+      "cooldown": 0.0,
+      "priority": 1,
+      "phrases": [
+        {
+          "text": "buena ronda equipo",
+          "audio_path": "res://audio/chatter/victoria_01.wav"
+        },
+        {
+          "text": "gj",
+          "audio_path": ""
+        },
+        {
+          "text": "gg wp",
+          "audio_path": ""
+        },
+        {
+          "text": "demasiado fácil jaja",
+          "audio_path": "res://audio/chatter/victoria_02.wav"
+        },
+        {
+          "text": "¡Así se hace!",
+          "audio_path": "res://audio/chatter/victoria_03.wav"
+        }
+      ]
+    },
+    "round_lose_chat": {
+      "cooldown": 0.0,
+      "priority": 1,
+      "phrases": [
+        {
+          "text": "F, mala ronda",
+          "audio_path": ""
+        },
+        {
+          "text": "Debimos coordinarnos mejor...",
+          "audio_path": "res://audio/chatter/derrota_01.wav"
+        },
+        {
+          "text": "A la otra ganamos",
+          "audio_path": "res://audio/chatter/derrota_02.wav"
+        },
+        {
+          "text": "Me morí de la forma más tonta",
+          "audio_path": "res://audio/chatter/derrota_03.wav"
+        }
+      ]
+    },
+    "objective_mode": {
+      "cooldown": 8.0,
+      "priority": 5,
+      "game_modes": {
+        "ctf": [
+          {
+            "text": "¡Tengo la bandera enemiga! ¡Acompáñenme a base!",
+            "audio_path": "res://audio/chatter/ctf_bandera_tomada.wav"
+          },
+          {
+            "text": "¡Nuestra bandera ha sido capturada! ¡Recupérenla!",
+            "audio_path": "res://audio/chatter/ctf_bandera_perdida.wav"
+          },
+          {
+            "text": "Bandera asegurada en nuestra base.",
+            "audio_path": "res://audio/chatter/ctf_bandera_puntuada.wav"
+          }
+        ],
+        "destroy_base": [
+          {
+            "text": "¡El núcleo enemigo está expuesto! ¡Ataquen!",
+            "audio_path": "res://audio/chatter/db_base_expuesta.wav"
+          },
+          {
+            "text": "¡Están dañando nuestra base! ¡Regresen a defender!",
+            "audio_path": "res://audio/chatter/db_base_bajo_ataque.wav"
+          },
+          {
+            "text": "Cargando explosivos en el objetivo principal.",
+            "audio_path": "res://audio/chatter/db_bomba_puesta.wav"
+          }
+        ],
+        "tdm": [
+          {
+            "text": "Mantengan las posiciones, vamos ganando por puntos.",
+            "audio_path": "res://audio/chatter/tdm_ventaja.wav"
+          },
+          {
+            "text": "¡Nos llevan la delantera! Agúpense y cacen juntos.",
+            "audio_path": "res://audio/chatter/tdm_desventaja.wav"
+          }
+        ]
+      }
+    }
+  }
+}

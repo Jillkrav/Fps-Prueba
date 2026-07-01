@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_5trrx"]
+
+[resource]
+script = ExtResource("1_5trrx")
+weapon_name = "M3"
+ai_rating = 0.65
+preferred_range_min = 1.0
+preferred_range_max = 12.0
+lead_target = false
+refire_rate = 0.4
+aim_error_base = 3000
+attack_style_modifier = 0.5
+category = "Escopetas"

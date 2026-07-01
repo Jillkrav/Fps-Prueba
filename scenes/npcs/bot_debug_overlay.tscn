@@ -26,7 +26,7 @@ script = ExtResource("1_overlay")
 [node name="Viewport" type="SubViewport" parent="." unique_id=1338830612]
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(240, 100)
+size = Vector2i(240, 140)
 
 [node name="UI" type="Control" parent="Viewport" unique_id=1784104786]
 layout_mode = 3
@@ -108,12 +108,42 @@ offset_left = 6.0
 offset_top = 82.0
 offset_right = 234.0
 offset_bottom = 100.0
-theme_override_colors/font_color = Color(0.6, 0.8, 1.0, 1)
+theme_override_colors/font_color = Color(0.6, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "Rol: --"
 
+[node name="StateLabel" type="Label" parent="Viewport/UI" unique_id=1286608618]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 100.0
+offset_right = 234.0
+offset_bottom = 118.0
+theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
+theme_override_font_sizes/font_size = 12
+text = "FSM: --"
+
+[node name="OrderLabel" type="Label" parent="Viewport/UI" unique_id=1122334455]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 118.0
+offset_right = 234.0
+offset_bottom = 136.0
+theme_override_colors/font_color = Color(0.5, 1, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "Orden: --"
+
+[node name="SemLabel" type="Label" parent="Viewport/UI" unique_id=1271811603]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 136.0
+offset_right = 234.0
+offset_bottom = 154.0
+theme_override_colors/font_color = Color(0.8, 0.6, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Sem: --"
+
 [node name="Sprite" type="Sprite3D" parent="." unique_id=2135179019]
-transform = Transform3D(1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 1.4, 0)
-centered = false
-pixel_size = 0.0025
+transform = Transform3D(1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 1.8, 0)
+centered = true
+pixel_size = 0.0035
 billboard = 1

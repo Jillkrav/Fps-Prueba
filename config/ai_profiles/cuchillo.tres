@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponAIProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/ai/weapon_ai_profile.gd" id="1_7kf2d"]
+
+[resource]
+script = ExtResource("1_7kf2d")
+weapon_name = "Cuchillo"
+ai_rating = 0.4
+preferred_range_min = 0.5
+preferred_range_max = 8.0
+splash_damage = false
+lead_target = true
+refire_rate = 0.6
+aim_error_base = 1500
+attack_style_modifier = 0.8
+is_melee = false
+is_instant_hit = false
+category = "Arrojadizas"
