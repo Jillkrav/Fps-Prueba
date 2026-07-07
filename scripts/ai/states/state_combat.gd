@@ -209,7 +209,7 @@ func _update_phase() -> void:
 
 func _execute_chase() -> void:
 	var target: Node3D = decision_system.target_entity if decision_system else null
-	if target == null:
+	if target == null or not target.is_inside_tree():
 		return
 
 	# Apuntar y disparar mientras perseguimos
@@ -238,7 +238,7 @@ func _execute_chase() -> void:
 
 func _execute_strafe() -> void:
 	var target: Node3D = decision_system.target_entity if decision_system else null
-	if target == null:
+	if target == null or not target.is_inside_tree():
 		return
 
 	var role: TacticalRole = _get_role()
@@ -247,19 +247,6 @@ func _execute_strafe() -> void:
 	combat_cmd.set_engage(target.global_position + Vector3.UP * 1.2, 0)
 	combat_cmd.force_fire = true  # Forzar disparo aunque el ángulo no sea perfecto
 
-	# ── Intentar moverse hacia un punto AMBUSH o ALTERNATE ──
-	var use_semantic_strafe: bool = NavigationSystem._semantic_points_loaded and randf() < 0.35
-	if use_semantic_strafe and target:
-		# Buscar ambush point cerca del enemigo para flanquear
-		var ambush: SemanticPoint = NavigationSystem.get_nearest_point(
-			SemanticPoint.PointType.AMBUSH, target.global_position, -1, 25.0)
-		if ambush != null and ambush.distance_from(bot.global_position) > 5.0:
-			# Strafe hacia el ambush point
-			var dir_to_ambush: Vector3 = (ambush.position - bot.global_position).normalized()
-			movement_cmd.set_direct(dir_to_ambush, _role_speed(4.0))
-			_strafe_direction = 1 if dir_to_ambush.x > 0 else -1
-			return
-	
 	# Cambiar dirección de strafe periódicamente
 	var strafe_interval: float = role.strafe_change_interval if role else 2.0
 	var now: float = Time.get_ticks_msec() / 1000.0

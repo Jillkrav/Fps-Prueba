@@ -1,11 +1,10 @@
 # scripts/ai/navigation/navigation_system.gd
 # ──────────────────────────────────────────────────────────────────
-# SISTEMA DE NAVEGACIÓN — Gestión de navmesh + puntos semánticos
+# SISTEMA DE NAVEGACIÓN — Gestión del navmesh
 #
-# Responsabilidades (Fase 8 - Limpieza de Legacy):
+# Responsabilidades:
 # - Gestión del NavigationAgent3D (inicialización)
-# - Puntos semánticos (SemanticPoints) para decisiones tácticas
-# - API de consulta de puntos por tipo, equipo, distancia
+# - API de consulta de navegación (destino, siguiente posición)
 #
 # NO responsable de:
 # - Movimiento físico → MovementSystem
@@ -19,17 +18,124 @@ class_name NavigationSystem
 
 
 # ══════════════════════════════════════════════════════════════════
-# SEMANTIC POINTS — Navegación semántica (FASE 7)
+# ╔══════════════════════════════════════════════════════════════╗
+# ║  GESTIÓN GLOBAL DE PUNTOS SEMÁNTICOS                        ║
+# ║  (estáticos — compartidos entre todos los bots)             ║
+# ╚══════════════════════════════════════════════════════════════╝
 # ══════════════════════════════════════════════════════════════════
 
-## Lista global de todos los SemanticPoints del mapa actual.
+## Todos los puntos semánticos cargados en el mapa actual.
 static var all_semantic_points: Array[SemanticPoint] = []
 
-## Flag: ¿Ya se cargaron los puntos semánticos?
+## Flag: ¿ya se cargaron los puntos?
 static var _semantic_points_loaded: bool = false
 
-## Lista filtrada por tipo (caché para consultas rápidas).
-static var _points_by_type: Dictionary = {}  # PointType → Array[SemanticPoint]
+
+## Busca todos los nodos SemanticPointMarker en el árbol y los registra
+## como puntos semánticos. Se llama desde NpcBase al iniciar.
+static func load_semantic_points() -> void:
+	all_semantic_points.clear()
+	_semantic_points_loaded = false
+
+	var tree: SceneTree = Engine.get_main_loop()
+	if tree == null:
+		return
+
+	var markers: Array[Node] = []
+	
+	# 1. Buscar por grupo "semantic_points"
+	var group_nodes: Array[Node] = tree.get_nodes_in_group("semantic_points")
+	for group_node in group_nodes:
+		if group_node is SemanticPointMarker:
+			markers.append(group_node)
+		else:
+			for child in group_node.find_children("*", "SemanticPointMarker", true, false):
+				if child is SemanticPointMarker and child not in markers:
+					markers.append(child)
+	
+	# 2. Fallback: buscar por tipo en todo el árbol
+	if markers.is_empty():
+		var root: Window = tree.root
+		var found: Array[Node] = root.find_children("*", "SemanticPointMarker", true, false)
+		for n in found:
+			if n is SemanticPointMarker:
+				markers.append(n)
+
+	for marker_node in markers:
+		var marker: SemanticPointMarker = marker_node as SemanticPointMarker
+		if marker == null:
+			continue
+		var sp: SemanticPoint = marker.to_semantic_point()
+		all_semantic_points.append(sp)
+
+	_semantic_points_loaded = true
+	print("[NavigationSystem] Cargados %d puntos semánticos desde SemanticPointMarker" % all_semantic_points.size())
+
+
+## Retorna el punto semántico más cercano del tipo indicado,
+## dentro del radio max_dist, filtrado por equipo.
+## Si team_filter es -1, ignora el filtro de equipo.
+static func get_nearest_point(point_type: int, from_pos: Vector3,
+		team_filter: int = -1, max_dist: float = INF) -> SemanticPoint:
+	if not _semantic_points_loaded or all_semantic_points.is_empty():
+		return null
+
+	var nearest: SemanticPoint = null
+	var nearest_dist: float = max_dist
+
+	for sp in all_semantic_points:
+		# Filtrar por tipo
+		if sp.point_type != point_type:
+			continue
+		# Filtrar por equipo (si no es -1)
+		if team_filter != -1 and sp.team != -1 and sp.team != team_filter:
+			continue
+		var d: float = from_pos.distance_squared_to(sp.position)
+		if d < nearest_dist * nearest_dist:
+			nearest_dist = sqrt(d)
+			nearest = sp
+
+	return nearest
+
+
+## Retorna TODOS los puntos semánticos del tipo indicado,
+## ordenados por distancia ascendente desde from_pos.
+static func get_points_sorted(point_type: int, from_pos: Vector3,
+		team_filter: int = -1, max_dist: float = INF) -> Array[SemanticPoint]:
+	if not _semantic_points_loaded or all_semantic_points.is_empty():
+		return []
+
+	var result: Array[SemanticPoint] = []
+	for sp in all_semantic_points:
+		if sp.point_type != point_type:
+			continue
+		if team_filter != -1 and sp.team != -1 and sp.team != team_filter:
+			continue
+		var d: float = from_pos.distance_squared_to(sp.position)
+		if d <= max_dist * max_dist:
+			result.append(sp)
+
+	# Ordenar por distancia
+	result.sort_custom(func(a: SemanticPoint, b: SemanticPoint) -> bool:
+		var da: float = from_pos.distance_squared_to(a.position)
+		var db: float = from_pos.distance_squared_to(b.position)
+		return da < db
+	)
+	return result
+
+
+## Retorna true si hay al menos un punto del tipo indicado
+## dentro del radio especificado desde la posición dada.
+static func has_point_nearby(point_type: int, from_pos: Vector3,
+		team_filter: int = -1, radius: float = 8.0) -> bool:
+	var nearest: SemanticPoint = get_nearest_point(point_type, from_pos, team_filter, radius)
+	return nearest != null
+
+
+## Limpia todos los puntos (útil al cambiar de mapa).
+static func clear_points() -> void:
+	all_semantic_points.clear()
+	_semantic_points_loaded = false
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -58,128 +164,7 @@ func _ready() -> void:
 		agent = bot.get_node_or_null("NavigationAgent3D") as NavigationAgent3D
 
 
-# ══════════════════════════════════════════════════════════════════
-# API PÚBLICA — Puntos semánticos
-# ══════════════════════════════════════════════════════════════════
-
-## Carga puntos semánticos desde los SemanticPointMarker del scene tree.
-## Busca nodos en el grupo "semantic_points" y extrae sus SemanticPoint.
-static func load_semantic_points() -> void:
-	all_semantic_points.clear()
-	_points_by_type.clear()
-	_semantic_points_loaded = false
-
-	var tree: SceneTree = Engine.get_main_loop() as SceneTree
-	if not tree:
-		return
-
-	var markers: Array[Node] = tree.get_nodes_in_group("semantic_points")
-	for marker in markers:
-		if marker.has_method("get_semantic_point"):
-			var sp: SemanticPoint = marker.get_semantic_point()
-			if sp:
-				all_semantic_points.append(sp)
-
-	_index_points_by_type()
-	_semantic_points_loaded = true
-
-
-## Re-indexa los puntos semánticos por tipo.
-static func _index_points_by_type() -> void:
-	_points_by_type.clear()
-	for sp in all_semantic_points:
-		var type_key: int = sp.point_type as int
-		if not _points_by_type.has(type_key):
-			var typed_arr: Array[SemanticPoint] = []
-			_points_by_type[type_key] = typed_arr
-		_points_by_type[type_key].append(sp)
-
-
-## Obtiene el punto semántico más cercano a position que cumpla los filtros.
-## - point_type: tipo de punto (-1 para cualquier tipo)
-## - position: posición de referencia
-## - team: filtro de equipo (-1 para ignorar)
-## - max_dist: distancia máxima de búsqueda
-static func get_nearest_point(
-	point_type: int, position: Vector3, team: int = -1, max_dist: float = INF
-) -> SemanticPoint:
-	if not _semantic_points_loaded:
-		return null
-
-	var candidates: Array[SemanticPoint]
-	if point_type == -1 or not _points_by_type.has(point_type):
-		candidates = all_semantic_points
-	else:
-		candidates = _points_by_type.get(point_type, all_semantic_points)
-	if candidates.is_empty():
-		candidates = all_semantic_points
-
-	var best: SemanticPoint = null
-	var best_dist: float = max_dist
-
-	for sp in candidates:
-		if point_type != -1 and sp.point_type != point_type:
-			continue
-		if team != -1 and sp.team != -1 and sp.team != team:
-			continue
-		var d: float = position.distance_to(sp.position)
-		if d < best_dist:
-			best = sp
-			best_dist = d
-
-	return best
-
-
-## Obtiene el punto semántico más cercano de un tipo específico.
-## Alias de get_nearest_point con point_type específico.
-static func get_nearest_point_of_type(
-	point_type: int, position: Vector3, team: int = -1, max_dist: float = INF
-) -> SemanticPoint:
-	return get_nearest_point(point_type, position, team, max_dist)
-
-
-## Obtiene todos los puntos semánticos de un tipo dentro de un radio.
-static func get_points_in_radius(
-	point_type: int, position: Vector3, radius: float, team: int = -1
-) -> Array[SemanticPoint]:
-	var result: Array[SemanticPoint] = []
-	if not _semantic_points_loaded:
-		return result
-
-	var candidates: Array[SemanticPoint]
-	if _points_by_type.has(point_type):
-		candidates = _points_by_type.get(point_type, all_semantic_points)
-	else:
-		candidates = []
-	if candidates.is_empty():
-		candidates = []
-	for sp in candidates:
-		if team != -1 and sp.team != -1 and sp.team != team:
-			continue
-		if position.distance_to(sp.position) <= radius:
-			result.append(sp)
-
-	return result
-
-
-## Devuelve todos los puntos semánticos cargados (útil para debug).
-static func get_all_points() -> Array[SemanticPoint]:
-	return all_semantic_points.duplicate()
-
-
-## Establece los puntos semánticos desde un Array genérico.
-## Útil para que NpcBase pueda cargar puntos sin referenciar SemanticPoint.
-static func set_points_from_array(points: Array) -> void:
-	all_semantic_points.clear()
-	for p in points:
-		if p is SemanticPoint:
-			all_semantic_points.append(p as SemanticPoint)
-	_index_points_by_type()
-	_semantic_points_loaded = true
-
-
 ## Resetea el estado de navegación (útil en respawn).
-## Los puntos semánticos son globales, no se resetean por bot.
 func reset() -> void:
 	pass
 

@@ -54,22 +54,8 @@ func execute(_delta: float) -> void:
 		return
 
 	# ── Navegar hacia la última posición conocida ──
-	# Si hay puntos semánticos, considerar rutas alternativas
-	var use_semantic: bool = NavigationSystem._semantic_points_loaded and randf() < 0.4
-	if use_semantic:
-		# Buscar un ambush point cerca del target para interceptar
-		var ambush: SemanticPoint = NavigationSystem.get_nearest_point(
-			SemanticPoint.PointType.AMBUSH, _hunt_target, -1, 30.0)
-		if ambush != null and ambush.distance_from(bot.global_position) > 8.0:
-			# Ir primero al ambush point, luego al target
-			movement_cmd.set_navigate(ambush.position, _role_speed(6.0))
-			combat_cmd.set_aim(_hunt_target)
-		else:
-			movement_cmd.set_navigate(_hunt_target, _role_speed(6.0))
-			combat_cmd.set_aim(_hunt_target)
-	else:
-		movement_cmd.set_navigate(_hunt_target, _role_speed(6.0))
-		combat_cmd.set_aim(_hunt_target)
+	movement_cmd.set_navigate(_hunt_target, _role_speed(6.0))
+	combat_cmd.set_aim(_hunt_target)
 
 	# ── Verificar si hemos llegado ──
 	var desired_dist: float = bot.navigation_agent.target_desired_distance if bot.navigation_agent else 2.0

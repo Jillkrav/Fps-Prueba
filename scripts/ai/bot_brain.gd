@@ -104,7 +104,6 @@ var context: DecisionContext = null
 func _ready() -> void:
 	_register_behaviors()
 	context = DecisionContext.new()
-	_debug_brain("Brain listo con %d comportamientos" % behaviors.size())
 
 
 ## Registra todos los comportamientos disponibles.

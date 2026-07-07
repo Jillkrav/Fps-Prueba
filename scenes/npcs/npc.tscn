@@ -3,11 +3,11 @@
 [ext_resource type="Script" uid="uid://cl6po86habtwt" path="res://scripts/npc_base.gd" id="1_base"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_base"]
-radius = 0.4
+radius = 0.65
 height = 1.8
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_base"]
-radius = 0.4
+radius = 0.65
 height = 1.8
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_base"]
@@ -60,9 +60,9 @@ shape = SubResource("SphereShape3D_head")
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=1870977625]
 target_desired_distance = 1.5
 path_max_distance = 1.5
+avoidance_enabled = true
 radius = 0.8
 max_speed = 6.0
-avoidance_enabled = true
 
 [node name="AreaVision" type="Area3D" parent="." unique_id=466204919]
 collision_layer = 0

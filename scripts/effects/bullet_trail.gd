@@ -46,7 +46,9 @@ func setup(from: Vector3, to: Vector3, color: Color = TRAIL_COLOR) -> void:
 	dir = dir.normalized()
 
 	# Orientar: el BoxMesh base tiene size=1 en Z, escalamos al largo real
-	look_at(from + dir * 10.0, Vector3.UP)
+	# El nodo está en el punto medio, miramos hacia 'to' para que el
+	# box (centrado) se extienda desde 'from' hasta 'to'.
+	look_at(to, Vector3.UP)
 	scale.z = dist
 
 	# Aplicar color emisivo

@@ -97,6 +97,11 @@ var base_defense_radius: float
 # Esto modifica el RouteType calculado por RouteDiversifier.
 var flanking_bias: float
 
+# ── Sesgo de dispersión (0.0 - 0.5 aprox) ──────────────────────
+# 0.0 = solo importa la cercanía al bot (comportamiento por defecto)
+# 0.3+ = prefiere puntos lejos del core aliado (para flanqueo amplio)
+var spread_weight: float
+
 # ── Enfoque en objetivo principal (0.0 - 1.0) ────────────────────
 # 0.0 = se distrae con cualquier enemigo cercano
 # 0.5 = equilibrado
@@ -172,6 +177,7 @@ static func create(role_type: int) -> TacticalRole:
 	role.target_persistence = cfg.get("target_persistence", 4.0)
 	role.base_defense_radius = cfg.get("base_defense_radius", 0.0)
 	role.flanking_bias = cfg.get("flanking_bias", 0.0)
+	role.spread_weight = cfg.get("spread_weight", 0.0)
 	role.objective_focus = cfg.get("objective_focus", 0.3)
 	role.speed_multiplier = cfg.get("speed_multiplier", 1.0)
 	role.jump_frequency = cfg.get("jump_frequency", 0.0)
@@ -195,6 +201,7 @@ func duplicate_role() -> TacticalRole:
 	copy.target_persistence = target_persistence
 	copy.base_defense_radius = base_defense_radius
 	copy.flanking_bias = flanking_bias
+	copy.spread_weight = spread_weight
 	copy.objective_focus = objective_focus
 	copy.speed_multiplier = speed_multiplier
 	copy.jump_frequency = jump_frequency
@@ -247,6 +254,9 @@ static func _build_configs() -> Dictionary:
 			# Sin sesgo de flanqueo: va directo al enemigo cercano
 			"flanking_bias": 0.0,
 
+			# Sin dispersión: se queda cerca de su zona
+			"spread_weight": 0.0,
+
 			# Enfoque medio en objetivo: protege, pero si hay
 			# enemigos cerca los prioriza
 			"objective_focus": 0.4,
@@ -295,6 +305,9 @@ static func _build_configs() -> Dictionary:
 			# Sesgo de flanqueo bajo: prefiere ruta directa
 			"flanking_bias": 0.2,
 
+			# Sin dispersión: va en línea recta al core
+			"spread_weight": 0.0,
+
 			# Alto enfoque en objetivo: prioriza el core
 			"objective_focus": 0.8,
 
@@ -341,6 +354,10 @@ static func _build_configs() -> Dictionary:
 
 			# Alto sesgo de flanqueo: SIEMPRE busca rutas laterales
 			"flanking_bias": 0.9,
+
+			# Dispersión moderada: elige puntos cercanos pero que lo
+			# alejen del core aliado (rutas envolventes)
+			"spread_weight": 0.35,
 
 			# Enfoque medio-alto: va al core pero ataca lo que
 			# encuentra en el camino
@@ -390,6 +407,9 @@ static func _build_configs() -> Dictionary:
 
 			# Sesgo de flanqueo medio: a veces directo, a veces no
 			"flanking_bias": 0.4,
+
+			# Sin dispersión: solo importa lo que encuentra cerca
+			"spread_weight": 0.0,
 
 			# Bajo enfoque en objetivo: se distrae fácilmente
 			"objective_focus": 0.2,

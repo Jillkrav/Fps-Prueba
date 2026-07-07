@@ -105,7 +105,6 @@ var _is_reloading: bool = false
 func _ready() -> void:
 	bot = get_parent() as NpcBase
 	_preload_ai_profiles()
-	_debug_ws("WeaponSystem listo (%d perfiles cargados)" % ai_profiles.size())
 
 
 ## Procesa el estado del arma cada frame.
@@ -142,7 +141,6 @@ func register_weapon(weapon: Weapon) -> void:
 		return
 
 	available_weapons.append(weapon)
-	_debug_ws("Arma registrada: %s" % weapon.weapon_name)
 
 	# Cargar perfil AI si no está ya
 	_load_profile_for(weapon)
@@ -360,6 +358,7 @@ func fire() -> Array:
 
 	if current_weapon.ammo_in_mag <= 0 and current_weapon.reserve_ammo > 0:
 		weapon_empty.emit()
+		bot._debug("¡Sin balas en el cargador! Recargando...")
 
 	return hits
 
@@ -400,7 +399,6 @@ func _load_profile_for(weapon: Weapon) -> void:
 	if profile:
 		ai_profiles[weapon.weapon_name] = profile
 		weapon.ai_profile = profile
-		_debug_ws("Perfil cargado para: %s" % weapon.weapon_name)
 
 
 # ══════════════════════════════════════════════════════════════════

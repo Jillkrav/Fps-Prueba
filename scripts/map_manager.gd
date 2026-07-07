@@ -81,10 +81,10 @@ func _update_navigation() -> void:
 	nav_region.add_child(temp_root)
 	
 	var nav_mesh: NavigationMesh = NavigationMesh.new()
-	nav_mesh.agent_radius = 0.5     # 2 * cell_size = 0.5 (exacto)
+	nav_mesh.agent_radius = 0.6     # 2 * cell_size = 0.6 (exacto)
 	nav_mesh.agent_height = 1.75    # 7 * cell_height = 1.75 (exacto)
-	nav_mesh.agent_max_climb = 0.25 # 1 * cell_height = 0.25 (exacto)
-	nav_mesh.cell_size = 0.25
+	nav_mesh.agent_max_climb = 0.5  # 2 * cell_height = 0.5 (múltiplo exacto, evita truncado)
+	nav_mesh.cell_size = 0.3
 	nav_mesh.cell_height = 0.25     # Coincide con el mapa de navegación por defecto
 	
 	var source_geo: NavigationMeshSourceGeometryData3D = NavigationMeshSourceGeometryData3D.new()
@@ -150,12 +150,40 @@ func _setup_match() -> void:
 	# 2.5 Mejorar navegación
 	_update_navigation()
 	
+	# 2.75 Instanciar puntos semánticos del mapa (si existen)
+	_instantiate_semantic_points()
+	
 	# 3. Conectar fin de partida
 	if GameState.match_ended.is_connected(_on_match_ended):
 		GameState.match_ended.disconnect(_on_match_ended)
 	GameState.match_ended.connect(_on_match_ended)
 	
 	print("[MapManager] Mapa inicializado para partida de bots!")
+
+## Instancia los puntos semánticos del mapa si existe el archivo
+## correspondiente. Busca un archivo 'semantic_points_[map_name].tscn'
+## y lo agrega como hijo del mapa raíz.
+func _instantiate_semantic_points() -> void:
+	if not _map_root:
+		return
+	
+	# Determinar el nombre del mapa para buscar su archivo de puntos
+	var map_name: String = _map_root.name.to_lower()
+	var scene_path: String = "res://scenes/maps/semantic_points_%s.tscn" % map_name
+	
+	if ResourceLoader.exists(scene_path):
+		var sem_scene: PackedScene = load(scene_path)
+		if sem_scene:
+			var instance: Node = sem_scene.instantiate()
+			_map_root.add_child(instance)
+			instance.owner = _map_root
+			print("[MapManager] Puntos semánticos instanciados desde: %s" % scene_path)
+			
+			# Cargar los puntos en NavigationSystem inmediatamente
+			NavigationSystem.load_semantic_points()
+	else:
+		print("[MapManager] No hay puntos semánticos para: %s" % scene_path)
+
 
 func _replace_cores() -> void:
 	if not _map_root:

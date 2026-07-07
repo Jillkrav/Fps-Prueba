@@ -110,8 +110,6 @@ func _ready() -> void:
 	if _states.size() > 0:
 		_change_state(BotState.StateType.ROAMING)
 
-	_debug_decision("DecisionSystem listo con %d estados" % _states.size())
-
 
 ## Registra todos los nodos BotState hijos como estados de la FSM.
 func _register_child_states() -> void:
@@ -120,8 +118,6 @@ func _register_child_states() -> void:
 			var state: BotState = child as BotState
 			state.decision_system = self
 			_states[state.state_type] = state
-			_debug_decision("  Estado registrado: %s (tipo=%d)" % [
-				state.state_name, state.state_type])
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -247,7 +243,7 @@ func change_state(new_type: int) -> void:
 func _change_state(new_type: int) -> void:
 	var new_state: BotState = _states.get(new_type)
 	if not new_state:
-		_debug_decision("ERROR: Estado %d no registrado" % new_type)
+		#_debug_decision("ERROR: Estado %d no registrado" % new_type)
 		return
 	if new_state == current_state:
 		return
@@ -291,11 +287,15 @@ func is_in_state(type: int) -> bool:
 
 ## ¿Hay un objetivo enemigo vivo?
 func has_target() -> bool:
-	return target_entity != null and is_instance_valid(target_entity)
+	return target_entity != null \
+		and is_instance_valid(target_entity) \
+		and target_entity.is_inside_tree()
 
-## ¿El objetivo actual está muerto o destruido?
+## ¿El objetivo actual está muerto, destruido, o fuera del árbol?
 func is_target_dead() -> bool:
 	if not has_target():
+		return true
+	if not target_entity.is_inside_tree():
 		return true
 	if target_entity.has_method("is_queued_for_deletion") and target_entity.is_queued_for_deletion():
 		return true
@@ -307,7 +307,7 @@ func is_target_dead() -> bool:
 
 ## Distancia al objetivo (o INF si no hay).
 func dist_to_target() -> float:
-	if has_target() and bot:
+	if has_target() and bot and bot.is_inside_tree():
 		return bot.global_position.distance_to(target_entity.global_position)
 	return INF
 

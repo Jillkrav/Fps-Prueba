@@ -38,7 +38,10 @@ func _stick_to(body: Node) -> void:
 		_destroy_projectile()
 		return
 	
-	sticks_to = body
+	var body_3d: Node3D = body as Node3D
+	if not body_3d:
+		_destroy_projectile()
+		return
 	
 	# Desactivar físicas
 	freeze = true
@@ -47,9 +50,11 @@ func _stick_to(body: Node) -> void:
 	collision_layer = 0
 	collision_mask = 0
 	
-	# Reparentear al body para que siga su movimiento
-	var _old_parent: Node = get_parent()
-	reparent(body)
+	# Guardar offset y activar seguimiento manual (sin reparentear)
+	# para evitar heredar escala no uniforme del padre, que Jolt
+	# Physics no soporta en shapes de colisión.
+	_stick_offset = body_3d.global_transform.affine_inverse() * global_transform
+	sticks_to = body_3d
 	
 	# Si es explosivo con fuse, esperar a que explote clavado
 	# (el timer de fuse ya está corriendo)

@@ -31,6 +31,25 @@ const PRIORITY_PATROL: float = 10.0
 var _objective_reached: bool = false
 var _nav_target: Vector3 = Vector3.ZERO
 
+# ── Cooldown de cubos semánticos ──────────────────────────────────
+# Duración de cooldown según el tipo de cubo.
+const POINT_COOLDOWN: Dictionary = {
+	SemanticPoint.PointType.ASSAULT: 55.0,
+	SemanticPoint.PointType.ALTERNATE: 30.0,
+}
+# Dict: "x,y,z" → timestamp de expiración
+var _semantic_cooldowns: Dictionary = {}
+
+# El tipo de cubo al que el bot está navegando actualmente (-1 = no es cubo)
+var _last_semantic_type: int = -1
+
+# Timestamp del momento en que se fijó _nav_target (para detectar navegación fallida)
+var _nav_target_set_time: float = 0.0
+
+# ── Stack de ruta semántica (para CTF futuro) ───────────────────
+# Almacena los puntos semánticos visitados en orden de avance.
+var _semantic_path: Array[SemanticPoint] = []
+
 
 func _init() -> void:
 	state_type = StateType.ROAMING
@@ -44,6 +63,9 @@ func _init() -> void:
 func enter(_previous_state: BotState) -> void:
 	_objective_reached = false
 	_nav_target = Vector3.ZERO
+	_last_semantic_type = -1
+	_nav_target_set_time = 0.0
+	_semantic_path.clear()
 	movement_cmd.reset()
 	if decision_system:
 		decision_system.combat_command.cease_fire = true
@@ -165,9 +187,43 @@ func _advance_to_core() -> void:
 	if dist_to_core < 4.0:
 		_objective_reached = true
 
-	if _nav_target == Vector3.ZERO or _objective_reached:
-		_nav_target = core.global_position
-		_objective_reached = false
+	if _nav_target == Vector3.ZERO or _objective_reached or _is_nav_finished():
+		# ── Cooldown del punto al que intentamos llegar ──
+		# Siempre se aplica al terminar con un cubo, haya llegado o no.
+		# Así el bot no se queda atascado intentando un cubo inalcanzable
+		# ni se devuelve a buscar uno que quedó atrás.
+		if _nav_target != Vector3.ZERO and _last_semantic_type >= 0:
+			_add_semantic_cooldown(_nav_target, _last_semantic_type)
+
+		# ── Elegir punto según el rol del bot ──
+		var role: TacticalRole = _get_role()
+		var target_point: SemanticPoint = null
+		var point_label: String = ""
+
+		if role != null:
+			match role.type:
+				TacticalRole.Type.ASSAULT:
+					target_point = _get_assault_point_nearby()
+					point_label = "Asalto"
+				TacticalRole.Type.FLANKER:
+					target_point = _get_flanker_point_nearby()
+					point_label = "Flanqueo"
+
+		if target_point != null:
+			_nav_target = target_point.position
+			_last_semantic_type = target_point.point_type
+			_nav_target_set_time = Time.get_ticks_msec() / 1000.0
+			_semantic_path.append(target_point)
+			_debug("Punto de %s: navegando a (%.1f, %.1f, %.1f)" % [
+				point_label, target_point.position.x,
+				target_point.position.y, target_point.position.z])
+			_objective_reached = false
+		else:
+			# Ir directo al core enemigo
+			_nav_target = core.global_position
+			_last_semantic_type = -1
+			_nav_target_set_time = 0.0
+			_objective_reached = false
 
 	movement_cmd.set_navigate(_nav_target, _role_speed(4.5))
 
@@ -176,42 +232,228 @@ func _wander() -> void:
 	var wander_radius: float = _get_wander_radius()
 
 	if _nav_target == Vector3.ZERO or _is_nav_finished():
-		# ── Intentar usar un punto semántico PATH o AMBUSH ──
-		var use_semantic: bool = randf() < 0.6  # 60% prob de usar semantic points
-		var sem_point: SemanticPoint = null
-		
-		if use_semantic and NavigationSystem._semantic_points_loaded:
-			var team_filter: int = bot.equipo_id if bot else -1
-			# Preferir PATH points, luego AMBUSH
-			sem_point = NavigationSystem.get_nearest_point(
-				SemanticPoint.PointType.PATH, bot.global_position, team_filter, wander_radius * 2)
-			if sem_point == null:
-				sem_point = NavigationSystem.get_nearest_point(
-					SemanticPoint.PointType.AMBUSH, bot.global_position, team_filter, wander_radius * 2)
-		
-		if sem_point != null:
-			# Ir al punto semántico
-			_nav_target = sem_point.position
+		# ── Posición aleatoria en el navmesh ──
+		var nav_map_rid: RID
+		if navigation and navigation.agent:
+			nav_map_rid = navigation.agent.get_navigation_map()
+		elif bot and bot.navigation_agent:
+			nav_map_rid = bot.navigation_agent.get_navigation_map()
 		else:
-			# Fallback: posición aleatoria en el navmesh
-			var nav_map_rid: RID
-			if navigation and navigation.agent:
-				nav_map_rid = navigation.agent.get_navigation_map()
-			elif bot and bot.navigation_agent:
-				nav_map_rid = bot.navigation_agent.get_navigation_map()
-			else:
-				nav_map_rid = RID()
+			nav_map_rid = RID()
 
-			var raw_target: Vector3 = bot.global_position + Vector3(
-				randf_range(-wander_radius, wander_radius), 0,
-				randf_range(-wander_radius, wander_radius))
+		var raw_target: Vector3 = bot.global_position + Vector3(
+			randf_range(-wander_radius, wander_radius), 0,
+			randf_range(-wander_radius, wander_radius))
 
-			if nav_map_rid.is_valid() and NavigationServer3D.map_is_active(nav_map_rid):
-				_nav_target = NavigationServer3D.map_get_closest_point(nav_map_rid, raw_target)
-			else:
-				_nav_target = raw_target
+		if nav_map_rid.is_valid() and NavigationServer3D.map_is_active(nav_map_rid):
+			_nav_target = NavigationServer3D.map_get_closest_point(nav_map_rid, raw_target)
+		else:
+			_nav_target = raw_target
 
 	movement_cmd.set_navigate(_nav_target, _role_speed(3.5))
+
+
+# ══════════════════════════════════════════════════════════════════
+# PUNTOS DE ASALTO
+# ══════════════════════════════════════════════════════════════════
+
+## Busca un punto de asalto (SemanticPoint.PointType.ASSAULT) cercano.
+## Solo los bots con rol ASSAULT pueden usarlo.
+##
+## ▶ Filtra cubos en cooldown (55s).
+## ▶ Solo considera puntos que estén ADELANTE (más cerca del core enemigo).
+## ▶ 50% de probabilidad de saltar al 2° cubo más cercano (más dinamismo).
+##
+## Retorna el punto seleccionado, o null si no hay puntos válidos.
+func _get_assault_point_nearby() -> SemanticPoint:
+	var role: TacticalRole = _get_role()
+	if role == null:
+		return null
+
+	# Solo bots ASSAULT pueden usar puntos de asalto
+	if role.type != TacticalRole.Type.ASSAULT:
+		return null
+
+	if not NavigationSystem._semantic_points_loaded:
+		NavigationSystem.load_semantic_points()
+
+	# Obtener TODOS los puntos ASSAULT ordenados por distancia (más cercano primero)
+	var points: Array[SemanticPoint] = NavigationSystem.get_points_sorted(
+		SemanticPoint.PointType.ASSAULT,
+		bot.global_position,
+		bot.equipo_id,
+		99999.0  # Sin límite de distancia
+	)
+	if points.is_empty():
+		return null
+
+	# ── Filtrar: cooldown + solo puntos adelante del bot ──
+	var enemy_core: Node = bot._enemy_core if bot else null
+	var bot_to_core: float
+	if enemy_core and is_instance_valid(enemy_core):
+		bot_to_core = bot.global_position.distance_to(enemy_core.global_position)
+	else:
+		bot_to_core = -1.0  # Sin core, no filtrar por dirección
+
+	var now: float = Time.get_ticks_msec() / 1000.0
+	var valid_points: Array[SemanticPoint] = []
+	for p in points:
+		var key: String = str(p.position)
+		# 1) No está en cooldown
+		if _semantic_cooldowns.has(key) and _semantic_cooldowns[key] > now:
+			continue
+		# 2) Está adelante del bot (más cerca del core, o sin core disponible)
+		if bot_to_core >= 0.0:
+			var p_to_core: float = p.position.distance_to(enemy_core.global_position)
+			if p_to_core > bot_to_core + 5.0:  # +5m de tolerancia lateral
+				continue
+		# 3) El primer paso en la navmesh no debe retroceder del core
+		if _requires_backtrack(p.position):
+			continue
+		valid_points.append(p)
+
+	if valid_points.is_empty():
+		return null
+
+	# 50% de probabilidad de saltar al 2° cubo más cercano
+	if valid_points.size() >= 2 and randf() < 0.5:
+		return valid_points[1]
+
+	return valid_points[0]
+
+
+## Busca un punto de flanqueo (SemanticPoint.PointType.ALTERNATE) cercano.
+## Solo los bots con rol FLANKER pueden usarlo.
+##
+## ▶ Cooldown + solo adelante + sin backtrack (igual que ASSAULT).
+## ▶ Scoring: elige el punto más cercano al bot pero que más se aleje
+##   del core aliado (spread_weight). Esto crea rutas envolventes.
+## ▶ 50% de probabilidad de saltar al 2° mejor (más dinamismo).
+##
+## Retorna el punto seleccionado, o null si no hay puntos válidos.
+func _get_flanker_point_nearby() -> SemanticPoint:
+	var role: TacticalRole = _get_role()
+	if role == null:
+		return null
+
+	# Solo bots FLANKER pueden usar puntos de flanqueo
+	if role.type != TacticalRole.Type.FLANKER:
+		return null
+
+	if not NavigationSystem._semantic_points_loaded:
+		NavigationSystem.load_semantic_points()
+
+	# Obtener todos los puntos ALTERNATE del mapa
+	var points: Array[SemanticPoint] = NavigationSystem.get_points_sorted(
+		SemanticPoint.PointType.ALTERNATE,
+		bot.global_position,
+		bot.equipo_id,
+		99999.0
+	)
+	if points.is_empty():
+		return null
+
+	# Referencias a cores
+	var enemy_core: Node = bot._enemy_core if bot else null
+	var own_core: Node = _get_own_core()
+
+	# Distancia del bot al core enemigo (para filtro "adelante")
+	var bot_to_core: float
+	if enemy_core and is_instance_valid(enemy_core):
+		bot_to_core = bot.global_position.distance_to(enemy_core.global_position)
+	else:
+		bot_to_core = -1.0
+
+	var now: float = Time.get_ticks_msec() / 1000.0
+
+	# ── 1. Filtrar puntos válidos con scoring ─────────────────────
+	# Cada punto recibe un score donde MENOR = MEJOR:
+	#   score = distancia_al_bot - spread_weight * distancia_del_core_aliado
+	# Esto favorece puntos cercanos al bot pero que también se alejen
+	# del core aliado (rutas envolventes).
+	var scored: Array[Dictionary] = []
+
+	for p in points:
+		var key: String = str(p.position)
+		# 1) Cooldown
+		if _semantic_cooldowns.has(key) and _semantic_cooldowns[key] > now:
+			continue
+		# 2) Adelante del bot (más cerca del core enemigo, con tolerancia)
+		if bot_to_core >= 0.0:
+			var p_to_core: float = p.position.distance_to(enemy_core.global_position)
+			if p_to_core > bot_to_core + 5.0:
+				continue
+		# 3) Sin backtrack en navmesh
+		if _requires_backtrack(p.position):
+			continue
+
+		# ── Calcular score ──
+		var dist_to_bot: float = bot.global_position.distance_to(p.position)
+		var dist_from_ally: float = 0.0
+		if own_core and is_instance_valid(own_core):
+			dist_from_ally = p.position.distance_to(own_core.global_position)
+
+		var sp: float = role.spread_weight
+		var score: float = dist_to_bot - sp * dist_from_ally
+
+		scored.append({"point": p, "score": score})
+
+	if scored.is_empty():
+		return null
+
+	# ── 2. Ordenar por score ascendente (menor = mejor) ──────────
+	scored.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a.score < b.score
+	)
+
+	# ── 3. Elegir el mejor, o el 2° mejor (50% de probabilidad) ──
+	if scored.size() >= 2 and randf() < 0.5:
+		return scored[1].point
+
+	return scored[0].point
+
+
+## Registra un punto semántico en cooldown.
+## La duración depende del tipo de punto (ASSAULT=55s, ALTERNATE=30s).
+## Mientras esté en cooldown, el bot ignorará ese cubo al buscar el siguiente.
+func _add_semantic_cooldown(pos: Vector3, point_type: int) -> void:
+	var duration: float = POINT_COOLDOWN.get(point_type, 30.0)
+	var now: float = Time.get_ticks_msec() / 1000.0
+	var key: String = str(pos)
+	_semantic_cooldowns[key] = now + duration
+	_debug("Cubo en cooldown por %.0fs: (%.1f, %.1f, %.1f)" % [
+		duration, pos.x, pos.y, pos.z])
+
+
+## Verifica si la navegación hacia `pos` requiere retroceder.
+## Si el primer paso del camino en la navmesh se aleja del core enemigo,
+## el punto requiere devolverse → debe descartarse.
+func _requires_backtrack(pos: Vector3) -> bool:
+	var enemy_core: Node = bot._enemy_core if bot else null
+	if not enemy_core or not is_instance_valid(enemy_core):
+		return false
+
+	var nav_map: RID
+	if navigation and navigation.agent:
+		nav_map = navigation.agent.get_navigation_map()
+	elif bot and bot.navigation_agent:
+		nav_map = bot.navigation_agent.get_navigation_map()
+
+	if not nav_map.is_valid() or not NavigationServer3D.map_is_active(nav_map):
+		return false
+
+	var path: PackedVector3Array = NavigationServer3D.map_get_path(
+		nav_map, bot.global_position, pos, true
+	)
+	if path.size() < 2:
+		return false
+
+	# Dirección del primer paso en la navmesh vs dirección al core
+	var first_step_dir: Vector3 = (path[1] - path[0]).normalized()
+	var to_core_dir: Vector3 = (enemy_core.global_position - bot.global_position).normalized()
+
+	# Si apunta en dirección opuesta al core (< -0.3) → retrocede
+	return first_step_dir.dot(to_core_dir) < -0.3
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -268,6 +510,9 @@ func _is_nav_finished() -> bool:
 
 ## Ejecuta la orden actual del bot según TeamAI.
 ## Retorna true si la orden fue procesada (el bot tiene una orden activa).
+##
+## ▶ ASALTO y FLANQUEADOR NUNCA defienden: si reciben orden DEFEND o HOLD,
+##   las ignoran y se comportan como FREELANCE (avanzan al frente).
 func _execute_order() -> bool:
 	if not is_instance_valid(TeamAI):
 		return false
@@ -276,6 +521,13 @@ func _execute_order() -> bool:
 
 	var order_data: Dictionary = bot.get_current_order()
 	var order_type: int = order_data.get("type", TeamAI.OrderType.FREELANCE)
+
+	# ── Solo DEFENSOR se queda quieto defendiendo.
+	#    ASALTO, FLANQUEADOR y PATRULLERO ignoran órdenes defensivas.
+	var role: TacticalRole = _get_role()
+	if role != null and role.type != TacticalRole.Type.DEFENDER:
+		if order_type == TeamAI.OrderType.DEFEND or order_type == TeamAI.OrderType.HOLD:
+			order_type = TeamAI.OrderType.FREELANCE
 
 	match order_type:
 		TeamAI.OrderType.ATTACK:
@@ -329,43 +581,29 @@ func _defend_position() -> void:
 		var dist_to_base: float = bot.global_position.distance_to(own_core.global_position)
 		var defense_range: float = 12.0
 
-		# ── Intentar usar punto DEFENSE semántico ──
-		var defense_point: SemanticPoint = null
-		if NavigationSystem._semantic_points_loaded:
-			defense_point = NavigationSystem.get_nearest_point_of_type(
-				SemanticPoint.PointType.DEFENSE, own_core.global_position,
-				bot.equipo_id if bot else -1)
-
 		# Si está cerca de la base, patrullar alrededor
 		if dist_to_base < defense_range:
 			var wander_radius: float = 8.0
 			if _nav_target == Vector3.ZERO or _is_nav_finished():
-				if defense_point != null:
-					# Ir al punto de defensa
-					_nav_target = defense_point.position
+				# Wander aleatorio dentro del radio defensivo
+				var raw_target: Vector3 = own_core.global_position + Vector3(
+					randf_range(-wander_radius, wander_radius), 0,
+					randf_range(-wander_radius, wander_radius))
+				var nav_map_rid: RID
+				if navigation and navigation.agent:
+					nav_map_rid = navigation.agent.get_navigation_map()
+				elif bot and bot.navigation_agent:
+					nav_map_rid = bot.navigation_agent.get_navigation_map()
 				else:
-					# Wander aleatorio dentro del radio defensivo
-					var raw_target: Vector3 = own_core.global_position + Vector3(
-						randf_range(-wander_radius, wander_radius), 0,
-						randf_range(-wander_radius, wander_radius))
-					var nav_map_rid: RID
-					if navigation and navigation.agent:
-						nav_map_rid = navigation.agent.get_navigation_map()
-					elif bot and bot.navigation_agent:
-						nav_map_rid = bot.navigation_agent.get_navigation_map()
-					else:
-						nav_map_rid = RID()
-					if nav_map_rid.is_valid() and NavigationServer3D.map_is_active(nav_map_rid):
-						_nav_target = NavigationServer3D.map_get_closest_point(nav_map_rid, raw_target)
-					else:
-						_nav_target = raw_target
+					nav_map_rid = RID()
+				if nav_map_rid.is_valid() and NavigationServer3D.map_is_active(nav_map_rid):
+					_nav_target = NavigationServer3D.map_get_closest_point(nav_map_rid, raw_target)
+				else:
+					_nav_target = raw_target
 			movement_cmd.set_navigate(_nav_target, _role_speed(3.5))
 		else:
 			# Está lejos de la base, regresar
-			if defense_point != null:
-				_nav_target = defense_point.position
-			else:
-				_nav_target = own_core.global_position
+			_nav_target = own_core.global_position
 			movement_cmd.set_navigate(_nav_target, _role_speed(5.0))
 	else:
 		_wander()

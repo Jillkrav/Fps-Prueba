@@ -278,7 +278,7 @@ material = SubResource("StandardMaterial3D_floor")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 30)
 
 [node name="ResupplyBox" parent="." unique_id=1961235864 instance=ExtResource("2_resupply")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.533682, 0, -20.276691)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.958266, 0, -20.276691)
 
 [node name="BlueSpawner" type="Node3D" parent="." unique_id=1208990263]
 script = ExtResource("3_spawner")

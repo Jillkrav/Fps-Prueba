@@ -21,6 +21,9 @@ var equipo_id: int:
 	get: return GameState.player_team
 var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity"))
 
+## Radio del capsule shape leído en _ready() (para step-up assist)
+var _capsule_radius: float = 0.65
+
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
@@ -32,6 +35,18 @@ var _debug_overlay: Node3D = null
 
 var active_weapon: Weapon = null
 
+# ─── Step-up assist state ──────────────────────────────────────────
+# (cooldown no necesario: el impulso se aplica continuamente mientras se detecta el escalón)
+
+# ─── Vault / Step-up 2 ────────────────────────────────────────────────────
+## Controlador de vaulting para objetos más grandes que el step-up assist.
+var _vault_controller: VaultController = null
+
+## Indica si hay un obstáculo vaultable disponible (para icono HUD).
+var vault_available: bool = false
+## Se emite cuando cambia la disponibilidad del vault.
+signal vault_availability_changed(available: bool)
+
 # ─── Pickup confirmation system ──────────────────────────────────────────
 ## Referencia al pickup pendiente de confirmación (arma diferente).
 var _pending_pickup: Node = null
@@ -42,12 +57,32 @@ func _ready() -> void:
 	add_to_group("player")
 	max_health = ConfigManager.salud_jugador
 	current_health = max_health
+	# ── Step-up: configurar CharacterBody3D para movimiento natural ────
+	# El factor MÁS importante es el radio de la cápsula (0.65 en escena).
+	# El step-up interno de move_and_slide() escala con el radio de la
+	# forma de colisión. Radio 0.65 → step máximo ≈ 0.42 unidades.
+	motion_mode = MotionMode.MOTION_MODE_GROUNDED
+	up_direction = Vector3.UP
+	floor_max_angle = deg_to_rad(48.0)   # 45° default + 3° margen para rampas/bordes
+	floor_block_on_wall = false          # NO bloquearse en paredes — las caras
+										 # laterales de rampas CSGBox3D no
+										 # deben detener al jugador. El step-up
+										 # nativo funciona sin este bloqueo.
+	floor_constant_speed = true          # Velocidad constante en pendientes
+	floor_stop_on_slope = true           # No deslizarse en pendientes
+	
+	# Leer radio real de la cápsula para step-up assist
+	if collision_shape and collision_shape.shape is CapsuleShape3D:
+		_capsule_radius = collision_shape.shape.radius
 	# FIX: usar GameState directamente en lugar de get_node con cast inseguro
 	if GameState.player_team == int(Enums.Equipo.ESPECTADOR):
 		GameState.player_team = int(Enums.Equipo.AZUL)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# El arma se equipa externamente (DevMenu, team_weapon_selector, etc.)
 	active_weapon = null
+	# ── Vault controller (step-up 2) ──
+	_vault_controller = VaultController.new()
+	_vault_controller.setup(self)
 	health_changed.emit(current_health, max_health)
 	_setup_debug_overlay()
 
@@ -130,20 +165,82 @@ func _physics_process(delta: float) -> void:
 			shape.height = _original_height
 			head.position.y = shape.height * 0.5
 
-	# ── Jump ───────────────────────────────────────────────────────────
+	# ── Jump & Vault (step-up 2) ──────────────────────────────────────
+	var current_time: float = Time.get_ticks_msec() / 1000.0
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var direction := (global_transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var vault_check_dir: Vector3 = direction if direction.length_squared() > 0.01 else -global_transform.basis.z
+	
+	# ── Verificar disponibilidad de vault (para HUD) ────────────────
+	var was_vault_available: bool = vault_available
+	vault_available = false
+	if _vault_controller and is_on_floor() and not _vault_controller.is_vaulting():
+		vault_available = _vault_controller.can_vault(vault_check_dir, current_time)
+		# Solo mostrar el indicador si hay intención de movimiento (input_dir > 0)
+		# o si el jugador está mirando activamente hacia el obstáculo
+		if input_dir.length() < 0.1:
+			vault_available = false
+	if vault_available != was_vault_available:
+		vault_availability_changed.emit(vault_available)
+	
 	if Input.is_action_just_pressed("jump") and is_on_floor() and not is_crouching:
-		velocity.y = jump_velocity
+		if vault_available and _vault_controller and _vault_controller.try_vault(vault_check_dir, current_time):
+			vault_available = false
+			vault_availability_changed.emit(false)  # Ocultar HUD inmediatamente
+		else:
+			velocity.y = jump_velocity
 
 	# ── Movement ───────────────────────────────────────────────────────
 	var current_speed: float = crouch_speed if is_crouching else speed
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction := (global_transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	if direction:
 		velocity.x = direction.x * current_speed
 		velocity.z = direction.z * current_speed
 	else:
 		velocity.x = move_toward(velocity.x, 0, current_speed)
 		velocity.z = move_toward(velocity.z, 0, current_speed)
+	
+	# ── Step-up assist ═════════════════════════════════════════════════
+	# Dos raycasts horizontales detectan escalones/obstáculos delante
+	# del personaje midiendo la altura REAL del escalón:
+	#   - RAY BAJO: desde 0.15 u. sobre los pies → detecta cara vertical
+	#   - RAY ALTO: desde altura máxima escalable → verifica espacio libre
+	# Si el bajo impacta y el alto no → hay un escalón subible.
+	# Se aplica impulso vertical continuo mientras dure el contacto.
+	if is_on_floor():
+		var input_len: float = Vector2(input_dir.x, input_dir.y).length()
+		if input_len > 0.1:
+			var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+			var check_dist: float = _capsule_radius + 0.3
+			
+			# RAY BAJO: detecta cara vertical del escalón (0.15 u. sobre pies)
+			var low_origin: Vector3 = global_position + Vector3(0, 0.15, 0)
+			var low_end: Vector3 = low_origin + direction * check_dist
+			var low_query = PhysicsRayQueryParameters3D.create(low_origin, low_end)
+			low_query.collision_mask = collision_mask
+			low_query.exclude = [self]
+			var low_hit: Dictionary = space_state.intersect_ray(low_query)
+			
+			# RAY ALTO: verifica espacio libre arriba del escalón
+			var top_h: float = _capsule_radius * 1.2
+			var high_origin: Vector3 = global_position + Vector3(0, top_h, 0)
+			var high_end: Vector3 = high_origin + direction * check_dist
+			var high_query = PhysicsRayQueryParameters3D.create(high_origin, high_end)
+			high_query.collision_mask = collision_mask
+			high_query.exclude = [self]
+			var high_hit: Dictionary = space_state.intersect_ray(high_query)
+			
+			# Step detectado: bajo impacta (cara vertical) Y alto NO impacta (paso libre)
+			if not low_hit.is_empty() and high_hit.is_empty():
+				if low_hit.normal.y < 0.3:  # Cara vertical
+					velocity.y = max(velocity.y, 3.0)  # Impulso fuerte y continuo
+	
+	# ── Vault / Step-up 2 — procesar si está en curso ────────────────────
+	if _vault_controller and _vault_controller.is_vaulting():
+		_vault_controller.process_vault(delta, current_time)
+		vault_available = false
+		move_and_slide()
+		return
+	
 	move_and_slide()
 
 func shoot() -> void:

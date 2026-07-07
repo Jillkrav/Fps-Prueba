@@ -121,7 +121,6 @@ func initialize_from_name(nombre_arma: String) -> void:
 
 	ammo_in_mag  = clip_size
 	reserve_ammo = max_ammo
-	print("Weapon: '%s' inicializada — categoria=%s dano=%.0f cargador=%d" % [weapon_name, categoria_municion, damage_vs_player, clip_size])
 
 ## Configura el área de detección melee según melee_range.
 func _configure_melee_area() -> void:
@@ -155,8 +154,7 @@ func fire() -> Array:
 	last_fire_time  = Time.get_ticks_msec()
 	weapon_fired.emit(ammo_in_mag, reserve_ammo)
 	show_muzzle_flash()
-	# Log visible para debug de bots
-	print("[Weapon.fire] %s dispara! ammo=%d" % [weapon_name, ammo_in_mag])
+	# Log visible para debug de bots (desactivado, muy verboso)
 
 	match categoria_municion:
 		"bala":

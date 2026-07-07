@@ -36,12 +36,18 @@ extends CanvasLayer
 # Auto Balance label (parte superior central)
 @onready var auto_balance_label: Label = $AutoBalanceLabel
 
+# Step-up 2 indicator (↑)
+@onready var step_up_indicator: Label = $StepUpIndicator
+
 var _player:       Player     = null
 var _menu_abierto: bool       = false
 
 func _ready() -> void:
 	# FIX: registrar en grupo para que spawner.gd pueda encontrarlo con get_nodes_in_group("hud")
 	add_to_group("hud")
+	# ── Step-up 2 indicator: asegurar que empieza OCULTO ──
+	if step_up_indicator:
+		step_up_indicator.visible = false
 	_conectar_player()
 	_configurar_pausa()
 	_configurar_death_screen()
@@ -66,6 +72,9 @@ func _conectar_player() -> void:
 	if is_instance_valid(MatchManager):
 		if not MatchManager.player_respawned.is_connected(_on_player_respawned):
 			MatchManager.player_respawned.connect(_on_player_respawned)
+	# ── Step-up 2 indicator ──
+	if not _player.vault_availability_changed.is_connected(_on_vault_availability_changed):
+		_player.vault_availability_changed.connect(_on_vault_availability_changed)
 	update_health(_player.current_health, _player.max_health)
 
 func _configurar_pausa() -> void:
@@ -160,6 +169,9 @@ func _on_player_died() -> void:
 	if death_screen:
 		death_screen.visible = true
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Ocultar indicador de step-up al morir
+	if step_up_indicator:
+		step_up_indicator.visible = false
 	# El respawn automatico lo gestiona el MatchManager ahora.
 	# La pantalla de muerte se ocultara cuando llegue la senal player_respawned.
 
@@ -169,6 +181,8 @@ func _on_player_respawned() -> void:
 		death_screen.visible = false
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	# Reconectar al jugador (pudo haber sido recreado en el respawn)
+	_conectar_player()
 
 func _cleanup_match_state() -> void:
 	"""Limpia todo el estado de la partida antes de salir al menu principal."""
@@ -388,6 +402,16 @@ func show_weapon_prompt(new_weapon: String, current_weapon: String) -> void:
 func hide_weapon_prompt() -> void:
 	if weapon_prompt:
 		weapon_prompt.visible = false
+
+# ─────────────────────────────────────────
+# STEP-UP 2 INDICATOR (Flecha ↑)
+# ─────────────────────────────────────────
+
+## Muestra/oculta el indicador de vault disponible.
+func _on_vault_availability_changed(available: bool) -> void:
+	if step_up_indicator:
+		step_up_indicator.visible = available
+
 
 func _debug(msg: String) -> void:
 	print(msg)

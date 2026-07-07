@@ -147,11 +147,6 @@ func _ready() -> void:
 	weapon_sys = get_node_or_null("../WeaponSystem") as WeaponSystem
 	if bot:
 		_head_node = bot.get_node_or_null("Head") as Node3D
-	_debug("CombatSystem listo (aim_rotation=%s, head=%s, weapon_sys=%s)" % [
-		"OK" if aim_rotation != Quaternion.IDENTITY else "IDLE",
-		"OK" if _head_node else "null",
-		"OK" if weapon_sys else "null",
-	])
 
 
 ## Procesa el combate y ESCRIBE aim_rotation (único lugar).
@@ -216,6 +211,8 @@ func _get_effective_target(cmd: CombatCommand) -> Vector3:
 	# Si tenemos target_entity vivo, apuntar a su centro
 	if decision_sys and decision_sys.has_target():
 		var target: Node3D = decision_sys.target_entity
+		if not target.is_inside_tree():
+			return Vector3.ZERO
 		target_pos = target.global_position
 
 		# Ajuste según tipo de entidad (humanoides vs objetos)
@@ -254,6 +251,8 @@ func _get_hitscan_target_position(cmd: CombatCommand) -> Vector3:
 		return Vector3.ZERO
 
 	var target: Node3D = decision_sys.target_entity
+	if not target.is_inside_tree():
+		return Vector3.ZERO
 	var torso_pos: Vector3 = target.global_position
 
 	# Ajuste al torso: centro del CharacterBody3D
@@ -371,19 +370,13 @@ func _aim_at_target_entity() -> void:
 func _check_fire_weapon(cmd: CombatCommand) -> void:
 	var weapon: Weapon = _get_weapon()
 	if weapon == null:
-		_debug("_check_fire_weapon: weapon is NULL")
 		return
 	if not weapon.can_fire():
-		_debug_rl("_check_fire_weapon: cannot fire (ammo=%d, reloading=%s)" % [
-			weapon.ammo_in_mag, weapon.is_reloading])
 		return
-	_debug("_check_fire_weapon: weapon OK (%s ammo=%d) force_fire=%s" % [
-		weapon.weapon_name, weapon.ammo_in_mag, cmd.force_fire])
 
 	# Verificar que estamos apuntando en la dirección correcta
 	if not _is_aiming_at_target():
 		if not cmd.force_fire:
-			_debug("_check_fire_weapon: aiming check FAILED (force_fire=false)")
 			return
 
 	# ── Configurar override de posición/dirección para proyectiles ──
@@ -395,7 +388,6 @@ func _check_fire_weapon(cmd: CombatCommand) -> void:
 		var launch_pos: Vector3 = _get_launch_position()
 		var launch_dir: Vector3 = _get_launch_direction()
 		weapon.set_shoot_override(launch_pos, launch_dir)
-		_debug("Projectile fire: pos=%s dir=%s" % [str(launch_pos), str(launch_dir)])
 	else:
 		# ── Hit-scan: apuntar directamente al torso del objetivo ──
 		# En lugar de depender de la rotación cuerpo+cabeza (que puede tener
@@ -404,7 +396,6 @@ func _check_fire_weapon(cmd: CombatCommand) -> void:
 		var hit_target_pos: Vector3 = _get_hitscan_target_position(cmd)
 		if hit_target_pos != Vector3.ZERO:
 			weapon.override_hitscan_target(hit_target_pos)
-			_debug("Hitscan direct aim: target=%s" % str(hit_target_pos.round()))
 
 	# Disparar
 	var killer_id: int = -1
@@ -438,8 +429,8 @@ func _check_fire_weapon(cmd: CombatCommand) -> void:
 		# Para proyectiles/melee, emitir señal con información de debug
 		if hits.size() > 0:
 			emit_signal("weapon_fired", hits)
-		_debug("Proyectil/Melee disparado: %s, categoria=%s, speed=%.1f" % [
-			weapon.weapon_name, categoria, weapon.velocidad_proyectil])
+		bot._debug("[Combat] Disparando: %s (categoria=%s)" % [
+			weapon.weapon_name, categoria])
 
 
 ## Verifica si el bot está apuntando aproximadamente hacia el objetivo.
@@ -451,6 +442,8 @@ func _is_aiming_at_target() -> bool:
 	if decision_sys == null or not decision_sys.has_target():
 		return false
 	var target: Node3D = decision_sys.target_entity
+	if not target.is_inside_tree():
+		return false
 	
 	# Usar el mismo target_pos que _get_effective_target para consistencia
 	var aim_target_pos: Vector3 = target.global_position
@@ -473,11 +466,7 @@ func _is_aiming_at_target() -> bool:
 	if weapon and weapon.categoria_municion in ["arrojadiza", "explosiva", "plasma"]:
 		acceptance_angle = 25.0  # Más tolerante para proyectiles
 	var angle_deg: float = rad_to_deg(aim_forward.angle_to(dir_to_target))
-	# Debug periódico: solo log si está cerca del límite
-	if angle_deg > acceptance_angle * 0.8 and angle_deg <= acceptance_angle * 1.5:
-		_debug("_is_aiming_at_target: angle=%.1f° (limit=%.0f°) — %s" % [
-			angle_deg, acceptance_angle,
-			"PASA" if angle_deg <= acceptance_angle else "FALLA"])
+	# Debug periódico: solo log si está cerca del límite (desactivado)
 	return angle_deg <= acceptance_angle
 
 
@@ -562,6 +551,8 @@ func _check_dodge_request() -> void:
 
 	# Determinar dirección de evasión (perpendicular al enemigo)
 	var target: Node3D = decision_sys.target_entity
+	if not target.is_inside_tree():
+		return
 	var to_target: Vector3 = (target.global_position - bot.global_position).normalized()
 	var side: Vector3 = to_target.cross(Vector3.UP)
 	# Alternar izquierda/derecha aleatoriamente
@@ -613,6 +604,9 @@ func _update_engagement_analysis() -> void:
 
 	if decision_sys.has_target():
 		var target: Node3D = decision_sys.target_entity
+		if not target.is_inside_tree():
+			engagement_analysis = {}
+			return
 		var dist: float = decision_sys.dist_to_target()
 		analysis["has_target"] = true
 		analysis["distance"] = dist

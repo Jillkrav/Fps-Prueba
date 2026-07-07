@@ -37,6 +37,7 @@ var _hit_bodies: Array[Node] = []   # Cuerpos ya impactados (para penetración)
 var _lifespan_timer: Timer = null
 var _direction: Vector3 = Vector3.FORWARD
 var _ignore_shooter_collision: bool = true
+var _stick_offset: Transform3D
 
 func _ready() -> void:
 	# Configurar físicas del proyectil
@@ -84,6 +85,17 @@ func _physics_process(delta: float) -> void:
 		# (paralela a UP), usar RIGHT como vector de referencia
 		var up: Vector3 = Vector3.RIGHT if abs(dir.dot(Vector3.UP)) > 0.99 else Vector3.UP
 		look_at(global_position + dir, up)
+
+func _process(_delta: float) -> void:
+	# Seguimiento del cuerpo donde está clavado (sin reparentear para evitar
+	# escalas no uniformes que Jolt Physics no soporta)
+	if sticks_to and is_instance_valid(sticks_to):
+		var body_3d: Node3D = sticks_to as Node3D
+		if body_3d and not body_3d.is_queued_for_deletion():
+			global_transform = body_3d.global_transform * _stick_offset
+		else:
+			sticks_to = null
+			_destroy_projectile()
 
 # ─── Configuración inicial ──────────────────────────────────────────────
 
@@ -187,8 +199,8 @@ func _stick_to(body: Node) -> void:
 	gravity_scale = 0.0
 	linear_velocity = Vector3.ZERO
 	
-	# Reparentear al body DEFFERED para evitar remover el nodo
-	# durante un callback de físicas (body_entered)
+	# Calcular offset y activar seguimiento (en deferred para evitar
+	# modificar el árbol durante un callback de físicas)
 	call_deferred("_deferred_stick", body)
 	
 	# Si además es explosivo con fuse, esperar a que explote
@@ -198,7 +210,18 @@ func _stick_to(body: Node) -> void:
 func _deferred_stick(body: Node) -> void:
 	if not is_instance_valid(self) or not is_instance_valid(body):
 		return
-	reparent(body)
+	
+	var body_3d: Node3D = body as Node3D
+	if not body_3d:
+		_destroy_projectile()
+		return
+	
+	# Guardar offset relativo al body (en espacio global) para seguimiento manual
+	_stick_offset = body_3d.global_transform.affine_inverse() * global_transform
+	sticks_to = body_3d
+	
+	# No reparentear: evitar heredar escala no uniforme del padre,
+	# que Jolt Physics no soporta en shapes de colisión.
 
 func explode() -> void:
 	if not is_instance_valid(self):

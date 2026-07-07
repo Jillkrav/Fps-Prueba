@@ -20,7 +20,7 @@ static var enabled: bool = false
 @onready var role_label: Label = $Viewport/UI/RoleLabel
 @onready var state_label: Label = $Viewport/UI/StateLabel
 @onready var order_label: Label = $Viewport/UI/OrderLabel
-@onready var sem_label: Label = $Viewport/UI/SemLabel
+# sem_label eliminado — los puntos semánticos se migraron
 
 # ─── Referencias al padre ─────────────────────────────────────────────
 var _npc: NpcBase = null
@@ -146,26 +146,7 @@ func _process(_delta: float) -> void:
 	elif _player and is_instance_valid(_player):
 		order_label.text = "Orden: --"
 
-	# ── Mostrar punto semántico cercano (FASE 7) ──────────────
-	if _npc and is_instance_valid(_npc) and NavigationSystem._semantic_points_loaded:
-		var bot_pos: Vector3 = _npc.global_position
-		var nearest: SemanticPoint = NavigationSystem.get_nearest_point(
-			SemanticPoint.PointType.PATH, bot_pos, -1, 30.0)
-		if nearest == null:
-			nearest = NavigationSystem.get_nearest_point(
-				SemanticPoint.PointType.AMBUSH, bot_pos, -1, 30.0)
-		if nearest == null:
-			nearest = NavigationSystem.get_nearest_point(
-				SemanticPoint.PointType.DEFENSE, bot_pos, -1, 30.0)
-		if nearest:
-			var type_name: String = SemanticPoint.PointType.keys()[nearest.point_type] \
-				if nearest.point_type < SemanticPoint.PointType.size() else "?"
-			var dist: float = nearest.distance_from(bot_pos)
-			sem_label.text = "Sem: %s (%.0f)" % [type_name, dist]
-		else:
-			sem_label.text = "Sem: ninguno"
-	else:
-		sem_label.text = "Sem: --"
+	# ── Puntos semánticos eliminados (migrados por el usuario) ──
 
 # ─── Toggle global para Propiedades de unidad ─────────────────────────
 ## Alterna el estado global y actualiza TODAS las unidades (NPCs + Jugador).

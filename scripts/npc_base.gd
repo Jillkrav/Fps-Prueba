@@ -22,7 +22,7 @@ var perception_sys: PerceptionSystem = null
 ## Sistema de memoria (FASE 1). ÚNICO escritor de memory_store.
 var memory_sys: MemorySystem = null
 
-## Sistema de navegación (FASE 7). Gestiona navmesh + puntos semánticos.
+## Sistema de navegación. Gestiona el NavigationAgent3D.
 var navigation_sys: NavigationSystem = null
 
 ## Sistema de movimiento (FASE 2). ÚNICO escritor de velocity.
@@ -83,6 +83,21 @@ func _ready() -> void:
 	_npc_id = randi() % 9000 + 1000
 	add_to_group("npc")
 	
+	# ── Step-up: configurar CharacterBody3D para movimiento natural ────
+	# El factor MÁS importante es el radio de la cápsula (0.65 en escena).
+	# El step-up interno de move_and_slide() escala con el radio de la
+	# forma de colisión. Radio 0.65 → step máximo ≈ 0.42 unidades.
+	motion_mode = MotionMode.MOTION_MODE_GROUNDED
+	up_direction = Vector3.UP
+	floor_max_angle = deg_to_rad(50.0)   # 50° para rampas de hasta ~48°
+	floor_block_on_wall = false          # NO bloquearse en paredes — las caras
+										 # laterales de rampas CSGBox3D no
+										 # deben detener al NPC. El step-up
+										 # nativo funciona sin este bloqueo.
+	floor_constant_speed = true          # Velocidad constante en pendientes
+	floor_stop_on_slope = true           # No deslizarse en pendientes
+	max_slides = 8                       # Más iteraciones para mejor transición rampa↔piso
+	
 	max_health = ConfigManager.get_vida_npc("Enemigo")
 	current_health = max_health
 	
@@ -133,21 +148,20 @@ func _ready() -> void:
 	# ── Conectar señales ─────────────────────────────────────
 	_connect_decision_signals()
 	
-	# ── Cargar puntos semánticos (FASE 7) ──
-	if not NavigationSystem._semantic_points_loaded:
-		_load_semantic_points_for_map()
-		_debug("Puntos semánticos cargados: %d" % NavigationSystem.all_semantic_points.size())
-	
 	# ── Inicializar rol táctico ──
 	_tactical_role = TacticalRole.for_npc(self)
+	
+	# ── Cargar puntos semánticos del mapa ────────────────────
+	# Los puntos semánticos (SemanticPointMarker) se cargan una
+	# sola vez para todos los bots. El primer bot que se inicializa
+	# los carga; los siguientes ya los encuentran cargados.
+	if not NavigationSystem._semantic_points_loaded:
+		NavigationSystem.load_semantic_points()
 	
 	# Encontrar core enemigo como objetivo principal
 	call_deferred("_find_enemy_core")
 	
 	_setup_debug_overlay()
-	_debug("INICIALIZADO | Equipo=%s | Arma=%s | Decision=%s estados" % [
-		GameState.nombre_equipo(equipo_id), nombre_arma,
-		decision_sys.get_child_count() if decision_sys else 0])
 
 
 ## Añade los estados de la FSM como hijos del DecisionSystem.
@@ -171,7 +185,6 @@ func _add_fsm_states() -> void:
 	retreating.name = "State_Retreating"
 	decision_sys.add_child(retreating)
 	
-	_debug("FSM: %d estados añadidos al DecisionSystem" % decision_sys.get_child_count())
 
 
 ## Conecta las señales de percepción al DecisionSystem.
@@ -324,7 +337,6 @@ func pickup_weapon(data: Dictionary) -> void:
 			_weapon.ammo_in_mag = min(_weapon.ammo_in_mag, _weapon.clip_size)
 			_weapon.reserve_ammo += balas_reserva
 			_weapon.reserve_ammo = min(_weapon.reserve_ammo, _weapon.max_ammo)
-			_debug("Recogió munición de %s" % weapon_name)
 			return
 	
 	# Arma diferente: reemplazar
@@ -340,7 +352,6 @@ func pickup_weapon(data: Dictionary) -> void:
 	if _weapon:
 		_weapon.ammo_in_mag = balas_cargador
 		_weapon.reserve_ammo = balas_reserva
-		_debug("Equipó %s del suelo (cargador=%d reserva=%d)" % [weapon_name, balas_cargador, balas_reserva])
 
 
 # ─────────────────────────────────────────
@@ -376,7 +387,12 @@ func die(killer_id: int = -1) -> void:
 	if navigation_agent:
 		navigation_agent.target_position = global_position
 	
-	_debug("MUERTO - esperando respawn...")
+	var killer_name: String = "desconocido"
+	if is_instance_valid(MatchManager) and killer_id >= 0:
+		var kd = MatchManager.get_player_data(killer_id)
+		if kd:
+			killer_name = kd.player_name
+	_debug("MUERTO por %s - esperando respawn..." % killer_name)
 
 
 func _drop_weapon() -> void:
@@ -588,7 +604,6 @@ func respawn() -> void:
 	call_deferred("_refresh_order")
 	call_deferred("_find_enemy_core")
 	
-	_debug("RESPAWNEADO")
 
 
 # ─────────────────────────────────────────
@@ -692,26 +707,6 @@ func _role_wander_radius(role) -> float:
 
 
 # ─────────────────────────────────────────
-# PUNTOS SEMÁNTICOS (FASE 7)
-# ─────────────────────────────────────────
-
-func _load_semantic_points_for_map() -> void:
-	var sp_loaded: bool = false
-	
-	var map_data_script = load("res://scripts/maps/map_1_semantic_points.gd")
-	if map_data_script and map_data_script.has_method("get_points"):
-		var map_points: Array = map_data_script.get_points()
-		if map_points.size() > 0:
-			NavigationSystem.set_points_from_array(map_points)
-			sp_loaded = true
-	
-	if sp_loaded:
-		pass  # set_points_from_array ya indexó y marcó como cargado
-	else:
-		NavigationSystem.load_semantic_points()
-
-
-# ─────────────────────────────────────────
 # DEBUG OVERLAY
 # ─────────────────────────────────────────
 
@@ -747,8 +742,6 @@ static func toggle_debug_overlay_all() -> void:
 	for npc in npcs:
 		if npc is NpcBase:
 			npc._setup_debug_overlay()
-	print("[NpcBase] Debug overlay %s para %d NPCs" % [
-		"ACTIVADO" if BotDebugOverlay.enabled else "DESACTIVADO", npcs.size()])
 
 
 ## Devuelve la posición desde donde debe lanzarse un proyectil
