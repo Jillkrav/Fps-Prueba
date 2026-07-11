@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bnre1cxahhdti"]
 
-[ext_resource type="Script" uid="uid://dxe463fg4q7gh" path="res://scripts/weapon_pickup.gd" id="1_weapon_pickup"]
+[ext_resource type="Script" uid="uid://dxe463fg4q7gh" path="res://Scripts/shared/gameplay/pickups/weapon_pickup.gd" id="1_weapon_pickup"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_pickup"]
 size = Vector3(0.8, 0.4, 0.8)

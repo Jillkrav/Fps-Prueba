@@ -8,7 +8,7 @@
 
 config_version=5
 
-autoload="MatchManager=\"*res://scripts/match_manager.gd\""
+autoload="MatchManager=\"*res://Scripts/MP/match/multiplayer/match_manager.gd\""
 
 [application]
 
@@ -19,15 +19,17 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-ConfigManager="*res://scripts/config_manager.gd"
-GameState="*res://scripts/game_state.gd"
-TeamAI="*res://scripts/team_ai.gd"
-InputManager="*res://scripts/input_manager.gd"
-MapManager="*res://scripts/map_manager.gd"
-MatchManager="*res://scripts/match_manager.gd"
+ConfigManager="*res://Scripts/shared/core/config_manager.gd"
+GameState="*res://Scripts/shared/core/game_state.gd"
+TeamAI="*res://Scripts/MP/match/teams/team_ai.gd"
+InputManager="*res://Scripts/shared/input/input_manager.gd"
+MapManager="*res://Scripts/MP/match/match_state/map_manager.gd"
+MatchManager="*res://Scripts/MP/match/multiplayer/match_manager.gd"
+PickupManager="*res://Scripts/shared/gameplay/pickups/pickup_manager.gd"
 
 [display]
 
+window/size/viewport_width="1920"
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

@@ -112,10 +112,10 @@ func _register_behaviors() -> void:
 	# NOTA: Usamos load() en lugar de preload() para evitar
 	# dependencias circulares en tiempo de compilación.
 	# La primera vez que se llama, los scripts ya están cargados.
-	var combat_script = load("res://scripts/ai/behaviors/behavior_combat.gd")
-	var hunt_script = load("res://scripts/ai/behaviors/behavior_hunt.gd")
-	var patrol_script = load("res://scripts/ai/behaviors/behavior_patrol.gd")
-	var idle_script = load("res://scripts/ai/behaviors/behavior_idle.gd")
+	var combat_script = load("res://Scripts/ai/behaviors/behavior_combat.gd")
+	var hunt_script = load("res://Scripts/ai/behaviors/behavior_hunt.gd")
+	var patrol_script = load("res://Scripts/ai/behaviors/behavior_patrol.gd")
+	var idle_script = load("res://Scripts/ai/behaviors/behavior_idle.gd")
 	
 	behaviors = [
 		combat_script.new(),

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dyutk26wqfg3y"]
 
-[ext_resource type="Script" uid="uid://b3q8yvyou4pko" path="res://scripts/team_weapon_selector.gd" id="1_selector"]
+[ext_resource type="Script" path="res://Scripts/MP/match/multiplayer/team_weapon_selector.gd" id="1_selector"]
 
 [node name="TeamWeaponSelector" type="CanvasLayer" unique_id=1765143374]
 script = ExtResource("1_selector")

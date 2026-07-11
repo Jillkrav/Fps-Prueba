@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://bsh2o1h3r4mno" path="res://scenes/pickups/resupply_box.tscn" id="2_resupply"]
 [ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/hud.tscn" id="4_hud"]
 [ext_resource type="PackedScene" uid="uid://dyutk26wqfg3y" path="res://scenes/team_weapon_selector.tscn" id="5_selector"]
-[ext_resource type="Script" uid="uid://bw3ij83oucfv3" path="res://scripts/spawner.gd" id="6"]
+[ext_resource type="Script" path="res://Scripts/MP/match/multiplayer/spawner.gd" id="6"]
 [ext_resource type="PackedScene" uid="uid://b7f3m2xq5lag1" path="res://scenes/Puntossem/assault_point.tscn" id="7_l2lx5"]
 [ext_resource type="PackedScene" uid="uid://cq06glnmavlmp" path="res://scenes/Puntossem/alternate_point.tscn" id="8_d31ot"]
 

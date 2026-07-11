@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://06oyc7b8fupg"]
 
-[ext_resource type="Script" uid="uid://daet4rgg5a1qa" path="res://scripts/bot_debug_overlay.gd" id="1_overlay"]
+[ext_resource type="Script" path="res://Scripts/shared/debug/bot_debug_overlay.gd" id="1_overlay"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
 bg_color = Color(0.05, 0.05, 0.08, 0.85)

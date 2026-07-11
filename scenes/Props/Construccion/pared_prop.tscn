@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://dparedpropcons"]
+
+[ext_resource type="Script" path="res://Scripts/props/prop_base.gd" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+albedo_color = Color(0.6, 0.5, 0.3, 1)
+metallic = 0.0
+roughness = 0.85
+
+[node name="ParedProp" type="StaticBody3D" groups=["props"]]
+script = ExtResource("1_base")
+prop_name = "Pared 4x4"
+
+[node name="WallMesh" type="CSGBox3D" parent="."]
+use_collision = true
+size = Vector3(4, 4, 0.2)
+material = SubResource("Mat_wall")

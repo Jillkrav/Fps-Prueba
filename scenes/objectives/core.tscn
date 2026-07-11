@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://c5b3j7nqv6dnc"]
 
-[ext_resource type="Script" uid="uid://cq7m4bb0rniv5" path="res://scripts/core.gd" id="1_core"]
+[ext_resource type="Script" path="res://Scripts/MP/game_modes/core_attack/core.gd" id="1_core"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_jmd5y"]
 size = Vector3(2, 1.4, 1.4)

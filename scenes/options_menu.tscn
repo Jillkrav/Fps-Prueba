@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dgxv5pum0iw37"]
 
-[ext_resource type="Script" uid="uid://16b1w7enugen" path="res://scripts/options_menu.gd" id="1_f4pl0"]
+[ext_resource type="Script" uid="uid://oyksnfu8mq8l" path="res://Scripts/shared/ui/options_menu.gd" id="1_f4pl0"]
 
 [sub_resource type="StyleBoxFlat" id="1"]
 bg_color = Color(0.05, 0.05, 0.1, 0.95)
@@ -12,7 +12,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 script = ExtResource("1_f4pl0")
 
 [node name="BgPanel" type="Panel" parent="." unique_id=1582965892]
@@ -215,12 +214,12 @@ size_flags_vertical = 3
 layout_mode = 2
 columns = 2
 
-[node name="Mouse" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer"]
+[node name="Mouse" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer" unique_id=1125426022]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 4
 
-[node name="Margin" type="MarginContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse"]
+[node name="Margin" type="MarginContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse" unique_id=1382409371]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -229,26 +228,26 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="VBox" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin"]
+[node name="VBox" type="VBoxContainer" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin" unique_id=1780590181]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="LblTitle" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+[node name="LblTitle" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox" unique_id=1548788623]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "CONFIGURACION DE MOUSE"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+[node name="HSeparator" type="HSeparator" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox" unique_id=421699581]
 layout_mode = 2
 
-[node name="SensitivityLabel" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+[node name="SensitivityLabel" type="Label" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox" unique_id=16381527]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Sensibilidad: 0.0020"
 
-[node name="SensitivitySlider" type="HSlider" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+[node name="SensitivitySlider" type="HSlider" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox" unique_id=1202747045]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -256,20 +255,17 @@ min_value = 0.0005
 max_value = 0.02
 step = 0.0005
 value = 0.002
-rounded = false
 tick_count = 10
 
-[node name="HSeparator2" type="HSeparator" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+[node name="HSeparator2" type="HSeparator" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox" unique_id=954306077]
 layout_mode = 2
 
-[node name="InvertYCheck" type="CheckButton" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox"]
+[node name="InvertYCheck" type="CheckButton" parent="BgPanel/Panel/VBoxContainer/TabContainer/Mouse/Margin/VBox" unique_id=1801393544]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
 text = "Invertir Eje Y"
-button_pressed = false
-
 
 [node name="BtnCerrar" type="Button" parent="BgPanel/Panel/VBoxContainer" unique_id=758122266]
 custom_minimum_size = Vector2(0, 40)

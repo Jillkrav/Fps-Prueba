@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://lx5imhgqwxm3"]
+
+[ext_resource type="Script" path="res://Scripts/MP/nav/freeze_cube/freeze_cube_role.gd" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_h6x21"]
+size = Vector3(1.2, 1.2, 1.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_h6x21"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_h6x21"]
+albedo_color = Color(1, 0.55, 0, 1)
+emission_enabled = true
+emission = Color(1, 0.6, 0, 1)
+emission_energy_multiplier = 0.5
+
+[node name="FreezeCube0" type="Area3D" unique_id=458281380]
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1403905382]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("BoxShape3D_h6x21")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=831967457]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("BoxMesh_h6x21")
+surface_material_override/0 = SubResource("StandardMaterial3D_h6x21")

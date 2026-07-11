@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dei67qgb2ix0b"]
 
-[ext_resource type="Script" uid="uid://drtqanha8l1me" path="res://scripts/ai/navigation/semantic_point_marker.gd" id="1"]
+[ext_resource type="Script" path="res://Scripts/MP/nav/bots/semantic_point_marker.gd" id="1"]
 
 [sub_resource type="StandardMaterial3D" id="1"]
 albedo_color = Color(0.114, 0.529, 0.929, 1)

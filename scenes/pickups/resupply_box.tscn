@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://bsh2o1h3r4mno"]
 
-[ext_resource type="Script" path="res://scripts/resupply_box.gd" id="1_resupply"]
+[ext_resource type="Script" path="res://Scripts/shared/gameplay/pickups/resupply_box.gd" id="1_resupply"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_box"]
 size = Vector3(1.2, 1.2, 1.2)
