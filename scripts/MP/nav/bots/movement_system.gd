@@ -48,11 +48,17 @@ signal path_blocked(remaining_distance: float)
 var _gravity: float = 9.8
 
 # Stuck detection thresholds
+# IMPORTANTE: las claves deben coincidir con los state_name de los estados FSM:
+#   "roaming"  → StateRoaming.state_name
+#   "combat"   → StateCombat.state_name
+#   "hunting"  → StateHunting.state_name
+#   "idle"     → cuando no hay FSM activa
+# Si no hay match, se usa fallback 4.0s
 const STUCK_PROGRESS_THRESHOLD: Dictionary = {
-	"idle":   8.0,
-	"patrol": 2.5,
-	"combat": 2.5,
-	"hunt":   2.0,
+	"idle":     8.0,
+	"roaming":  2.5,
+	"combat":   2.5,
+	"hunting":  2.0,
 }
 
 const STUCK_BLOCKED_TRIGGER_TIME: float = 1.5
@@ -660,7 +666,7 @@ func _check_bot_blocking(delta: float) -> void:
 func _get_stuck_goal_position() -> Vector3:
 	var beh_name: String = _get_current_behavior_name()
 	match beh_name:
-		"patrol", "hunt":
+		"roaming", "hunting":
 			if route_target_pos != Vector3.ZERO:
 				return route_target_pos
 			if nav_target != Vector3.ZERO:

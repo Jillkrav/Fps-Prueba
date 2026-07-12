@@ -44,6 +44,21 @@ enum Type {
 
 
 # ══════════════════════════════════════════════════════════════════
+# ENUM — TIPOS DE RUTA (antes en RouteDiversifier)
+# ══════════════════════════════════════════════════════════════════
+# Inlineado aquí porque tactical_role.gd era el único consumidor.
+# ══════════════════════════════════════════════════════════════════
+
+enum RouteType {
+	DIRECT     = 0,
+	LEFT       = 1,
+	RIGHT      = 2,
+	WIDE_LEFT  = 3,
+	WIDE_RIGHT = 4,
+}
+
+
+# ══════════════════════════════════════════════════════════════════
 # PERFIL DE MOVIMIENTO (sub-enum)
 # ══════════════════════════════════════════════════════════════════
 
@@ -515,16 +530,16 @@ func get_preferred_route_type(base_route_type: int) -> int:
 	if prefers_flanking_route():
 		# Elegir entre LEFT, RIGHT, WIDE_LEFT, WIDE_RIGHT
 		var flank_routes: Array[int] = [
-			RouteDiversifier.RouteType.LEFT,
-			RouteDiversifier.RouteType.RIGHT,
-			RouteDiversifier.RouteType.WIDE_LEFT,
-			RouteDiversifier.RouteType.WIDE_RIGHT,
+			RouteType.LEFT,
+			RouteType.RIGHT,
+			RouteType.WIDE_LEFT,
+			RouteType.WIDE_RIGHT,
 		]
 		return flank_routes[randi() % flank_routes.size()]
 	else:
 		# Si no flanquea, posiblemente DIRECT
 		if randf() < 0.5:
-			return RouteDiversifier.RouteType.DIRECT
+			return RouteType.DIRECT
 		return base_route_type
 
 

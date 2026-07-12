@@ -38,6 +38,7 @@ extends CanvasLayer
 
 # Step-up 2 indicator (↑)
 @onready var step_up_indicator: Label = $StepUpIndicator
+@onready var camera_toggle_btn: Button = $CameraToggleBtn
 
 var _player:       Player     = null
 var _menu_abierto: bool       = false
@@ -55,6 +56,9 @@ func _ready() -> void:
 	_conectar_auto_balance()
 	_conectar_match_end()
 	_configurar_match_over_buttons()
+	# Botón de toggle cámara (conexión única, _ready solo corre una vez)
+	if camera_toggle_btn and not camera_toggle_btn.pressed.is_connected(_on_camera_toggle_pressed):
+		camera_toggle_btn.pressed.connect(_on_camera_toggle_pressed)
 
 func _conectar_player() -> void:
 	_player = get_tree().get_first_node_in_group("player") as Player
@@ -75,6 +79,12 @@ func _conectar_player() -> void:
 	# ── Step-up 2 indicator ──
 	if not _player.vault_availability_changed.is_connected(_on_vault_availability_changed):
 		_player.vault_availability_changed.connect(_on_vault_availability_changed)
+	# ── Camera mode toggle ──
+	if not _player.camera_mode_changed.is_connected(_on_camera_mode_changed):
+		_player.camera_mode_changed.connect(_on_camera_mode_changed)
+	# Sincronizar estado inicial del botón
+	if is_instance_valid(camera_toggle_btn):
+		_on_camera_mode_changed(_player.is_third_person)
 	update_health(_player.current_health, _player.max_health)
 
 func _configurar_pausa() -> void:
@@ -172,6 +182,9 @@ func _on_player_died() -> void:
 	# Ocultar indicador de step-up al morir
 	if step_up_indicator:
 		step_up_indicator.visible = false
+	# Ocultar botón de cámara al morir
+	if is_instance_valid(camera_toggle_btn):
+		camera_toggle_btn.visible = false
 	# El respawn automatico lo gestiona el MatchManager ahora.
 	# La pantalla de muerte se ocultara cuando llegue la senal player_respawned.
 
@@ -183,6 +196,9 @@ func _on_player_respawned() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# Reconectar al jugador (pudo haber sido recreado en el respawn)
 	_conectar_player()
+	# Restaurar visibilidad del botón de cámara
+	if is_instance_valid(camera_toggle_btn):
+		camera_toggle_btn.visible = true
 
 func _cleanup_match_state() -> void:
 	"""Limpia todo el estado de la partida antes de salir al menu principal."""
@@ -411,6 +427,26 @@ func hide_weapon_prompt() -> void:
 func _on_vault_availability_changed(available: bool) -> void:
 	if step_up_indicator:
 		step_up_indicator.visible = available
+
+
+# ─────────────────────────────────────────
+# CAMERA MODE TOGGLE (1ra / 3ra Persona)
+# ─────────────────────────────────────────
+
+func _on_camera_toggle_pressed() -> void:
+	"""Llamado al presionar el botón del HUD. Delega en Player."""
+	if not _player or not is_instance_valid(_player):
+		return
+	if _player.is_dead:
+		return
+	_player.toggle_camera_mode()
+
+
+func _on_camera_mode_changed(is_third_person: bool) -> void:
+	"""Actualiza el texto del botón según el modo actual."""
+	if not is_instance_valid(camera_toggle_btn):
+		return
+	camera_toggle_btn.text = "3ra Persona: ON" if is_third_person else "3ra Persona: OFF"
 
 
 func _debug(msg: String) -> void:

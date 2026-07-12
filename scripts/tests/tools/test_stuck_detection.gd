@@ -4,7 +4,7 @@
 # de recuperación no produzca bucles infinitos ni falsos positivos.
 extends SceneTree
 
-var _npc: NpcBase = null
+var _npc: MovementSystem = null
 var _test_count: int = 0
 var _pass_count: int = 0
 
@@ -52,23 +52,19 @@ func assert_lt(got, threshold, name: String) -> void:
 func _test_threshold_values() -> void:
 	print("\n── Thresholds por estado ──")
 	
-	var thresholds = NpcBase.STUCK_PROGRESS_THRESHOLD
+	var thresholds: Dictionary = MovementSystem.STUCK_PROGRESS_THRESHOLD
 	
-	# ROAMING (estado 1): debe detectar atasco rápido (2.5s)
-	assert_lt(thresholds[1], 3.0, "ROAMING: threshold < 3.0s (detección ágil)")
+	# IDLE: nunca se comprueba, threshold alto
+	assert_eq(thresholds["idle"], 8.0, "IDLE: threshold = 8.0 (no aplica)")
 	
-	# ATTACKING (estado 2): más permisivo que ROAMING
-	assert_gt(thresholds[2], thresholds[1], "ATTACKING: threshold > ROAMING (más permisivo en combate)")
+	# PATROL/ROAMING: debe detectar atasco rápido (2.5s)
+	assert_lt(thresholds["patrol"], 3.0, "PATROL/ROAMING: threshold < 3.0s (detección ágil)")
 	
-	# TACTICAL_MOVE (estado 3): el más permisivo
-	assert_gt(thresholds[3], thresholds[2], "TACTICAL_MOVE: threshold > ATTACKING (strafing activo)")
-	assert_gt(thresholds[3], 5.0, "TACTICAL_MOVE: threshold > 5.0s (muy permisivo)")
+	# COMBAT: igual de permisivo que patrol (2.5s)
+	assert_eq(thresholds["combat"], 2.5, "COMBAT: threshold = 2.5s")
 	
-	# HUNTING (estado 4): el más rápido (persecución)
-	assert_lt(thresholds[4], 2.5, "HUNTING: threshold < 2.5s (persecución urgente)")
-	
-	# IDLE (estado 0): no aplica (nunca se comprueba)
-	assert_eq(thresholds[0], 8.0, "IDLE: threshold = 8.0 (no aplica)")
+	# HUNT: el más rápido (persecución urgente)
+	assert_lt(thresholds["hunt"], 2.5, "HUNT: threshold < 2.5s (persecución urgente)")
 
 
 func _test_recovery_phase_transitions() -> void:
@@ -76,9 +72,9 @@ func _test_recovery_phase_transitions() -> void:
 	
 	# Verificar que las constantes de fase están en el rango esperado
 	# Fase 0 = normal
-	# Fase 1 = retroceder (0.4s)
-	# Fase 2 = lateral (0.3s)  
-	# Fase 3 = reruta (transición)
+	# Fase 1 = retroceder (0.4s en code, const RECOVERY_PHASE1_DURATION = 0.5)
+	# Fase 2 = lateral (0.4s en code, const RECOVERY_PHASE2_DURATION = 0.3)
+	# Fase 3 = reruta (transición instantánea)
 	
 	# Simular delta para 1 frame
 	var delta: float = 1.0 / 60.0
@@ -87,11 +83,11 @@ func _test_recovery_phase_transitions() -> void:
 	assert_gt(0.4, delta, "Fase 1: duración 0.4s > 1 frame")
 	
 	# Verificar que la fase 2 tiene duración suficiente
-	assert_gt(0.3, delta, "Fase 2: duración 0.3s > 1 frame")
+	assert_gt(0.4, delta, "Fase 2: duración 0.4s > 1 frame")
 	
 	print("\n  Secuencia esperada (3 fases + control FSM):")
 	print("  Fase 1 (0.4s): Retroceder → alejarse del objetivo/bloqueador")
-	print("  Fase 2 (0.3s): Lateral → perpendicular a la dirección anterior")
+	print("  Fase 2 (0.4s): Lateral → perpendicular a la dirección anterior")
 	print("  Fase 3 (1 frame): Re-ruta → _nav_target = ZERO, NavigationAgent reset")
 	print("  Vuelta a FSM: Estado retoma el control con ruta nueva")
 
@@ -99,18 +95,13 @@ func _test_recovery_phase_transitions() -> void:
 func _test_goal_position_for_states() -> void:
 	print("\n── Obtención de goal position por estado ──")
 	
-	# Simular llamada a _get_stuck_goal_position para cada estado
-	# ROAMING: usa _nav_target
-	# ATTACKING: usa target_enemy
-	# TACTICAL_MOVE: usa target_enemy
-	# HUNTING: usa _nav_target
-	# IDLE: Vector3.ZERO
-	
-	# Verificar que ROAMING y HUNTING comparten la misma fuente
-	# Verificar que ATTACKING y TACTICAL_MOVE comparten la misma fuente
-	print("  ROAMING/HUNTING → _nav_target")
-	print("  ATTACKING/TACTICAL_MOVE → target_enemy.global_position")
-	print("  IDLE → Vector3.ZERO (no检测)")
+# Mapping real en MovementSystem._get_stuck_goal_position():
+#   "roaming", "hunting" → route_target_pos → nav_target
+#   "combat"             → target_entity.global_position
+#   "idle"/default       → Vector3.ZERO
+	print("  roaming/hunting → route_target_pos / nav_target")
+	print("  combat          → target_entity.global_position")
+	print("  idle/default    → Vector3.ZERO")
 
 
 func _test_bot_blocking_detection() -> void:
@@ -145,16 +136,16 @@ func _test_reset_state_cleans_everything() -> void:
 
 
 func _test_no_false_positive_during_tactical() -> void:
-	print("-- Sin falsos positivos durante TACTICAL_MOVE --")
+	print("-- Sin falsos positivos durante COMBAT --")
 	
-	# TACTICAL_MOVE usa threshold = 6.0s
-	# Durante strafing, el bot se mueve lateralmente:
-	# - La Métrica 1 (progreso) es permisiva (6s umbral)
-	# - La Métrica 2 (inmovilidad) no se activa porque el bot se mueve
-	# - target_enemy como goal permite detectar atasco real
-	#   (si está atascado detrás de una pared, la distancia al enemigo
-	#    no cambia durante 6s → detecta atasco)
+# COMBAT usa threshold = 2.5s
+# Durante strafing, el bot se mueve lateralmente:
+# - La Métrica 1 (progreso) es permisiva (2.5s umbral)
+# - La Métrica 2 (inmovilidad) se desactiva si el bot se mueve
+# - target_enemy como goal permite detectar atasco real
+#   (si está atascado detrás de una pared, la distancia al enemigo
+#    no cambia durante 2.5s → detecta atasco)
 	
-	print("  ✓ threshold=6.0s: strafe lateral sin falso positivo")
-	print("  ✓ Si el bot no puede moverse (pared), detecta atasco a los 6s")
+	print("  ✓ threshold=2.5s: strafe lateral sin falso positivo")
+	print("  ✓ Si el bot no puede moverse (pared), detecta atasco a los 2.5s")
 	print("  ✓ Si el bot está strafeando, no detecta atasco")
