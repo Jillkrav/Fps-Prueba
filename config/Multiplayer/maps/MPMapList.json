@@ -1,0 +1,32 @@
+[
+	{
+		"id": "Map1",
+		"display_name": "2FORT (2 Torres)",
+		"scene_path": "res://scenes/Multiplayer/mapas/map_1.tscn",
+		"enabled": true
+	},
+	{
+		"id": "Map2",
+		"display_name": "MAPA 2 (Columnas)",
+		"scene_path": "res://scenes/Multiplayer/mapas/map_2.tscn",
+		"enabled": true
+	},
+	{
+		"id": "Map3",
+		"display_name": "MAPA 3 (Arena Abierta)",
+		"scene_path": "res://scenes/Multiplayer/mapas/map_3.tscn",
+		"enabled": true
+	},
+	{
+		"id": "Map4",
+		"display_name": "Colors",
+		"scene_path": "res://scenes/Multiplayer/mapas/Mapa_de_guerra.tscn",
+		"enabled": true
+	},
+	{
+		"id": "Map5",
+		"display_name": "DE_DUST2",
+		"scene_path": "res://scenes/Multiplayer/mapas/map_dust2.tscn",
+		"enabled": true
+	}
+]

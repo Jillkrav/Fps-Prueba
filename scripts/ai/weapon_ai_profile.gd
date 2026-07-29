@@ -1,162 +1,94 @@
 # scripts/ai/weapon_ai_profile.gd
-# ──────────────────────────────────────────────────────────────────
-# WEAPON AI PROFILE — Resource
-#
-# Define el perfil táctico de un arma para uso por bots.
-# Cada arma tiene UN perfil que describe cómo debe usarla un bot:
-# distancias óptimas, estilo de ataque, precisión, etc.
-#
-# ── USO ──
-#   var profile := WeaponAIProfile.new()
-#   profile.weapon_name = "USP"
-#   profile.preferred_range_min = 5.0
-#   profile.preferred_range_max = 25.0
-#   ResourceSaver.save(profile, "res://config/ai_profiles/usp.tres")
-#
-# ── LECTURA ──
-#   CombatSystem lee profiles para ajustar puntería
-#   WeaponSystem usa profiles para elegir mejor arma
-# ──────────────────────────────────────────────────────────────────
+# Perfil táctico de un arma para la IA.
+# Cada arma tiene un .tres con estos datos, cargado en tiempo de ejecución.
 extends Resource
 class_name WeaponAIProfile
 
-## Nombre del arma (debe coincidir con skill.json y weapon.weapon_name)
+# ─── Propiedades exportadas (seteadas desde los .tres) ────────────────────
+
 @export var weapon_name: String = ""
-
-## Poder general del arma (0.0 - 1.0). Influye en qué tan probable
-## es que el bot la elija sobre otras.
-@export var ai_rating: float = 0.5
-
-## Distancia mínima óptima en unidades 3D. A menor distancia que
-## esta, el arma es menos efectiva.
-@export var preferred_range_min: float = 2.0
-
-## Distancia máxima óptima en unidades 3D. A mayor distancia que
-## esta, el arma pierde efectividad.
-@export var preferred_range_max: float = 30.0
-
-## ¿Tiene daño por área (splash)? Armas como cohetes, granadas.
-## Si es true, CombatSystem apunta al suelo cerca del objetivo,
-## no directamente a él.
-@export var splash_damage: bool = false
-
-## ¿Predecir posición del objetivo? Armas con proyectil lento
-## (cohetes, flechas) necesitan lead prediction.
-@export var lead_target: bool = true
-
-## Probabilidad de seguir disparando (0.0 - 1.0). Armas de fuego
-## rápido tienen alta refire_rate; francotiradores baja.
-@export var refire_rate: float = 0.8
-
-## Error base de puntería en milésimas de radian (0 = preciso).
-## Se combina con el skill del bot para el error final.
-## Valores típicos: 500 (preciso) a 5000 (muy impreciso).
-@export var aim_error_base: int = 2000
-
-## Modificador de estilo de ataque (-1.0 a +1.0).
-## -1.0: el bot usa esta arma defensivamente (retrocede, cubre)
-##  0.0: neutro
-## +1.0: el bot usa esta arma agresivamente (carga, persigue)
-@export var attack_style_modifier: float = 0.0
-
-## ¿Prefiere usar modo alterno de fuego?
-## Ej: lanzagranadas en modo alterno vs disparo directo.
-@export var prefers_alt_fire: bool = false
-
-## ¿Es arma cuerpo a cuerpo? Afecta cómo el bot se acerca.
-@export var is_melee: bool = false
-
-## ¿Es hit-scan (impacto instantáneo)? false = proyectil.
-## Afecta el cálculo de puntería (lead vs directo).
-@export var is_instant_hit: bool = true
-
-## Categoría del arma (Pistolas, Escopetas, Subfusiles, etc.)
 @export var category: String = ""
 
-# ──────────────────────────────────────────────────────────────────
-# MÉTODOS DE EVALUACIÓN
-# ──────────────────────────────────────────────────────────────────
+@export var ai_rating: float = 0.5
+@export var preferred_range_min: float = 0.0
+@export var preferred_range_max: float = 50.0
+@export var refire_rate: float = 0.5
+@export var aim_error_base: float = 2000.0
+@export var attack_style_modifier: float = 0.0
 
-## Evalúa qué tan efectiva es esta arma a una distancia dada.
-## Retorna 0.0 (pésimo) a 1.0 (óptimo).
-func range_rating(target_distance: float) -> float:
-	if target_distance <= 0.0:
-		return 0.0
-
-	if target_distance < preferred_range_min:
-		# Demasiado cerca: penalizar
-		var ratio: float = target_distance / max(preferred_range_min, 0.1)
-		return max(0.1, ratio * 0.8)
-
-	if target_distance <= preferred_range_max:
-		# En rango óptimo
-		return 1.0
-
-	# Demasiado lejos: decaimiento suave
-	var excess: float = target_distance - preferred_range_max
-	var decay: float = exp(-excess / (preferred_range_max * 0.5))
-	return max(0.05, decay)
+@export var lead_target: bool = false
+@export var splash_damage: bool = false
+@export var is_melee: bool = false
+@export var is_instant_hit: bool = false
 
 
-## Evalúa el arma en un contexto completo de combate.
-## context puede contener:
-##   - target_distance: float
-##   - bot_health_ratio: float (0.0 - 1.0)
-##   - ammo_ratio: float (0.0 - 1.0)
-##   - in_cover: bool
-##   - num_enemies: int
-## Retorna rating combinado (0.0 - 1.0).
-func evaluate(context: Dictionary) -> float:
-	var distance: float = context.get("target_distance", 15.0)
-	var health_ratio: float = context.get("bot_health_ratio", 1.0)
-	var ammo_ratio: float = context.get("ammo_ratio", 1.0)
-	var _in_cover: bool = context.get("in_cover", false)
+# ─── Métodos evaluadores ──────────────────────────────────────────────────
 
+## Evalúa el rating táctico del arma en el contexto dado.
+## context puede contener: target_distance, bot_health_ratio, ammo_ratio, in_cover.
+## Retorna 0.0 (inútil) a 1.0 (óptimo).
+func evaluate(context: Dictionary = {}) -> float:
 	var rating: float = ai_rating
 
-	# Factor de distancia (el más importante)
-	rating *= range_rating(distance)
+	# Ajustar por distancia al objetivo
+	if context.has("target_distance"):
+		var dist: float = context["target_distance"]
+		rating *= range_rating(dist)
 
-	# Si el arma es agresiva y el bot está débil, penalizar
-	if attack_style_modifier > 0.3 and health_ratio < 0.3:
-		rating *= 0.5
+	# Ajustar por salud del bot
+	if context.has("bot_health_ratio"):
+		var health_ratio: float = context["bot_health_ratio"]
+		if health_ratio < 0.3:
+			rating *= 0.6  # Herido -> menos efectivo
 
-	# Si el arma es defensiva y el bot está con mucha salud, ligera penalización
-	if attack_style_modifier < -0.3 and health_ratio > 0.8:
-		rating *= 0.8
+	# Ajustar por munición restante
+	if context.has("ammo_ratio"):
+		var ammo_ratio: float = context["ammo_ratio"]
+		if ammo_ratio < 0.2 and not is_melee:
+			rating *= 0.4  # Poca munición
 
-	# Sin munición: inútil
-	if ammo_ratio <= 0.0:
-		return 0.0
-
-	# Poca munición: penalizar según refire_rate (armas que gastan rápido)
-	if ammo_ratio < 0.2 and refire_rate > 0.7:
-		rating *= 0.6
-
-	return clamp(rating, 0.0, 1.0)
+	return clampf(rating, 0.0, 1.0)
 
 
-## Sugiere el estilo de ataque para esta arma en el contexto actual.
-## Retorna un valor entre -1.0 (defensivo) y +1.0 (agresivo).
-func suggest_attack_style(context: Dictionary) -> float:
-	var base_style: float = attack_style_modifier
-	var health_ratio: float = context.get("bot_health_ratio", 1.0)
+## Evalúa qué tan adecuada es el arma para una distancia dada.
+## Retorna 0.0 (pésimo) a 1.0 (óptimo).
+func range_rating(dist: float) -> float:
+	if preferred_range_min <= 0 and preferred_range_max >= 999:
+		return 1.0
 
-	# Si el bot está muy débil, incluso armas agresivas se usan con cautela
-	if health_ratio < 0.25:
-		base_style -= 0.5
+	var mid: float = (preferred_range_min + preferred_range_max) / 2.0
+	var half_span: float = max((preferred_range_max - preferred_range_min) / 2.0, 1.0)
 
-	# Si el bot está con mucha salud, es más agresivo
-	if health_ratio > 0.8:
-		base_style += 0.2
-
-	return clamp(base_style, -1.0, 1.0)
+	# Campana: a medio rango da 1.0, se degrada hacia los extremos
+	var raw: float = 1.0 - abs(dist - mid) / half_span
+	return clampf(raw, 0.1, 1.0)
 
 
-## Retorna una descripción textual del perfil para debug.
+## Sugiere un estilo de ataque según el perfil y contexto.
+## Retorna -1.0 (defensivo) a +1.0 (agresivo).
+func suggest_attack_style(_context: Dictionary = {}) -> float:
+	var base: float = attack_style_modifier
+
+	# Armas cuerpo a cuerpo tienden a ser agresivas
+	if is_melee:
+		base += 0.3
+
+	# Armas de largo alcance tienden a ser defensivas
+	if preferred_range_max > 40.0:
+		base -= 0.2
+
+	return clampf(base, -1.0, 1.0)
+
+
+## Retorna una cadena descriptiva para debug.
 func debug_string() -> String:
-	return "%s | rating=%.2f rango=%.0f-%.0f splash=%s melee=%s" % [
-		weapon_name, ai_rating, preferred_range_min, preferred_range_max,
-		"sí" if splash_damage else "no",
-		"sí" if is_melee else "no"
+	return "%s | rating=%.2f | rango=[%.1f, %.1f] | refire=%.2f | aim_err=%.0f | melee=%s | splash=%s" % [
+		weapon_name,
+		ai_rating,
+		preferred_range_min,
+		preferred_range_max,
+		refire_rate,
+		aim_error_base,
+		str(is_melee),
+		str(splash_damage)
 	]

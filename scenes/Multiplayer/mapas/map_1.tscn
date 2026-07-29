@@ -1,0 +1,1011 @@
+[gd_scene format=3 uid="uid://b1d6x87p4e0u1"]
+
+[ext_resource type="PackedScene" uid="uid://c5b3j7nqv6dnc" path="res://scenes/Multiplayer/objetos/objectives/core.tscn" id="1_p4o1l"]
+[ext_resource type="PackedScene" uid="uid://dg0u4rsk2u6o7" path="res://scenes/Compartido/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://b7kxkiq2bk3y8" path="res://scenes/Multiplayer/objetos/puntossem/patrol_point.tscn" id="2_hdv2m"]
+[ext_resource type="PackedScene" uid="uid://bsh2o1h3r4mno" path="res://scenes/Compartido/pickups/resupply_box.tscn" id="2_resupply"]
+[ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/Compartido/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" uid="uid://dyutk26wqfg3y" path="res://scenes/Multiplayer/objetos/team_weapon_selector.tscn" id="5_selector"]
+[ext_resource type="Script" uid="uid://bu7be1i0jbcht" path="res://Scripts/Multiplayer/match/spawner.gd" id="6"]
+[ext_resource type="PackedScene" uid="uid://b7f3m2xq5lag1" path="res://scenes/Multiplayer/objetos/puntossem/assault_point.tscn" id="7_l2lx5"]
+[ext_resource type="PackedScene" uid="uid://c6pwbvjjd3nky" path="res://scenes/Multiplayer/objetos/puntossem/freeze_cube.tscn" id="8_646el"]
+[ext_resource type="PackedScene" uid="uid://cq06glnmavlmp" path="res://scenes/Multiplayer/objetos/puntossem/alternate_point.tscn" id="8_d31ot"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat_2f"]
+sky_horizon_color = Color(0.45, 0.55, 0.7, 1)
+ground_horizon_color = Color(0.45, 0.55, 0.7, 1)
+
+[sub_resource type="Sky" id="Sky_2f"]
+sky_material = SubResource("SkyMat_2f")
+
+[sub_resource type="Environment" id="Env_2f"]
+background_mode = 2
+sky = SubResource("Sky_2f")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="NavigationMesh" id="NavMesh_2f"]
+agent_height = 1.8
+agent_radius = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Mat_ground"]
+albedo_color = Color(0.28, 0.3, 0.32, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_bwall"]
+albedo_color = Color(0.15, 0.4, 0.9, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_bfloor"]
+albedo_color = Color(0.12, 0.35, 0.85, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_rail"]
+albedo_color = Color(0.3, 0.25, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_bridge"]
+albedo_color = Color(0.45, 0.38, 0.3, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8xo7f"]
+albedo_color = Color(0.16467498, 1.1755697, 0, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wnico"]
+albedo_color = Color(1.1755697, 1.0589279, 0, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_cover"]
+albedo_color = Color(0.35, 0.32, 0.28, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_rfloor"]
+albedo_color = Color(0.85, 0.15, 0.15, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_rwall"]
+albedo_color = Color(0.9, 0.2, 0.2, 1)
+
+[node name="Map1" type="Node3D" unique_id=1724040000]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1932915870]
+environment = SubResource("Env_2f")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2136512040]
+transform = Transform3D(0.086707644, -0.94247323, 0.32284072, 0.01693119, 0.32540852, 0.945422, -0.99608994, -0.07650924, 0.044172596, 13.60347, 38.169823, 0)
+light_color = Color(1.6197081, 1.4800168, 0.92125154, 1)
+shadow_enabled = true
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1619460511]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12491608, 0.10352135, 0.64984894)
+navigation_mesh = SubResource("NavMesh_2f")
+
+[node name="Geometry" type="Node3D" parent="NavigationRegion3D" unique_id=1531487936]
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=806239676]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12207031, -3.3400993, 31.906868)
+use_collision = true
+size = Vector3(55.75586, 6.851074, 127.813736)
+material = SubResource("Mat_ground")
+
+[node name="BlueBase" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=12315488]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.33475435, -32.035065)
+
+[node name="Core Azul" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1858965204 instance=ExtResource("1_p4o1l")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2400227, 0.0390805, -30.519669)
+
+[node name="BlueWall" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=826237007]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07892704, 28.22534, -54.933525)
+use_collision = true
+size = Vector3(56.169617, 58.16481, 7.696457)
+material = SubResource("Mat_bwall")
+
+[node name="BlueFloor" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1235833037]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.06632614, -0.43421277, -25.517159)
+use_collision = true
+size = Vector3(55.822052, 0.38837892, 51.82514)
+material = SubResource("Mat_bfloor")
+
+[node name="BlueWall2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1272276716]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -7.639117, 5.6634483, -34.865623)
+use_collision = true
+size = Vector3(21.970158, 12.686165, 8.446167)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1727655722]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 3.0611744, 5.7944875, -27.61296)
+use_collision = true
+size = Vector3(29.310112, 48.942455, 1.0322266)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=545611950]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.627989, 5.7783737, -23.681858)
+use_collision = true
+size = Vector3(33.283646, 12.456314, 1)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=442216163]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.998293, 5.6634483, -2.015499)
+use_collision = true
+size = Vector3(21.180305, 12.686165, 3.239746)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall6" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1585167399]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -15.011814, 5.778374, -25.80352)
+use_collision = true
+size = Vector3(7.5851707, 50.872852, 1)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall7" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=69359196]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -7.6391153, 5.6634483, -8.20789)
+use_collision = true
+size = Vector3(17.225471, 12.686165, 8.446167)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall8" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1545899088]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.097894, 8.707305, -15.241783)
+use_collision = true
+size = Vector3(21.702337, 6.5984535, 3.1357422)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall9" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1343804381]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 13.515508, 9.2374525, -8.227665)
+use_collision = true
+size = Vector3(17.18592, 19.834171, 8.446167)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall10" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=134523458]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.103718, 2.6199512, -22.090977)
+use_collision = true
+size = Vector3(7.795521, 6.139469, 4.1817627)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall11" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=132030394]
+transform = Transform3D(1, 0, 0, 0, 0.9063077, -0.42261824, 0, 0.42261824, 0.9063077, 12.161543, 4.963643, -1.1897163)
+use_collision = true
+size = Vector3(33.40634, 0.84946495, 4.6679926)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall12" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1444658636]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 13.515508, 8.534897, -20.389729)
+use_collision = true
+size = Vector3(9.91419, 6.9432697, 8.446167)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall13" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1836349509]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -18.90516, 8.623398, -26.284737)
+use_collision = true
+size = Vector3(50.356495, 6.766268, 2.2072144)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall14" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=2142782899]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 22.711285, 5.794487, -18.141994)
+use_collision = true
+size = Vector3(11.45481, 30.000525, 1.0322266)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall15" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=479662940]
+transform = Transform3D(1, 0, 0, 0, 0.4226182, -0.90630776, 0, 0.90630776, 0.4226182, 22.711285, 1.8183373, -40.918144)
+use_collision = true
+size = Vector3(11.45481, 17.832176, 1.7085114)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall16" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=225860727]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -1.7793916, 31.578428, 41.070892)
+use_collision = true
+size = Vector3(159.75394, 6.690035, 8.059998)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall17" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=220701675]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -27.505106, 31.578428, 41.070892)
+use_collision = true
+size = Vector3(159.75394, 6.690035, 8.059998)
+material = SubResource("Mat_bwall")
+
+[node name="Patrullaje y defensa" type="Node3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=884488829]
+
+[node name="PatrolPoint" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1148092875 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5.776085)
+
+[node name="PatrolPoint2" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=285454388 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20.49974)
+
+[node name="PatrolPoint3" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=166757229 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.585285, 0, -20.49974)
+
+[node name="PatrolPoint4" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=815208553 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.585285, 0, -20.49974)
+
+[node name="PatrolPoint5" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=503208375 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.585285, 0, -49.67932)
+
+[node name="PatrolPoint6" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1541187637 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36901665, 0, -49.67932)
+
+[node name="PatrolPoint7" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1742056598 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.032265, 0, -29.25174)
+
+[node name="PatrolPoint8" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=680334609 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.722164, 0, -47.751495)
+
+[node name="PatrolPoint9" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1202808264 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.722164, 5.7575903, -34.565765)
+
+[node name="PatrolPoint10" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1621909625 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.722164, 6.8233185, -20.558792)
+
+[node name="PatrolPoint11" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1335342780 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.722164, 5.6771293, 1.4861679)
+
+[node name="PatrolPoint12" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=334812892 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.627304, 5.128163, 2.2099953)
+
+[node name="PatrolPoint13" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=78604909 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.991234, 5.128163, 2.2099953)
+
+[node name="PatrolPoint14" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1504462408 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.556599, -0.5370959, 0.9562416)
+
+[node name="PatrolPoint15" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=668839491 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.154169, -0.15523875, 1.3675041)
+
+[node name="PatrolPoint16" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1753493036 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.444778, -0.15523875, 1.3675041)
+
+[node name="PatrolPoint17" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=516079595 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.444778, -0.15523875, -18.783226)
+
+[node name="PatrolPoint18" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=52029446 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.36776, 6.8233185, -28.686024)
+
+[node name="PatrolPoint19" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1902941293 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.36776, 6.8233185, -49.066704)
+
+[node name="PatrolPoint20" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=182406181 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.288431, 6.8233185, -49.066704)
+
+[node name="PatrolPoint21" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=194854893 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.369387, 6.8233185, -49.066704)
+
+[node name="PatrolPoint22" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=979149783 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.369387, 6.8233185, -20.15768)
+
+[node name="PatrolPoint23" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=940539886 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9285402, 6.8233185, -20.15768)
+
+[node name="PatrolPoint24" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=362651645 instance=ExtResource("2_hdv2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9285402, 6.8233185, -6.094757)
+
+[node name="BlueWall18" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1956213881]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 24.493448, 31.578428, 41.070892)
+use_collision = true
+size = Vector3(159.75394, 6.690035, 8.059998)
+material = SubResource("Mat_bwall")
+
+[node name="BlueWall19" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=517394202]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -1.5475264, 31.578428, 42.412197)
+use_collision = true
+size = Vector3(12.045906, 6.690035, 55.553574)
+material = SubResource("Mat_bwall")
+
+[node name="Bridge" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=79391948]
+
+[node name="Rampla3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1405370629]
+transform = Transform3D(-6.193295e-08, -1, -1.21071935e-08, 0.9063077, -3.961597e-08, -0.42261824, 0.42262402, -1.8626451e-08, 0.90631926, 15.853928, 0.4357314, 37.48115)
+use_collision = true
+size = Vector3(6.668872, 13.265331, 16.928776)
+material = SubResource("Mat_rail")
+
+[node name="Rampla4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1179787161]
+transform = Transform3D(0.0027432842, 0.99997896, 0.005882932, 0.9063077, -3.961597e-08, -0.42261824, -0.42261857, 0.0064910064, -0.90630704, 15.885176, -0.15289307, 25.185047)
+use_collision = true
+size = Vector3(7.967822, 13.181927, 16.928776)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1619776076]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, 7.0100956, 3.444406, 80.03001)
+use_collision = true
+size = Vector3(5.1852784, 6.6888123, 22.151138)
+material = SubResource("Mat_rail")
+
+[node name="ResupplyBox" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1162566731 instance=ExtResource("2_resupply")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.3281403, 0.099999994, 33.73761)
+
+[node name="BridgeFloor" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=443801061]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, 0)
+use_collision = true
+size = Vector3(16, 0.1, 28)
+material = SubResource("Mat_bridge")
+
+[node name="BridgeRailW" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1816479463]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7414734, 1.1022277, 62.616226)
+use_collision = true
+size = Vector3(2.1119142, 2.0044556, 11.391207)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=368746883]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.867841, 2.957727, 66.76056)
+use_collision = true
+size = Vector3(4.805762, 5.715454, 32.07762)
+material = SubResource("Mat_rail")
+
+[node name="Exterior" type="Node3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1284100001]
+
+[node name="Pared Exterior L1" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1159437844]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -46.666283, 24.232134, 6.132187)
+use_collision = true
+size = Vector3(38.142677, 48.264267, 179.32278)
+material = SubResource("StandardMaterial3D_8xo7f")
+
+[node name="Pared Exterior L3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1976247402]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, -19.562761, 3.7762392, 95.64186)
+use_collision = true
+size = Vector3(0.3, 7.352478, 16.100357)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L8" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=420198828]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, 1.6742526, 1.6408594, 14.5813875)
+use_collision = true
+size = Vector3(29.666101, 5.94664, 18.604988)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L9" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1986801332]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, 8.635145, 4.7822495, 3.0106075)
+use_collision = true
+size = Vector3(7.442969, 2.0465198, 38.570854)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L10" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1159830990]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, -14.046761, 4.351885, 25.225367)
+use_collision = true
+size = Vector3(51.507305, 0.52458954, 6.0428534)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L11" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1013367099]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, -14.127542, 1.7668095, -2.6967683)
+use_collision = true
+size = Vector3(52.3613, 5.705206, 7.9225802)
+material = SubResource("Mat_rail")
+
+[node name="Rampla2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1269532138]
+transform = Transform3D(-4.3711385e-08, -1, 0, 0.99999994, -4.371139e-08, 0, 0, 0, 0.99999994, -20.139912, -0.8217956, 2.2520614)
+use_collision = true
+size = Vector3(10.864026, 14.937216, 17.56949)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L12" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1637957043]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, -14.673247, 1.7860353, 46.86957)
+use_collision = true
+size = Vector3(8.170178, 6.236992, 16.841438)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L13" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1462363962]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, 5.865267, 4.3491325, -28.903578)
+use_collision = true
+size = Vector3(8.494246, 0.5405593, 46.702637)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L14" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1958678585]
+transform = Transform3D(-0.0057186973, 0.004004275, -0.9999756, 0.5735764, 0.819152, 0, 0.81913203, -0.5735624, -0.0069812406, 5.603196, 4.798583, -28.538519)
+use_collision = true
+size = Vector3(2.6071103, 0.5405593, 47.22766)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L16" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=498638821]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, 7.7558093, 9.554934, -29.2673)
+use_collision = true
+size = Vector3(7.716418, 0.5405593, 42.925777)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L17" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=177427575]
+transform = Transform3D(-0.006490944, 0, -0.99997896, 0, 1, 0, 0.99997896, 0, -0.006490944, 9.066808, 5.6441803, 47.00146)
+use_collision = true
+size = Vector3(8.125757, 0.36342025, 39.562515)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L18" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1494692018]
+transform = Transform3D(-0.0069812406, -0.42260796, -0.90628564, 0, 0.90630776, -0.42261827, 0.9999756, -0.0029503999, -0.0063271527, -11.695787, 4.5036616, 3.074291)
+use_collision = true
+size = Vector3(7.0906615, 1.4824947, 3.0524054)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=863881372]
+transform = Transform3D(1, 0, 0, 0, 0.9063077, -0.42261824, 0, 0.42261824, 0.9063077, -1.3329048, 0.27147686, 33.225803)
+use_collision = true
+size = Vector3(4.179332, 4.5728226, 10.875275)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L19" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=366273086]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -11.658593, 4.501484, -1.0968728)
+use_collision = true
+size = Vector3(2.9860642, 0.9579864, 2.0519197)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L20" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=899661947]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -11.428712, 4.9538484, -0.80908597)
+use_collision = true
+size = Vector3(2.5263011, 0.9579864, 1.7001748)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L21" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1949850729]
+transform = Transform3D(-0.0065602204, -0.0023877248, -0.9999756, -0.34202012, 0.9396926, 0, 0.9396697, 0.34201178, -0.0069812406, -14.019081, 4.5484185, -26.42149)
+use_collision = true
+size = Vector3(3.7327254, 1.368257, 8.002252)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1961086037]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58.893433, 44.938004, 6.132187)
+use_collision = true
+size = Vector3(62.606495, 89.67601, 179.32278)
+material = SubResource("StandardMaterial3D_wnico")
+
+[node name="Paredes 2" type="Node3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1351553729]
+
+[node name="BridgeRailE3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior/Paredes 2" unique_id=1708845707]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.710608, 10.00148, 15.985294)
+use_collision = true
+size = Vector3(0.48543692, 8.583752, 17.85419)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior/Paredes 2" unique_id=187241805]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.74516, 18.61339, 7.1831613)
+use_collision = true
+size = Vector3(24.72823, 27.890812, 0.24992466)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior/Paredes 2" unique_id=1061259815]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.485979, 12.664598, 25.091932)
+use_collision = true
+size = Vector3(4.0563607, 15.993228, 36.06747)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE6" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior/Paredes 2" unique_id=933171756]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.01318, 10.00148, 15.985294)
+use_collision = true
+size = Vector3(0.48543692, 8.583752, 17.85419)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE7" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior/Paredes 2" unique_id=48509852]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.01318, 4.1381407, -13.88939)
+use_collision = true
+size = Vector3(0.48543692, 20.31043, 27.349844)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE8" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior/Paredes 2" unique_id=738316354]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.8949585, 9.48067, -14.564105)
+use_collision = true
+size = Vector3(3.141749, 9.625372, 28.747051)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE9" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior/Paredes 2" unique_id=452332471]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.3969, 18.61339, -1.1650457)
+use_collision = true
+size = Vector3(8.855799, 27.890812, 0.24992466)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE10" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior/Paredes 2" unique_id=2087401353]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.025528, 10.00148, 23.398098)
+use_collision = true
+size = Vector3(3.115277, 8.583752, 0.78947544)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE11" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior/Paredes 2" unique_id=1237251345]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.854871, 10.00148, 12.473077)
+use_collision = true
+size = Vector3(3.115277, 8.583752, 0.78947544)
+material = SubResource("Mat_rail")
+
+[node name="Pared Exterior L15" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=1385750115]
+transform = Transform3D(-3.580627e-08, 2.5071822e-08, 1, 0.5735764, 0.819152, 0, -0.819152, 0.5735764, -4.371139e-08, 5.603196, 4.798583, -26.673346)
+use_collision = true
+size = Vector3(2.6071103, 0.5405593, 47.22766)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=174335774]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.310785, 15.166632, -0.30610657)
+use_collision = true
+size = Vector3(13.148633, 18.531555, 0.680357)
+material = SubResource("Mat_rail")
+
+[node name="Rampla" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=203152387]
+transform = Transform3D(-4.377216e-08, -1, 0, 0.9063077, -3.961597e-08, -0.42261824, 0.42261827, -1.8626451e-08, 0.90630776, -19.418892, -2.5, 17.408773)
+use_collision = true
+size = Vector3(7.507617, 16.379253, 17.56949)
+material = SubResource("Mat_rail")
+
+[node name="Rampla2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1742815191]
+transform = Transform3D(6.764924e-09, 1, -7.923193e-08, 0.9063077, -3.961597e-08, -0.42261824, -0.42261824, -6.894955e-08, -0.9063077, -19.430367, -2.5, -12.902729)
+use_collision = true
+size = Vector3(7.507617, 16.356304, 17.56949)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1686881862]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.120722, 2.957727, 105.48371)
+use_collision = true
+size = Vector3(0.3, 5.715454, 12.961044)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1482397467]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.270221, 2.957727, 11.1833)
+use_collision = true
+size = Vector3(5.604663, 5.715454, 77.41482)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailW2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=305037325]
+transform = Transform3D(0.42261824, 0.9063078, 0, -0.9063078, 0.42261824, 0, 0, 0, 1, -16.227804, 2.106452, 48.141495)
+use_collision = true
+size = Vector3(2.1119142, 13.456734, 5.5666256)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1338563434]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.0704374, 4.7626967, 17.032513)
+use_collision = true
+size = Vector3(5.604663, 0.8858795, 23.715338)
+material = SubResource("Mat_rail")
+
+[node name="BridgeRailE5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=549570748]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.310785, 15.166632, 42.913803)
+use_collision = true
+size = Vector3(13.148633, 18.531555, 0.680357)
+material = SubResource("Mat_rail")
+
+[node name="SpawnHouse" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=134804363]
+transform = Transform3D(-0.0016566945, 0, -0.9999986, 0, 1, 0, 0.9999986, 0, -0.0016566945, 8.485003, 1.4305115e-06, 31.932894)
+
+[node name="Player" parent="NavigationRegion3D/Geometry/SpawnHouse" unique_id=1910387562 instance=ExtResource("1_player")]
+transform = Transform3D(0.053607717, 0, -0.9985621, 0, 1, 0, 0.9985621, 0, 0.053607717, -96.56944, 42.200386, 11.012326)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometry/SpawnHouse" unique_id=1205100554]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, 0)
+use_collision = true
+size = Vector3(5, 0.1, 5)
+material = SubResource("Mat_bridge")
+
+[node name="WallW" type="CSGBox3D" parent="NavigationRegion3D/Geometry/SpawnHouse" unique_id=419979742]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 1.5, 0)
+use_collision = true
+size = Vector3(0.2, 3, 5)
+material = SubResource("Mat_cover")
+
+[node name="WallE" type="CSGBox3D" parent="NavigationRegion3D/Geometry/SpawnHouse" unique_id=432302632]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1.5, 0)
+use_collision = true
+size = Vector3(0.2, 3, 5)
+material = SubResource("Mat_cover")
+
+[node name="WallSW3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/SpawnHouse" unique_id=798940031]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1710143, 1.4529464, -2.381432)
+use_collision = true
+size = Vector3(2.5, 3, 0.2)
+material = SubResource("Mat_cover")
+
+[node name="WallSW2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/SpawnHouse" unique_id=1534889188]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3278811, 1.4185262, -2.4024773)
+use_collision = true
+size = Vector3(2.5, 3, 0.2)
+material = SubResource("Mat_cover")
+
+[node name="WallE2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/SpawnHouse" unique_id=1198345231]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7241554, 7.002207, 2.73493)
+use_collision = true
+size = Vector3(0.85439456, 14.004414, 10.453613)
+material = SubResource("Mat_cover")
+
+[node name="Covers" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=785890854]
+
+[node name="Cover3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=614471535]
+transform = Transform3D(-1, 3.694646e-08, 7.923193e-08, 0, 0.9063077, -0.42261824, -8.742278e-08, -0.42261824, -0.9063077, 1.2334747, -0.656389, -5.995632)
+use_collision = true
+size = Vector3(17.602386, 7.3169975, 14.93539)
+material = SubResource("Mat_cover")
+
+[node name="Cover4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1567737721]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6361041, 1, -26.242489)
+use_collision = true
+size = Vector3(7.342285, 2, 1.1656494)
+material = SubResource("Mat_cover")
+
+[node name="Cover5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1799535204]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.841825, 1, 72.38858)
+use_collision = true
+size = Vector3(10.525269, 2, 2)
+material = SubResource("Mat_cover")
+
+[node name="Cover6" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1780746118]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.127737, 1, 64.320946)
+use_collision = true
+size = Vector3(4, 2, 15.044189)
+material = SubResource("Mat_cover")
+
+[node name="Cover7" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1659876755]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.230385, 1, -8.033508)
+use_collision = true
+size = Vector3(4, 2, 2)
+material = SubResource("Mat_cover")
+
+[node name="Cover8" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=244653942]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.818676, 1, -7.405342)
+use_collision = true
+size = Vector3(4, 2, 2)
+material = SubResource("Mat_cover")
+
+[node name="Cover9" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1082927969]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.755399, 4.623169, 35.541264)
+use_collision = true
+size = Vector3(4.810562, 9.246338, 2)
+material = SubResource("Mat_cover")
+
+[node name="Cover10" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=645514469]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.935083, 4.1531982, 35.541264)
+use_collision = true
+size = Vector3(2.2796326, 8.3063965, 2)
+material = SubResource("Mat_cover")
+
+[node name="RedBase" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=1490434569]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58123493, 101.88663)
+
+[node name="RedFloor" type="CSGBox3D" parent="NavigationRegion3D/Geometry/RedBase" unique_id=779549331]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.532532, -0.72155756, 10.506348)
+use_collision = true
+size = Vector3(39.065063, 0.3934082, 34.987305)
+material = SubResource("Mat_rfloor")
+
+[node name="Cover" type="CSGBox3D" parent="NavigationRegion3D/Geometry/RedBase" unique_id=154223525]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5300293, 1.323446, 2.2699127)
+use_collision = true
+size = Vector3(10.939941, 4.010193, 1)
+material = SubResource("Mat_rwall")
+
+[node name="Cover2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/RedBase" unique_id=1670289508]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.213536, 2.3376236, -10.432816)
+use_collision = true
+size = Vector3(7.6696777, 5.8871384, 1)
+material = SubResource("Mat_rwall")
+
+[node name="RedWallBack" type="CSGBox3D" parent="NavigationRegion3D/Geometry/RedBase" unique_id=1995002161]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.454773, 2.269287, 27.999992)
+use_collision = true
+size = Vector3(38.909546, 5.461426, 1)
+material = SubResource("Mat_rwall")
+
+[node name="RedWallLeft" type="CSGBox3D" parent="NavigationRegion3D/Geometry/RedBase" unique_id=1606504514]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 1.715332, 6.7052)
+use_collision = true
+size = Vector3(1, 6.569336, 42.5896)
+material = SubResource("Mat_rwall")
+
+[node name="RedWallRight" type="CSGBox3D" parent="NavigationRegion3D/Geometry/RedBase" unique_id=1742197804]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27.50652, 2.1975098, 9.978394)
+use_collision = true
+size = Vector3(1, 5.6049805, 36.043213)
+material = SubResource("Mat_rwall")
+
+[node name="RedWallFrontLeft" type="CSGBox3D" parent="NavigationRegion3D/Geometry/RedBase" unique_id=966547732]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 1.9389648, 14)
+use_collision = true
+size = Vector3(9, 6.1220703, 1)
+material = SubResource("Mat_rwall")
+
+[node name="RedWallFrontRight" type="CSGBox3D" parent="NavigationRegion3D/Geometry/RedBase" unique_id=2071036185]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.511658, 2.286621, 14)
+use_collision = true
+size = Vector3(25.023315, 5.426758, 1)
+material = SubResource("Mat_rwall")
+
+[node name="RedRoof" type="CSGBox3D" parent="NavigationRegion3D/Geometry/RedBase" unique_id=964396193]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.002670288, 5.227974, 8.800621)
+use_collision = true
+size = Vector3(22.901337, 0.4317627, 39.32631)
+material = SubResource("Mat_cover")
+
+[node name="Core Rojo" parent="NavigationRegion3D/Geometry/RedBase" unique_id=2038467567 instance=ExtResource("1_p4o1l")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.880638, 0.62036204, 17.613434)
+
+[node name="BlueSpawner" type="Node3D" parent="." unique_id=877986520]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9160976, 0, -11.5371895)
+script = ExtResource("6")
+force_team = 1
+
+[node name="SpawnBlue1" type="Marker3D" parent="BlueSpawner" unique_id=272947656]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.925406, 3.2330108, -41.065544)
+
+[node name="SpawnBlue2" type="Marker3D" parent="BlueSpawner" unique_id=1196609004]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2684739, 1.704216, -64.19957)
+
+[node name="SpawnBlue3" type="Marker3D" parent="BlueSpawner" unique_id=1885734771]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.045858, 9.191655, -64.025696)
+
+[node name="SpawnBlue4" type="Marker3D" parent="BlueSpawner" unique_id=1853349256]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.25823, 3.9516678, -51.74835)
+
+[node name="SpawnBlue5" type="Marker3D" parent="BlueSpawner" unique_id=247397253]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.482388, 9.434416, -40.280098)
+
+[node name="SpawnBlue6" type="Marker3D" parent="BlueSpawner" unique_id=1410198323]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.85474205, 7.7980895, -39.942085)
+
+[node name="RedSpawner" type="Node3D" parent="." unique_id=458952401]
+transform = Transform3D(0.54298985, 0, 0, 0, 0.8536035, 0, 0, 0, 0.42884386, 0, 0, 75.19469)
+script = ExtResource("6")
+force_team = 2
+
+[node name="SpawnRed1" type="Marker3D" parent="RedSpawner" unique_id=1868255199]
+transform = Transform3D(0.99999934, 0, 0, 0, 0.99999946, 0, 0, 0, 1, 39.776173, 1.2297652, 117.480194)
+
+[node name="SpawnRed2" type="Marker3D" parent="RedSpawner" unique_id=300602753]
+transform = Transform3D(0.99999917, 0, 0, 0, 0.9999993, 0, 0, 0, 1, 29.517136, 3.5942314, 56.37137)
+
+[node name="SpawnRed3" type="Marker3D" parent="RedSpawner" unique_id=1625630383]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 1, 5.4338136, 1.0407854, 117.78726)
+
+[node name="SpawnRed4" type="Marker3D" parent="RedSpawner" unique_id=149342481]
+transform = Transform3D(0.9999998, 0, 0, 0, 0.9999998, 0, 0, 0, 1, -13.664667, 1.789078, 52.730194)
+
+[node name="SpawnRed5" type="Marker3D" parent="RedSpawner" unique_id=1423101901]
+transform = Transform3D(0.9999988, 0, 0, 0, 0.99999905, 0, 0, 0, 1, -33.009037, 1.7768614, 34.14972)
+
+[node name="HUDLayer" parent="." unique_id=1215791023 groups=["hud"] instance=ExtResource("4_hud")]
+
+[node name="TeamWeaponSelector" parent="." unique_id=1872856244 instance=ExtResource("5_selector")]
+
+[node name="Ai" type="Node3D" parent="." unique_id=1150736687]
+
+[node name="Base Azul" type="Node3D" parent="Ai" unique_id=1217508944]
+
+[node name="Primer Piso" type="Node3D" parent="Ai/Base Azul" unique_id=1357802191]
+
+[node name="AssaultPoint19" parent="Ai/Base Azul/Primer Piso" unique_id=1876631521 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.2989492, 1.3590517, -50.518894)
+
+[node name="Segundo Piso" type="Node3D" parent="Ai/Base Azul" unique_id=1994495410]
+
+[node name="Exterior" type="Node3D" parent="Ai" unique_id=996928611]
+
+[node name="Primer piso" type="Node3D" parent="Ai/Exterior" unique_id=1601816754]
+
+[node name="Asalto" type="Node3D" parent="Ai/Exterior/Primer piso" unique_id=1125519627]
+
+[node name="Amarillo" type="Node3D" parent="Ai/Exterior/Primer piso/Asalto" unique_id=711005319]
+
+[node name="AssaultPoint15" parent="Ai/Exterior/Primer piso/Asalto/Amarillo" unique_id=56831847 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.213903, 0.91028, 51.333614)
+
+[node name="Medio" type="Node3D" parent="Ai/Exterior/Primer piso/Asalto" unique_id=1345456867]
+
+[node name="Pasillo" type="Node3D" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=121055842]
+
+[node name="AssaultPoint21" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=17599606 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.582233, 1.0259373, 12.019535)
+
+[node name="AssaultPoint22" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1330296100 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.526212, 1.0196333, 3.326602)
+
+[node name="AssaultPoint23" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=829990376 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.078294, 0.7530621, 17.49353)
+
+[node name="AssaultPoint24" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=774597529 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.078294, 0.97452486, 22.357471)
+
+[node name="AssaultPoint10" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1482980113 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.096834, 0.8699441, -14.030834)
+
+[node name="AssaultPoint11" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1146707961 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.078294, 0.9313235, -2.6760533)
+
+[node name="AssaultPoint25" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=2078828992 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.184859, 0.91590905, 29.054295)
+
+[node name="AssaultPoint26" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=108019374 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.628279, 0.91590905, 29.054295)
+
+[node name="AssaultPoint27" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1835118943 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.519325, 0.91590905, 35.353733)
+
+[node name="AssaultPoint28" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1634925369 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.519325, 0.91590905, 40.142097)
+
+[node name="AssaultPoint20" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1213658887 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.078294, 1.2122352, 6.767274)
+
+[node name="AssaultPoint13" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=606768668 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.421362, 1.4492514, -26.196066)
+
+[node name="AssaultPoint11" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1605636935 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.90834, 1.0165522, 43.579796)
+
+[node name="AssaultPoint7" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1391695044 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4771962, 0.9522519, 71.99747)
+
+[node name="AssaultPoint6" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=658282300 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.4973736, 0.66692793, 85.70353)
+
+[node name="AssaultPoint18" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1818562333 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5650535, 0.9600487, -25.969496)
+
+[node name="AssaultPoint8" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1754634872 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.248567, 0.4624405, 72.05673)
+
+[node name="AssaultPoint9" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=856133681 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.248567, 1.1752234, 62.236122)
+
+[node name="AssaultPoint10" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1334848714 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.248567, 1.0904214, 50.61536)
+
+[node name="AssaultPoint12" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=262469818 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6656542, 0.66692793, 89.68835)
+
+[node name="AssaultPoint19" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=293997045 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2253547, 1.3590517, -15.286223)
+
+[node name="AssaultPoint20" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1154368426 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.9702287, 0.68565726, -15.286223)
+
+[node name="AssaultPoint21" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=905043437 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1476295, 2.2556977, -8.334297)
+
+[node name="Verde" type="Node3D" parent="Ai/Exterior/Primer piso/Asalto" unique_id=863119839]
+
+[node name="Segundo piso" type="Node3D" parent="Ai/Exterior" unique_id=54808831]
+
+[node name="Asalto" type="Node3D" parent="Ai/Exterior/Segundo piso" unique_id=1084134087]
+
+[node name="AssaultPoint17" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=834367749 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.950656, 6.457164, -26.67728)
+
+[node name="AssaultPoint12" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=40778958 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.745243, 6.457164, 2.0457196)
+
+[node name="AssaultPoint14" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=697907782 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.517698, 4.5489264, 18.840649)
+
+[node name="AssaultPoint13" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=524914504 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.692581, 6.457164, 24.36497)
+
+[node name="AssaultPoint21" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1145013390 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.442589, 6.457164, 32.567154)
+
+[node name="AssaultPoint22" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1738940683 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4565802, 6.457164, 47.947536)
+
+[node name="AssaultPoint23" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=324849276 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.96579, 6.457164, 53.916225)
+
+[node name="AssaultPoint29" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1528149334 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.96579, 6.457164, 75.21725)
+
+[node name="AssaultPoint11" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1004085772 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.324316, 5.3032136, -29.37386)
+
+[node name="AssaultPoint15" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=148989770 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.9253197, 5.5333962, -28.29873)
+
+[node name="AssaultPoint18" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1616542736 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.491966, 6.457164, -19.15209)
+
+[node name="AssaultPoint19" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1451766423 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.147238, 6.457164, -10.860789)
+
+[node name="AssaultPoint20" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=169492861 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.650356, 6.457164, -1.3131313)
+
+[node name="AssaultPoint24" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=787901722 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.673464, 6.457164, 4.043634)
+
+[node name="AssaultPoint27" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1580394041 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.472055, 6.457164, 4.9078746)
+
+[node name="AssaultPoint28" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1704546809 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.189535, 6.457164, 1.5004029)
+
+[node name="AssaultPoint16" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1907193948 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.6829214, 5.9977264, 13.487833)
+
+[node name="AssaultPoint30" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=420643084 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.348483, 5.9977264, 27.170479)
+
+[node name="AssaultPoint31" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1505733954 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.581211, 6.894584, 31.835445)
+
+[node name="AssaultPoint32" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1800646628 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.581211, 1.2482431, 44.873466)
+
+[node name="AssaultPoint33" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=2014771490 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.581211, 1.0696874, 17.809938)
+
+[node name="AssaultPoint34" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=540545075 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.96623, 3.9085803, 38.327213)
+
+[node name="AssaultPoint35" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1560477535 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.96623, 3.9085803, 24.565538)
+
+[node name="AssaultPoint36" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=2005285707 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4656153, 5.2164516, 29.143204)
+
+[node name="AssaultPoint37" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=896997103 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.960668, 6.457164, 47.947536)
+
+[node name="AssaultPoint41" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1335128276 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.082653, 1.1951592, 75.21725)
+
+[node name="AssaultPoint42" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=4473877 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.082653, 0.9247925, 65.81963)
+
+[node name="AssaultPoint43" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=54007742 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.956926, 0.95719075, 65.81963)
+
+[node name="AssaultPoint44" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1313208617 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.175497, 0.7232685, 84.94064)
+
+[node name="AssaultPoint45" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1758467488 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.116302, 0.8360584, 88.6287)
+
+[node name="AssaultPoint46" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1398428408 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.192863, 1.2393801, 79.69227)
+
+[node name="AssaultPoint47" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1574738177 instance=ExtResource("7_l2lx5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.844397, 6.457164, 14.072427)
+
+[node name="Saltos" type="Node3D" parent="Ai/Exterior/Segundo piso" unique_id=1489580097]
+
+[node name="1" type="Node3D" parent="Ai/Exterior/Segundo piso/Saltos" unique_id=330175989]
+
+[node name="FreezeCube" parent="Ai/Exterior/Segundo piso/Saltos/1" unique_id=1732588968 instance=ExtResource("8_646el")]
+transform = Transform3D(0.4183129, 0, 0, 0, 1, 0, 0, 0, 25.637821, 6.8057966, 5.6531453, 65.71521)
+
+[node name="FreezeCube3" parent="Ai/Exterior/Segundo piso/Saltos/1" unique_id=1396876735 instance=ExtResource("8_646el")]
+transform = Transform3D(10.373922, 0, 0, 0, 1, 0, 0, 0, 0.52880377, 21.827099, 5.6531453, 7.2615414)
+
+[node name="FreezeCube4" parent="Ai/Exterior/Segundo piso/Saltos/1" unique_id=1024593998 instance=ExtResource("8_646el")]
+transform = Transform3D(14.945646, 0, 0, 0, 1, 0, 0, 0, 0.52880377, 19.61273, 5.6531453, 51.516354)
+
+[node name="2" type="Node3D" parent="Ai/Exterior/Segundo piso/Saltos" unique_id=818107442]
+
+[node name="0" type="Node3D" parent="Ai/Exterior/Segundo piso/Saltos" unique_id=1551448003]
+
+[node name="Flanco" type="Node3D" parent="Ai" unique_id=346040979]
+
+[node name="AlternatePoint" parent="Ai/Flanco" unique_id=114622450 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.844189, 0.830001, -10.9163475)
+
+[node name="AlternatePoint2" parent="Ai/Flanco" unique_id=1569595373 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.233128, 1.1248312, 32.693798)
+
+[node name="AlternatePoint3" parent="Ai/Flanco" unique_id=34028833 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.670465, 1.1248312, 56.972446)
+
+[node name="AlternatePoint4" parent="Ai/Flanco" unique_id=1702344063 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.732553, 1.1248312, 79.55109)
+
+[node name="AlternatePoint5" parent="Ai/Flanco" unique_id=1856656696 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.925169, 1.1248312, 79.55109)
+
+[node name="AlternatePoint6" parent="Ai/Flanco" unique_id=1514971732 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.5097, 0.9312959, 50.408955)
+
+[node name="AlternatePoint7" parent="Ai/Flanco" unique_id=101312782 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.213655, 3.5248127, 15.307091)
+
+[node name="AlternatePoint8" parent="Ai/Flanco" unique_id=1132145668 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.026377, 0.13333988, -28.29528)
+
+[node name="AlternatePoint9" parent="Ai/Flanco" unique_id=700334368 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.844189, 0.8430786, -29.317982)
+
+[node name="AlternatePoint10" parent="Ai/Flanco" unique_id=1572294275 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.6471963, 0.93061674, -29.317982)
+
+[node name="AlternatePoint11" parent="Ai/Flanco" unique_id=925342572 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.658907, 0.7162641, -29.83821)
+
+[node name="AlternatePoint12" parent="Ai/Flanco" unique_id=1692852461 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.107197, 1.1248312, -51.23407)
+
+[node name="AlternatePoint13" parent="Ai/Flanco" unique_id=1913021218 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1236367, 0.794605, -51.660774)
+
+[node name="AlternatePoint14" parent="Ai/Flanco" unique_id=683153293 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.06703, 0.794605, -45.381477)
+
+[node name="AlternatePoint15" parent="Ai/Flanco" unique_id=1127567936 instance=ExtResource("8_d31ot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.026377, 0.13333988, -15.525034)
+
+[node name="AlternatePoint16" parent="Ai/Flanco" unique_id=313350018 instance=ExtResource("8_d31ot")]
+transform = Transform3D(0.9999099, -0.007858235, -0.0108827455, 0.00790482, 0.9999597, 0.004243412, 0.010848955, -0.0043290714, 0.99993175, -21.84368, 4.731635, -7.0593596)
+
+[node name="AlternatePoint17" parent="Ai/Flanco" unique_id=1593783340 instance=ExtResource("8_d31ot")]
+transform = Transform3D(0.9999099, -0.007858235, -0.0108827455, 0.00790482, 0.9999597, 0.004243412, 0.010848955, -0.0043290714, 0.99993175, -18.748917, 4.731635, 3.406577)
+
+[node name="AlternatePoint18" parent="Ai/Flanco" unique_id=586102267 instance=ExtResource("8_d31ot")]
+transform = Transform3D(0.9999099, -0.007858235, -0.0108827455, 0.00790482, 0.9999597, 0.004243412, 0.010848955, -0.0043290714, 0.99993175, -21.84368, 0.60779333, 33.119675)

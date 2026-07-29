@@ -1,0 +1,17 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" uid="uid://bqxv5vbskxln8" path="res://Scripts/Multiplayer/player/skins/skin_data.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bte2lnu5in8mg" path="res://scenes/Multiplayer/objetos/skins/teddy/teddy_skin.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+id = "teddy_rojo"
+name = "Teddy Rojo"
+description = "Un osito de peluche. Tierno pero letal. Edición Roja."
+model_scene = ExtResource("2_scene")
+mesh_path = NodePath("Character/Mesh")
+animation_player_path = NodePath("AnimationPlayer")
+has_skeleton = false
+albedo_color = Color(0.95, 0.15, 0.1, 1.0)
+roughness = 0.7
+metallic = 0.1

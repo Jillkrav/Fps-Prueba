@@ -1,0 +1,61 @@
+[gd_scene format=3 uid="uid://dg0u4rsk2u6o7"]
+
+[ext_resource type="Script" uid="uid://h5e6ijfta6ni" path="res://Scripts/Compartido/player/player.gd" id="1_player"]
+[ext_resource type="Script" uid="uid://chpku3ysjho2v" path="res://Scripts/Compartido/gameplay/weapons/weapon_equip_state.gd" id="2_weaponequip"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_3vyb7"]
+radius = 0.65
+height = 1.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_visor"]
+size = Vector3(0.5, 0.15, 0.2)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_3vyb7"]
+radius = 0.65
+height = 1.8
+
+[node name="Player" type="CharacterBody3D" unique_id=1619528691 groups=["player"]]
+collision_layer = 2
+collision_mask = 13
+script = ExtResource("1_player")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=488507082]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+visible = false
+mesh = SubResource("CapsuleMesh_3vyb7")
+
+[node name="VisorMesh" type="MeshInstance3D" parent="MeshInstance3D" unique_id=1465749283]
+visible = false
+mesh = SubResource("BoxMesh_visor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=75930856]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_3vyb7")
+
+[node name="Playermodel" type="Node3D" parent="." unique_id=1739272709]
+transform = Transform3D(-150, 0, 0, 0, 150, 0, 0, 0, -150, 0, 0, 0)
+
+[node name="Head" type="Node3D" parent="." unique_id=581882918]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Head" unique_id=930923897]
+current = true
+
+[node name="ThirdPersonPivot" type="Node3D" parent="." unique_id=969701047]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="WallDetector" type="RayCast3D" parent="ThirdPersonPivot" unique_id=386584689]
+target_position = Vector3(0, 0, 3)
+hit_from_inside = true
+
+[node name="SpringArm3D" type="SpringArm3D" parent="ThirdPersonPivot" unique_id=1239257564]
+spring_length = 3.0
+margin = 0.15
+
+[node name="ThirdPersonCamera" type="Camera3D" parent="ThirdPersonPivot" unique_id=814252991]
+
+[node name="ThirdPersonWeaponSocket" type="Marker3D" parent="." unique_id=237307267]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.5, -0.3)
+
+[node name="WeaponEquipState" type="Node" parent="." unique_id=1108507128]
+script = ExtResource("2_weaponequip")

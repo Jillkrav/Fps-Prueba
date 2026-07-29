@@ -1,0 +1,49 @@
+{
+  "characters": [
+	{
+	  "id": "teddy",
+	  "skin_resource": "res://scenes/player/skins/teddy/teddy_skin.tres",
+	  "enabled": true,
+	  "camera": {
+		"first_person": {"head_height": 1.5, "fov": 75.0},
+		"third_person": {"height": 1.5, "distance": 2.8, "lateral_offset": 0.65, "look_height": 1.35, "fov": 70.0}
+	  }
+	},
+	{
+	  "id": "gign",
+	  "skin_resource": "res://scenes/player/skins/gign/gign_skin.tres",
+	  "enabled": true,
+	  "camera": {
+		"first_person": {"head_height": 1.55, "fov": 75.0},
+		"third_person": {"height": 1.55, "distance": 2.9, "lateral_offset": 0.65, "look_height": 1.4, "fov": 70.0}
+	  }
+	},
+	{
+	  "id": "combine",
+	  "skin_resource": "res://scenes/player/skins/combine/combine_skin.tres",
+	  "enabled": true,
+	  "camera": {
+		"first_person": {"head_height": 1.6, "fov": 75.0},
+		"third_person": {"height": 1.6, "distance": 3.0, "lateral_offset": 0.65, "look_height": 1.45, "fov": 70.0}
+	  }
+	},
+	{
+	  "id": "teddy_azul",
+	  "skin_resource": "res://scenes/player/skins/teddy/teddy_skin_azul.tres",
+	  "enabled": true,
+	  "camera": {
+		"first_person": {"head_height": 1.5, "fov": 75.0},
+		"third_person": {"height": 1.5, "distance": 2.8, "lateral_offset": 0.65, "look_height": 1.35, "fov": 70.0}
+	  }
+	},
+	{
+	  "id": "teddy_rojo",
+	  "skin_resource": "res://scenes/player/skins/teddy/teddy_skin_rojo.tres",
+	  "enabled": true,
+	  "camera": {
+		"first_person": {"head_height": 1.5, "fov": 75.0},
+		"third_person": {"height": 1.5, "distance": 2.8, "lateral_offset": 0.65, "look_height": 1.35, "fov": 70.0}
+	  }
+	}
+  ]
+}

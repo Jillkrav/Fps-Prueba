@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://dramppropbase"]
+
+[ext_resource type="Script" uid="uid://b0pp8qwnok7xp" path="res://Scripts/Compartido/props/prop_base.gd" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_ramp"]
+albedo_color = Color(0.55, 0.45, 0.35, 1)
+metallic = 0.1
+roughness = 0.8
+
+[node name="RampProp" type="StaticBody3D" unique_id=364821001 groups=["props"]]
+script = ExtResource("1_base")
+prop_name = "Rampa 22°"
+
+[node name="RampMesh" type="CSGBox3D" parent="." unique_id=776037860]
+transform = Transform3D(0.9272, 0.3746, 0, -0.3746, 0.9272, 0, 0, 0, 1, 0, 0.725, 0)
+use_collision = true
+size = Vector3(3.5, 0.15, 2)
+material = SubResource("Mat_ramp")

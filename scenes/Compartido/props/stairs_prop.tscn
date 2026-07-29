@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://dstairspropr"]
+
+[ext_resource type="Script" uid="uid://b0pp8qwnok7xp" path="res://Scripts/Compartido/props/prop_base.gd" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_stair"]
+albedo_color = Color(0.5, 0.42, 0.33, 1)
+roughness = 0.9
+
+[node name="StairsProp" type="StaticBody3D" unique_id=740055254 groups=["props"]]
+script = ExtResource("1_base")
+prop_name = "Escaleras 5 pasos"
+
+[node name="Step1" type="CSGBox3D" parent="." unique_id=294551787]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.125, 0)
+use_collision = true
+size = Vector3(2, 0.25, 0.35)
+material = SubResource("Mat_stair")
+
+[node name="Step2" type="CSGBox3D" parent="." unique_id=583713944]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.375, 0.3125)
+use_collision = true
+size = Vector3(2, 0.25, 0.35)
+material = SubResource("Mat_stair")
+
+[node name="Step3" type="CSGBox3D" parent="." unique_id=516191272]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.625, 0.625)
+use_collision = true
+size = Vector3(2, 0.25, 0.35)
+material = SubResource("Mat_stair")
+
+[node name="Step4" type="CSGBox3D" parent="." unique_id=1755084072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0.9375)
+use_collision = true
+size = Vector3(2, 0.25, 0.35)
+material = SubResource("Mat_stair")
+
+[node name="Step5" type="CSGBox3D" parent="." unique_id=1909979938]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.125, 1.25)
+use_collision = true
+size = Vector3(2, 0.25, 0.35)
+material = SubResource("Mat_stair")

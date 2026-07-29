@@ -1,0 +1,20 @@
+{
+	"point_mapping": {
+		"ASSAULT":    ["ASALTO"],
+		"DEFENSE":    ["DEFENSOR"],
+		"ALTERNATE":  ["FLANQUEADOR"],
+		"PATH":       ["PATRULLADOR"],
+		"VERSATIL":    ["VERSATIL"],
+		"OVERWATCH":  ["FRANCOTIRADOR"],
+		"SUPPORT":    ["APOYO"]
+	},
+	"cooldowns": {
+		"ASSAULT":    25.0,
+		"DEFENSE":    20.0,
+		"ALTERNATE":  15.0,
+		"PATH":       20.0,
+		"VERSATIL":    30.0,
+		"OVERWATCH":  35.0,
+		"SUPPORT":    25.0
+	}
+}

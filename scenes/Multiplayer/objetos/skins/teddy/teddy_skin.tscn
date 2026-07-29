@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://bte2lnu5in8mg"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_uqkbg"]
+albedo_color = Color(0.6, 0.5, 0.4, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qwert"]
+albedo_color = Color(0.5, 0.4, 0.3, 1)
+roughness = 0.9
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_wxyrp"]
+resource_name = "TeddyBody"
+radius = 0.3
+mid_height = 0.8
+material = SubResource("StandardMaterial3D_uqkbg")
+
+[sub_resource type="SphereMesh" id="SphereMesh_abcde"]
+resource_name = "TeddyHead"
+radius = 0.2
+height = 0.3
+material = SubResource("StandardMaterial3D_uqkbg")
+
+[sub_resource type="SphereMesh" id="SphereMesh_fghij"]
+resource_name = "TeddyEar"
+radius = 0.07
+height = 0.14
+material = SubResource("StandardMaterial3D_qwert")
+
+[node name="TeddyModel" type="Node3D"]
+scale = Vector3(0.8, 0.8, 0.8)
+
+[node name="Character" type="Node3D" parent="."]
+
+[node name="Mesh" type="MeshInstance3D" parent="Character"]
+mesh = SubResource("CapsuleMesh_wxyrp")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+
+[node name="Head" type="MeshInstance3D" parent="Character"]
+mesh = SubResource("SphereMesh_abcde")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="EarL" type="MeshInstance3D" parent="Character/Head"]
+mesh = SubResource("SphereMesh_fghij")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.22, 0.1, 0)
+
+[node name="EarR" type="MeshInstance3D" parent="Character/Head"]
+mesh = SubResource("SphereMesh_fghij")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.22, 0.1, 0)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]

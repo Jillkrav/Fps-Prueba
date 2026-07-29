@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://dkpkna1qnixr"]
+
+[ext_resource type="Script" uid="uid://b0pp8qwnok7xp" path="res://Scripts/Compartido/props/prop_base.gd" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_crate"]
+albedo_color = Color(0.45, 0.38, 0.28, 1)
+metallic = 0.0
+roughness = 0.9
+
+[node name="ObstaculoProp" type="StaticBody3D" groups=["props"]]
+script = ExtResource("1_base")
+prop_name = "Obstaculo 1.5x1.5"
+
+[node name="CrateMesh" type="CSGBox3D" parent="."]
+use_collision = true
+size = Vector3(1.5, 1.5, 1.5)
+material = SubResource("Mat_crate")
