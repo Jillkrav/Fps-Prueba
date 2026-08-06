@@ -11,19 +11,23 @@ config_version=5
 [application]
 
 config/name="Nuevo Proyecto de Juego"
-run/main_scene="res://scenes/main_menu.tscn"
+run/main_scene="uid://cxofon4e0u7h"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
-ConfigManager="*res://scripts/shared/core/config_manager.gd"
-GameState="*res://scripts/shared/core/game_state.gd"
-TeamAI="*res://scripts/MP/match/teams/team_ai.gd"
-InputManager="*res://scripts/shared/input/input_manager.gd"
-MapManager="*res://scripts/MP/match/match_state/map_manager.gd"
-MatchManager="*res://scripts/MP/match/multiplayer/match_manager.gd"
-PickupManager="*res://scripts/shared/gameplay/pickups/pickup_manager.gd"
+ConfigManager="*res://Scripts/Compartido/core/config_manager.gd"
+GameState="*res://Scripts/Compartido/core/game_state.gd"
+TeamAI="*res://Scripts/Multiplayer/teams/team_ai.gd"
+InputManager="*res://Scripts/Compartido/input/input_manager.gd"
+MapManager="*res://Scripts/Multiplayer/match/map_manager.gd"
+MatchManager="*res://Scripts/Multiplayer/match/match_manager.gd"
+PickupManager="*res://Scripts/Compartido/gameplay/pickups/pickup_manager.gd"
+GameStateMP="*res://Scripts/Multiplayer/core/game_state_mp.gd"
+SkinManager="*res://Scripts/Multiplayer/player/skins/skin_manager.gd"
+BotDifficulty="*res://Scripts/Multiplayer/player/bot_difficulty.gd"
+VelocidadesArmas="*res://Scripts/Compartido/gameplay/weapons/velocidades_armas.gd"
 
 [display]
 
