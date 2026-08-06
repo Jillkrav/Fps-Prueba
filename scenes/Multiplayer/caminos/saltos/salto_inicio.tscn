@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://scenes/Multiplayer/caminos/saltos/salto_inicio.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/Multiplayer/caminos/saltos/salto_inicio.gd" id="1_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_trigger"]
 size = Vector3(1, 1, 0.25)
