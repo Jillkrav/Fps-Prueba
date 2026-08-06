@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/Multiplayer/caminos/saltos/salto_inicio.gd" id="1_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_trigger"]
+size = Vector3(1, 1, 0.25)
+
+[sub_resource type="StandardMaterial3D" id="Material_debug"]
+albedo_color = Color(0.2, 0.8, 1, 0.25)
+transparency = 1
+shading_mode = 0
+
+[node name="SaltoInicio" type="Area3D"]
+collision_layer = 0
+collision_mask = 0
+monitoring = true
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_trigger")
+
+[node name="DebugMesh" type="MeshInstance3D" parent="."]
+visible = false
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/Multiplayer/caminos/camino_bot.gd" id="1_script"]
+
+[sub_resource type="Curve3D" id="Curve3D_default"]
+_point_count = 2
+_data = [Vector3(0, 0, 0), 0.0, 0.0, 0, 0, Vector3(0, 0, 4), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[node name="CaminoBot" type="Path3D"]
+curve = SubResource("Curve3D_default")
+script = ExtResource("1_script")

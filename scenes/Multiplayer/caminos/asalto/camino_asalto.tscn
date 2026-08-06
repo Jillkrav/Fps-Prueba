@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/camino_bot.tscn" id="1_base"]
+
+[node name="CaminoAsalto" instance=ExtResource("1_base")]
+role = 0
+route_id = &"assault_route"
