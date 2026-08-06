@@ -30,7 +30,7 @@ static var all_semantic_points: Array[SemanticPoint] = []
 ## Flag: ¿ya se cargaron los puntos?
 static var _semantic_points_loaded: bool = false
 
-# ── Spatial Grid ──────────────────────────────────────────────
+# ── Spatial Grid (FASE 5) ──────────────────────────────────────
 ## Rejilla espacial para consultas O(c) vs O(n).
 ## Clave: "cx,cz" → Array[SemanticPoint] en esa celda.
 static var _spatial_grid: Dictionary = {}
@@ -43,6 +43,7 @@ static func _grid_key(pos: Vector3) -> String:
 	return "%d,%d" % [cx, cz]
 
 ## Construye la rejilla espacial a partir de all_semantic_points.
+## Se llama al final de load_semantic_points().
 static func _build_spatial_grid() -> void:
 	_spatial_grid.clear()
 	for sp in all_semantic_points:
@@ -51,53 +52,17 @@ static func _build_spatial_grid() -> void:
 			_spatial_grid[key] = []
 		_spatial_grid[key].append(sp)
 
-
 ## Retorna los puntos en la celda de from_pos y sus 8 vecinas (3x3).
-## Si no hay suficientes candidatos del tipo buscado, expande a 5x5.
-## Si aun así está vacío, devuelve all_semantic_points como fallback.
-static func _get_cell_points_for_type(from_pos: Vector3, point_type: int, team_filter: int) -> Array[SemanticPoint]:
+static func _get_cell_points(from_pos: Vector3) -> Array[SemanticPoint]:
+	var result: Array[SemanticPoint] = []
 	var cx: int = floori(from_pos.x / _grid_cell_size)
 	var cz: int = floori(from_pos.z / _grid_cell_size)
-
-	# Intentar 3x3 primero
-	var result: Array[SemanticPoint] = []
 	for dx in range(-1, 2):
 		for dz in range(-1, 2):
 			var key: String = "%d,%d" % [cx + dx, cz + dz]
 			if _spatial_grid.has(key):
 				result.append_array(_spatial_grid[key])
-
-	# Filtrar para ver si hay algo útil en 3x3
-	var has_useful: bool = false
-	for sp in result:
-		if sp.point_type != point_type:
-			continue
-		if team_filter != -1 and sp.team != -1 and sp.team != team_filter:
-			continue
-		has_useful = true
-		break
-
-	if has_useful:
-		return result
-
-	# Expandir a 5x5
-	result.clear()
-	for dx in range(-2, 3):
-		for dz in range(-2, 3):
-			var key: String = "%d,%d" % [cx + dx, cz + dz]
-			if _spatial_grid.has(key):
-				result.append_array(_spatial_grid[key])
-
-	# Verificar si 5x5 tiene algo útil
-	for sp in result:
-		if sp.point_type != point_type:
-			continue
-		if team_filter != -1 and sp.team != -1 and sp.team != team_filter:
-			continue
-		return result
-
-	# Fallback total: todos los puntos
-	return all_semantic_points
+	return result
 
 
 ## Busca todos los nodos SemanticPointMarker en el árbol y los registra
@@ -111,7 +76,7 @@ static func load_semantic_points() -> void:
 		return
 
 	var markers: Array[Node] = []
-
+	
 	# 1. Buscar por grupo "semantic_points"
 	var group_nodes: Array[Node] = tree.get_nodes_in_group("semantic_points")
 	for group_node in group_nodes:
@@ -121,7 +86,7 @@ static func load_semantic_points() -> void:
 			for child in group_node.find_children("*", "SemanticPointMarker", true, false):
 				if child is SemanticPointMarker and child not in markers:
 					markers.append(child)
-
+	
 	# 2. Fallback: buscar por tipo en todo el árbol
 	if markers.is_empty():
 		var root: Window = tree.root
@@ -137,7 +102,10 @@ static func load_semantic_points() -> void:
 		var sp: SemanticPoint = marker.to_semantic_point()
 		all_semantic_points.append(sp)
 
-	# Auto-asignar equipo a puntos neutrales según proximidad al core
+	# ── Auto-asignar equipo a puntos neutrales según proximidad al core ──
+	# Si un punto tiene team == -1 (neutral), se le asigna automáticamente
+	# el equipo (AZUL o ROJO) del core más cercano. Así los puntos colocados
+	# cerca de la base azul son solo para bots azules, y viceversa.
 	_assign_team_by_core_proximity()
 
 	_semantic_points_loaded = true
@@ -148,12 +116,16 @@ static func load_semantic_points() -> void:
 
 ## Retorna el punto semántico más cercano del tipo indicado,
 ## dentro del radio max_dist, filtrado por equipo.
+## Si team_filter es -1, ignora el filtro de equipo.
 static func get_nearest_point(point_type: int, from_pos: Vector3,
 		team_filter: int = -1, max_dist: float = INF) -> SemanticPoint:
 	if not _semantic_points_loaded or all_semantic_points.is_empty():
 		return null
 
-	var candidates: Array[SemanticPoint] = _get_cell_points_for_type(from_pos, point_type, team_filter)
+	# FASE 5: usar spatial grid (solo celdas cercanas)
+	var candidates: Array[SemanticPoint] = _get_cell_points(from_pos)
+	if candidates.is_empty():
+		candidates = all_semantic_points  # fallback si grid vacío
 
 	var nearest: SemanticPoint = null
 	var nearest_dist_sq: float = max_dist * max_dist
@@ -178,7 +150,10 @@ static func get_points_sorted(point_type: int, from_pos: Vector3,
 	if not _semantic_points_loaded or all_semantic_points.is_empty():
 		return []
 
-	var candidates: Array[SemanticPoint] = _get_cell_points_for_type(from_pos, point_type, team_filter)
+	# FASE 5: usar spatial grid (solo celdas cercanas)
+	var candidates: Array[SemanticPoint] = _get_cell_points(from_pos)
+	if candidates.is_empty():
+		candidates = all_semantic_points  # fallback si grid vacío
 
 	var result: Array[SemanticPoint] = []
 	var max_dist_sq: float = max_dist * max_dist
@@ -191,6 +166,7 @@ static func get_points_sorted(point_type: int, from_pos: Vector3,
 		if d_sq <= max_dist_sq:
 			result.append(sp)
 
+	# Ordenar por distancia
 	result.sort_custom(func(a: SemanticPoint, b: SemanticPoint) -> bool:
 		var da: float = from_pos.distance_squared_to(a.position)
 		var db: float = from_pos.distance_squared_to(b.position)
@@ -208,23 +184,27 @@ static func has_point_nearby(point_type: int, from_pos: Vector3,
 
 
 ## Asigna equipo a puntos semánticos neutrales según el core más cercano.
+## Los puntos con team != -1 se respetan (no se sobreescriben).
+## Usa GameStateMP.core_blue / core_red para calcular distancias.
 static func _assign_team_by_core_proximity() -> void:
 	if not is_instance_valid(GameState):
 		return
-
+	
 	var blue_pos: Vector3 = Vector3.ZERO
 	var blue_valid: bool = false
 	var red_pos: Vector3 = Vector3.ZERO
 	var red_valid: bool = false
-
+	
+	# Obtener posición de cada core
 	if is_instance_valid(GameStateMP.core_blue) and GameStateMP.core_blue is Node3D:
 		blue_pos = (GameStateMP.core_blue as Node3D).global_position
 		blue_valid = true
 	if is_instance_valid(GameStateMP.core_red) and GameStateMP.core_red is Node3D:
 		red_pos = (GameStateMP.core_red as Node3D).global_position
 		red_valid = true
-
+	
 	if not blue_valid and not red_valid:
+		# No hay cores registrados aún — buscar por grupo "core"
 		var cores: Array[Node] = Engine.get_main_loop().get_nodes_in_group("core")
 		for core_node in cores:
 			if not is_instance_valid(core_node) or not (core_node is Node3D):
@@ -236,15 +216,17 @@ static func _assign_team_by_core_proximity() -> void:
 			elif team_id == Enums.Equipo.ROJO:
 				red_pos = (core_node as Node3D).global_position
 				red_valid = true
-
+	
 	if not blue_valid and not red_valid:
 		push_warning("[NavigationSystem] No se encontraron cores para auto-asignar equipos")
 		return
-
+	
 	var assigned_count: int = 0
 	for sp in all_semantic_points:
+		# Solo auto-asignar si es neutral (team == -1)
 		if sp.team != -1:
 			continue
+		
 		if blue_valid and red_valid:
 			var dist_to_blue: float = sp.position.distance_squared_to(blue_pos)
 			var dist_to_red: float = sp.position.distance_squared_to(red_pos)
@@ -253,8 +235,9 @@ static func _assign_team_by_core_proximity() -> void:
 			sp.team = Enums.Equipo.AZUL
 		elif red_valid:
 			sp.team = Enums.Equipo.ROJO
+		
 		assigned_count += 1
-
+	
 	if assigned_count > 0:
 		print("[NavigationSystem] Auto-asignados %d puntos semánticos por proximidad al core" % assigned_count)
 
@@ -290,6 +273,9 @@ func _ready() -> void:
 	_bot = get_parent() as BotBase
 	if bot:
 		agent = bot.get_node_or_null("NavigationAgent3D") as NavigationAgent3D
+
+
+
 
 
 # ══════════════════════════════════════════════════════════════════

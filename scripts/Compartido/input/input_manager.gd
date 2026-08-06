@@ -19,7 +19,9 @@ const ACTION_LABELS: Dictionary = {
 	"dev_menu": "Menú Dev",
 	"scoreboard": "Scoreboard / Tabla",
 	"interact": "Interactuar / Recoger",
-	"toggle_weapon": "Equipar / Guardar Arma"
+	"toggle_weapon": "Equipar / Guardar Arma",
+	"ads": "Apuntar (ADS)",
+	"toggle_third_person": "Cambiar Camara (1a/3a)"
 }
 
 # Default key mappings (action_name -> physical_keycode or mouse button)
@@ -35,12 +37,14 @@ const DEFAULT_KEYS: Dictionary = {
 	"dev_menu": KEY_Q,
 	"scoreboard": KEY_TAB,
 	"interact": KEY_E,
-	"toggle_weapon": KEY_H
+	"toggle_weapon": KEY_H,
+	"toggle_third_person": KEY_V
 }
 
 # Default mouse button mappings (action_name -> button_index)
 const DEFAULT_MOUSE: Dictionary = {
-	"shoot": MOUSE_BUTTON_LEFT
+	"shoot": MOUSE_BUTTON_LEFT,
+	"ads": MOUSE_BUTTON_RIGHT
 }
 
 # Second key for shoot (F key)

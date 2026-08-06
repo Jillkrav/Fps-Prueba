@@ -8,13 +8,14 @@
 # NavigationSystem al iniciar la partida.
 #
 # ── TIPOS DE PUNTO ──
-# ASSAULT    → Solo bots ASALTO
-# DEFENSE    → Solo bots DEFENSOR
-# ALTERNATE  → Solo bots FLANQUEADOR (rutas de flanqueo)
-# PATH       → Solo bots PATRULLADOR (rondas de patrullaje)
-# VERSATIL   → Solo bots VERSATIL
-# OVERWATCH  → Solo bots FRANCOTIRADOR (posiciones de cobertura)
-# SUPPORT    → Solo bots APOYO (posiciones de supresión)
+# ASSAULT    → Solo bots con rol ASSAULT lo usan como waypoint
+#               hacia la base enemiga
+# DEFENSE    → Para bots DEFENDER (lo protegen)
+# ALTERNATE  → Para bots FLANKER (rutas de flanqueo)
+# PATH       → Para bots PATROLLER (rondas de patrullaje)
+# OBJECTIVE  → Para bots ASSAULT y FLANKER (objetivo secundario azul)
+# DUAL       → Para bots ASSAULT y FLANKER (punto compartido verde oscuro)
+# TERCER     → Para bots ASSAULT y FLANKER (tercer camino verde oscuro)
 # ──────────────────────────────────────────────────────────────────
 extends RefCounted
 class_name SemanticPoint
@@ -25,13 +26,13 @@ class_name SemanticPoint
 # ══════════════════════════════════════════════════════════════════
 
 enum PointType {
-	ASSAULT   = 0,
-	DEFENSE   = 1,
-	ALTERNATE = 2,
-	PATH      = 3,
-	VERSATIL  = 7,
-	OVERWATCH = 8,
-	SUPPORT   = 9,
+	ASSAULT   = 0,  # Punto de asalto: solo ASALTO lo usa
+	DEFENSE   = 1,  # Punto defensivo: solo DEFENSOR lo usa
+	ALTERNATE = 2,  # Ruta alterna: solo FLANQUEADOR lo usa
+	PATH      = 3,  # Ruta de patrulla: solo PATRULLADOR lo usa
+	VERSATIL   = 7,  # Punto versatil: solo VERSATIL lo usa
+	OVERWATCH = 8,  # Punto de cobertura: solo FRANCOTIRADOR lo usa
+	SUPPORT   = 9,  # Punto de supresion: solo APOYO lo usa
 }
 
 
@@ -39,17 +40,21 @@ enum PointType {
 # PROPIEDADES
 # ══════════════════════════════════════════════════════════════════
 
-## Tipo de punto semántico.
+## Tipo de punto semántico (ASSAULT, DEFENSE, ALTERNATE, PATH, OBJECTIVE)
 var point_type: int = PointType.ASSAULT
 
-## Posición global del punto en el mundo.
+## Posición global del punto en el mundo
 var position: Vector3 = Vector3.ZERO
 
-## Equipo al que pertenece (-1 = neutral, auto-asignado por proximidad al core).
+## Equipo al que pertenece (-1 = neutral, cualquier equipo lo usa)
 var team: int = -1
 
-## Nombre descriptivo (para debug).
+## Nombre descriptivo (para debug)
 var name: String = ""
+
+## Posición secundaria (para puntos OBJECTIVE: posición del cubo celeste
+## al que el bot debe ir después de tocar el cubo azul).
+var secondary_position: Vector3 = Vector3.ZERO
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -57,27 +62,37 @@ var name: String = ""
 # ══════════════════════════════════════════════════════════════════
 
 func _init(p_type: int = PointType.ASSAULT, p_position: Vector3 = Vector3.ZERO,
-		   p_team: int = -1, p_name: String = "") -> void:
+		   p_team: int = -1, p_name: String = "", p_secondary: Vector3 = Vector3.ZERO) -> void:
 	point_type = p_type
 	position = p_position
 	team = p_team
 	name = p_name
+	secondary_position = p_secondary
 
 
 # ══════════════════════════════════════════════════════════════════
 # UTILIDADES
 # ══════════════════════════════════════════════════════════════════
 
+## Retorna el nombre del tipo de punto para debug.
 func get_type_name() -> String:
 	match point_type:
-		PointType.ASSAULT:   return "ASSAULT"
-		PointType.DEFENSE:   return "DEFENSE"
-		PointType.ALTERNATE: return "ALTERNATE"
-		PointType.PATH:      return "PATH"
-		PointType.VERSATIL:  return "VERSATIL"
-		PointType.OVERWATCH: return "OVERWATCH"
-		PointType.SUPPORT:   return "SUPPORT"
-		_:                   return "UNKNOWN"
+		PointType.ASSAULT:
+			return "ASSAULT"
+		PointType.DEFENSE:
+			return "DEFENSE"
+		PointType.ALTERNATE:
+			return "ALTERNATE"
+		PointType.PATH:
+			return "PATH"
+		PointType.VERSATIL:
+			return "VERSATIL"
+		PointType.OVERWATCH:
+			return "OVERWATCH"
+		PointType.SUPPORT:
+			return "SUPPORT"
+		_:
+			return "UNKNOWN"
 
 
 func _to_string() -> String:
