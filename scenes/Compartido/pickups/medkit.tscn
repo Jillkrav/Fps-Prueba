@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://brrao005ro4vd"]
+
+[ext_resource type="Script" uid="uid://bh6f4hvudgf3w" path="res://Scripts/Compartido/gameplay/pickups/medkit.gd" id="1_medkit"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_pickup"]
+size = Vector3(0.7, 0.7, 0.7)
+
+[sub_resource type="BoxMesh" id="BoxMesh_item"]
+size = Vector3(0.3, 0.3, 0.3)
+
+[node name="Medkit" type="RigidBody3D" unique_id=109594212]
+mass = 0.5
+script = ExtResource("1_medkit")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1305129563]
+shape = SubResource("BoxShape_pickup")
+
+[node name="ItemMesh" type="MeshInstance3D" parent="." unique_id=139594576]
+mesh = SubResource("BoxMesh_item")
+
+[node name="Label3D" type="Label3D" parent="." unique_id=1477112439]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+modulate = Color(0.2, 1, 0.3, 1)
+outline_modulate = Color(0, 0, 0, 0.9)
+outline_size = 4
+
+[node name="PickupArea" type="Area3D" parent="." unique_id=1113476655]
+
+[node name="PickupCollision" type="CollisionShape3D" parent="PickupArea" unique_id=1757435842]
+shape = SubResource("BoxShape_pickup")
+
+[node name="DespawnTimer" type="Timer" parent="." unique_id=1219599125]
+wait_time = 30.0
+one_shot = true
+autostart = true

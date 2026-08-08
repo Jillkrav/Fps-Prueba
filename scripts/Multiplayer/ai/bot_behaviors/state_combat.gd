@@ -105,6 +105,14 @@ func execute(_delta: float) -> void:
 	# ── 1. Verificar transiciones de salida ──
 	if _check_exit_transitions():
 		return
+	
+	# Necesidades críticas y recarga bajo fuego tienen prioridad sobre atacar.
+	if bot.tactical_sys != null and bot.tactical_sys.should_force_flee():
+		change_state(BotState.StateType.FLEEING)
+		return
+	if bot.tactical_sys != null and bot.tactical_sys.requires_cover_for_reload():
+		change_state(BotState.StateType.COVER_RELOAD)
+		return
 
 	# ── 2. Validar objetivo ──
 	if not _validate_target():
@@ -240,6 +248,11 @@ func _update_phase() -> void:
 	var dist: float = _get_target_distance()
 	var engage_max: float = role.preferred_engagement_max if role else 15.0
 
+	# Un francotirador ya apostado tras un one_way_low_wall no abandona su
+	# posición para perseguir: convierte el contacto visible en fuego estático.
+	if _is_sniper_in_one_way_cover():
+		phase = CombatPhase.STRAFE
+		return
 	if bot and bot._is_attacking_core:
 		phase = CombatPhase.CORE_ATTACK
 	elif dist > engage_max:
@@ -294,6 +307,11 @@ func _execute_strafe() -> void:
 	combat_cmd.set_engage(target.global_position + Vector3.UP * 1.2, 0)
 	combat_cmd.force_fire = true  # Forzar disparo aunque el ángulo no sea perfecto
 
+	# El francotirador debe conservar su puesto tras el muro bajo orientado.
+	if _is_sniper_in_one_way_cover():
+		movement_cmd.set_hold()
+		return
+
 	# Cambiar dirección de strafe periódicamente
 	var strafe_interval: float = role.strafe_change_interval if role else 2.0
 	var now: float = Time.get_ticks_msec() / 1000.0
@@ -308,6 +326,12 @@ func _execute_strafe() -> void:
 	# Movimiento lateral + ajuste de distancia
 	var dir_to_enemy: Vector3 = (target.global_position - bot.global_position).normalized()
 	var side_dir: Vector3 = dir_to_enemy.cross(Vector3.UP) * _strafe_direction
+
+	# Desde un muro bajo o tronera, mantener la cobertura y disparar con
+	# micro-strafe. La semántica llega por los props reutilizables y no fuerza
+	# ninguna escena/mapa a tenerlos.
+	if _is_using_peek_cover():
+		side_dir *= 0.45
 
 	var dist: float = _get_target_distance()
 	var engage_min: float = role.preferred_engagement_min if role else 5.0
@@ -375,6 +399,8 @@ func on_see_player(player: Node3D) -> void:
 
 
 func on_take_damage(_amount: float, attacker: Node3D) -> void:
+	if bot != null and bot.tactical_sys != null:
+		bot.tactical_sys.notify_damage(attacker)
 	# Si no tenemos objetivo y alguien nos ataca, responder
 	if not has_target() and attacker and is_instance_valid(attacker):
 		if decision_system:
@@ -389,8 +415,9 @@ func exit(_next_state: BotState) -> void:
 	_time_without_los = 0.0
 	combat_cmd.reset()
 
-	# Guardar arma al salir de combate (Fase 4)
-	if bot and bot.weapon_equip_state:
+	# Guardar arma al salir de combate, salvo al pasar a cobertura para
+	# recargar: esa transición debe conservarla equipada para iniciar la recarga.
+	if bot and bot.weapon_equip_state and (_next_state == null or _next_state.state_type != BotState.StateType.COVER_RELOAD):
 		bot.weapon_equip_state.unequip()
 
 
@@ -423,6 +450,37 @@ func _role_speed(base_speed: float) -> float:
 
 ## Verifica si el objetivo actual está visible (tiene línea de visión).
 ## Consulta el sistema de percepción que ya procesa LOS con dual raycast.
+func _is_using_peek_cover() -> bool:
+	if bot == null or not bot.is_inside_tree():
+		return false
+	var peek_points: Array[Node] = bot.get_tree().get_nodes_in_group(&"peek_cover_points")
+	for point: Node in peek_points:
+		if point != null and is_instance_valid(point) and point.is_inside_tree():
+			if bot.global_position.distance_to(point.global_position) <= 2.6:
+				return true
+	return false
+
+
+## Comprueba si el bot está apostado cerca del lado seguro de un muro bajo
+## de un sentido. Se basa en la API del prop para no acoplar combate a escenas.
+func _is_sniper_in_one_way_cover() -> bool:
+	var role: TacticalRole = _get_role()
+	if bot == null or role == null or role.type != Roles.Type.FRANCOTIRADOR or not bot.is_inside_tree():
+		return false
+	var covers: Array[Node] = bot.get_tree().get_nodes_in_group(&"cover_points")
+	for cover: Node in covers:
+		if cover == null or not is_instance_valid(cover) or not cover.is_inside_tree():
+			continue
+		var parent: Node = cover.get_parent()
+		if parent == null or not parent.has_method("supports_one_way_cover"):
+			continue
+		if not bool(parent.call("supports_one_way_cover")):
+			continue
+		if bot.global_position.distance_to(cover.global_position) <= 2.6:
+			return true
+	return false
+
+
 func _is_target_visible() -> bool:
 	if perception == null or decision_system == null:
 		return false

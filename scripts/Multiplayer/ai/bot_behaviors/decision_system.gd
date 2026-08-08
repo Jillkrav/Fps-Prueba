@@ -136,7 +136,15 @@ func process(delta: float) -> void:
 	# Limpiar comandos pendientes (FASE 3 — no heredar saltos/dodges viejos)
 	movement_command._clear_pending()
 
-	# ── 2. Ejecutar estado actual ──
+	# ── 2. Las necesidades críticas interrumpen cualquier estado ──
+	if bot != null and bot.tactical_sys != null and bot.tactical_sys.should_force_flee():
+		if not is_in_state(BotState.StateType.FLEEING):
+			change_state(BotState.StateType.FLEEING)
+	elif bot != null and bot.tactical_sys != null and bot.tactical_sys.requires_cover_for_reload():
+		if not is_in_state(BotState.StateType.FLEEING) and not is_in_state(BotState.StateType.COVER_RELOAD):
+			change_state(BotState.StateType.COVER_RELOAD)
+	
+	# ── 3. Ejecutar estado actual ──
 	if current_state:
 		time_in_state += delta
 		current_state.execute(delta)

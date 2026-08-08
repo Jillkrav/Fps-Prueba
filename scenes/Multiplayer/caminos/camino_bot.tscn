@@ -1,12 +1,14 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://c4c0m1fdf8kqx"]
 
-[ext_resource type="Script" path="res://scripts/Multiplayer/caminos/camino_bot.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bt7xirnqopeyu" path="res://Scripts/Multiplayer/caminos/camino_bot.gd" id="1_script"]
 
 [sub_resource type="Curve3D" id="Curve3D_default"]
-_point_count = 2
-_data = [Vector3(0, 0, 0), 0.0, 0.0, 0, 0, Vector3(0, 0, 4), 0.0, 0.0, 0, 0]
-point_count = 2
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -2.2182999, -0.6842433, -23.38753, 0, 0, 0, 0, 0, 0, -4.650894, -0.078673124, -3.2955532, 0, 0, 0, 0, 0, 0, -0.6937578, -0.6842431, 9.905502, 0, 0, 0, 0, 0, 0, -1.8973465, 3.9184349, 25.741354, 0, 0, 0, 0, 0, 0, 5.1867657, 4.0796633, 27.327765, 0, 0, 0, 0, 0, 0, 2.9652042, 3.7867496, 35.070656, 0, 0, 0, 0, 0, 0, -2.198616, 3.3814423, 37.601593, 0, 0, 0, 0, 0, 0, -4.049, 3.6684191, 42.0888, 0, 0, 0, 0, 0, 0, -4.5045395, 1.6092708, 46.196102, 0, 0, 0, 0, 0, 0, 1.7588081, -0.6842431, 52.878548, 0, 0, 0, 0, 0, 0, -4.9569607, -0.6842432, 62.09842, 0, 0, 0, 0, 0, 0, -2.1260986, -0.6842433, 78.719574, 0, 0, 0, 0, 0, 0, -5.264715, -0.6842434, 85.766815, 0, 0, 0, 0, 0, 0, -2.3343391, -0.68424344, 91.09772, 0, 0, 0, 0, 0, 0, 2.7869759, -0.68424356, 95.84146, 0, 0, 0, 0, 0, 0, -4.866905, -0.6842431, 103.41216, 0, 0, 0, 0, 0, 0, 20.695587, -0.6842431, 117.092026),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 17
 
-[node name="CaminoBot" type="Path3D"]
+[node name="CaminoBot" type="Path3D" unique_id=1142635285]
 curve = SubResource("Curve3D_default")
 script = ExtResource("1_script")

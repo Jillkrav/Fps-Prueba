@@ -1,0 +1,46 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/low_wall_prop.gd" id="1_script"]
+[ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
+[ext_resource type="Material" path="res://Assets/Multiplayer/props/materials/prop_concrete_gray.tres" id="3_material"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/cover_point.tscn" id="4_cover"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_low_wall"]
+size = Vector3(5, 1.2, 0.45)
+
+[sub_resource type="BoxShape3D" id="BoxShape_low_wall"]
+size = Vector3(5, 1.2, 0.45)
+
+[node name="LowWall" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+prop_name = "Muro bajo"
+prop_id = &"cover_low_wall"
+tactical_use = 4
+library_config = ExtResource("2_config")
+cover_height = 1.2
+peek_priority = 1.6
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.6, 0)
+mesh = SubResource("BoxMesh_low_wall")
+material_override = ExtResource("3_material")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.6, 0)
+shape = SubResource("BoxShape_low_wall")
+
+[node name="PeekFront" parent="." instance=ExtResource("4_cover")]
+position = Vector3(0, 0, 0.95)
+cover_type = 3
+coverage_radius = 2.2
+priority = 1.6
+facing_direction = Vector3(0, 0, 1)
+
+[node name="PeekBack" parent="." instance=ExtResource("4_cover")]
+position = Vector3(0, 0, -0.95)
+cover_type = 3
+coverage_radius = 2.2
+priority = 1.6
+facing_direction = Vector3(0, 0, -1)

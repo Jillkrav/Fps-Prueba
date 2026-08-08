@@ -1,0 +1,68 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/window_wall_prop.gd" id="1_script"]
+[ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
+[ext_resource type="Material" path="res://Assets/Multiplayer/props/materials/prop_metal_blue.tres" id="3_material"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/cover_point.tscn" id="4_cover"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_side"]
+size = Vector3(2, 3, 0.4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_top"]
+size = Vector3(2, 0.8, 0.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape_side"]
+size = Vector3(2, 3, 0.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape_top"]
+size = Vector3(2, 0.8, 0.4)
+
+[node name="WindowWall" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+prop_name = "Pared con ventana"
+prop_id = &"wall_window"
+tactical_use = 5
+library_config = ExtResource("2_config")
+opening_size = Vector2(2, 1.4)
+peek_priority = 2.5
+
+[node name="VisualLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-2, 1.5, 0)
+mesh = SubResource("BoxMesh_side")
+material_override = ExtResource("3_material")
+
+[node name="VisualRight" type="MeshInstance3D" parent="."]
+position = Vector3(2, 1.5, 0)
+mesh = SubResource("BoxMesh_side")
+material_override = ExtResource("3_material")
+
+[node name="VisualTop" type="MeshInstance3D" parent="."]
+position = Vector3(0, 2.6, 0)
+mesh = SubResource("BoxMesh_top")
+material_override = ExtResource("3_material")
+
+[node name="CollisionLeft" type="CollisionShape3D" parent="."]
+position = Vector3(-2, 1.5, 0)
+shape = SubResource("BoxShape_side")
+
+[node name="CollisionRight" type="CollisionShape3D" parent="."]
+position = Vector3(2, 1.5, 0)
+shape = SubResource("BoxShape_side")
+
+[node name="CollisionTop" type="CollisionShape3D" parent="."]
+position = Vector3(0, 2.6, 0)
+shape = SubResource("BoxShape_top")
+
+[node name="PeekFront" parent="." instance=ExtResource("4_cover")]
+position = Vector3(0, 0, 1.0)
+coverage_radius = 1.2
+priority = 2.5
+facing_direction = Vector3(0, 0, 1)
+
+[node name="PeekBack" parent="." instance=ExtResource("4_cover")]
+position = Vector3(0, 0, -1.0)
+coverage_radius = 1.2
+priority = 2.5
+facing_direction = Vector3(0, 0, -1)

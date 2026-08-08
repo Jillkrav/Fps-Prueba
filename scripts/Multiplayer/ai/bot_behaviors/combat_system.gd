@@ -773,8 +773,22 @@ func _has_line_of_sight_to_target() -> bool:
 	if not is_instance_valid(target) or not target.is_inside_tree():
 		return false
 	
-	# Posición de origen: cabeza del bot (o centro del cuerpo si no hay cabeza)
-	var origin: Vector3 = _head_node.global_position if _head_node and is_instance_valid(_head_node) else bot.global_position + Vector3.UP * 0.9
+	# Los personajes solo pueden recibir fuego si PerceptionSystem los confirmó
+	# visibles desde el arma durante el tick actual. Esto unifica detección y
+	# disparo: no existe un camino alternativo que permita wallhack.
+	if target is CharacterBody3D:
+		var perception: PerceptionSystem = bot.perception_sys
+		if perception == null:
+			return false
+		for entry: Dictionary in perception.visible_enemies:
+			if entry.get("body", null) == target:
+				return true
+		return false
+
+	# Para objetivos estáticos (por ejemplo, el core) se conserva la comprobación
+	# física directa; se origina en la boca del arma para coincidir con el disparo.
+	var weapon: Weapon = _get_weapon()
+	var origin: Vector3 = weapon._get_muzzle_position() if weapon != null and is_instance_valid(weapon) else (_head_node.global_position if _head_node and is_instance_valid(_head_node) else bot.global_position + Vector3.UP * 0.9)
 	
 	# Posición del objetivo: centro del torso (consistente con _get_effective_target)
 	var target_pos: Vector3 = target.global_position

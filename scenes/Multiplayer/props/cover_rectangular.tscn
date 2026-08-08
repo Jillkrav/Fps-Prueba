@@ -1,0 +1,44 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/cover_rectangular_prop.gd" id="1_script"]
+[ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
+[ext_resource type="Material" path="res://Assets/Multiplayer/props/materials/prop_hazard_red.tres" id="3_material"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/cover_point.tscn" id="4_cover"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_rect"]
+size = Vector3(4, 2.3, 1.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape_rect"]
+size = Vector3(4, 2.3, 1.6)
+
+[node name="CoverRectangular" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+prop_name = "Cubo rectangular de cobertura"
+prop_id = &"cover_rectangular"
+tactical_use = 3
+library_config = ExtResource("2_config")
+cover_priority = 1.1
+max_occupants = 2
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.15, 0)
+mesh = SubResource("BoxMesh_rect")
+material_override = ExtResource("3_material")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1.15, 0)
+shape = SubResource("BoxShape_rect")
+
+[node name="CoverFront" parent="." instance=ExtResource("4_cover")]
+position = Vector3(0, 0, 1.35)
+coverage_radius = 1.8
+priority = 1.1
+facing_direction = Vector3(0, 0, 1)
+
+[node name="CoverBack" parent="." instance=ExtResource("4_cover")]
+position = Vector3(0, 0, -1.35)
+coverage_radius = 1.8
+priority = 1.1
+facing_direction = Vector3(0, 0, -1)

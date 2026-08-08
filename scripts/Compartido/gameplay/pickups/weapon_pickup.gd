@@ -11,6 +11,7 @@ class_name WeaponPickup
 # ─── Inicialización ───────────────────────────────────────────────────
 func _ready() -> void:
 	pickup_type = Type.WEAPON
+	respawn_on_pickup = false
 	# La scene tree se inicializa, luego llamamos a super._ready()
 	# que ejecuta _update_visual()
 	super()

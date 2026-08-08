@@ -98,6 +98,9 @@ func exit(_next_state: BotState) -> void:
 
 ## Decide a qué estado volver después del stun.
 func _return_to_previous_state() -> void:
+	if bot != null and bot.tactical_sys != null and bot.tactical_sys.should_force_flee():
+		change_state(BotState.StateType.FLEEING)
+		return
 	# Si tenemos un objetivo enemigo válido → combat
 	if has_target() and not is_target_dead():
 		change_state(BotState.StateType.COMBAT)

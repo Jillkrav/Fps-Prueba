@@ -170,19 +170,20 @@ func _process(_delta: float) -> void:
 		else:
 			stuck_label.text = "Stuck: --"
 		
-		# ── COOLDOWN DE PUNTO SEMÁNTICO (FASE 7) ──────────────
-		var roam_state = null
-		var dec_sys = _npc.get("decision_sys")
-		if dec_sys:
+		# ── CAMINO AUTHORED ACTIVO ─────────────────────────────
+		var roam_state: Variant = null
+		var dec_sys: Variant = _npc.get("decision_sys")
+		if dec_sys != null:
 			roam_state = dec_sys.get("current_state")
-		if roam_state and "state_name" in roam_state and roam_state.state_name == "roaming":
-			var cooldown_count: int = roam_state._semantic_cooldowns.size() if "_semantic_cooldowns" in roam_state else 0
-			if cooldown_count > 0:
-				cooldown_label.text = "CubosCD: %d" % cooldown_count
+		if roam_state != null and roam_state.get("state_name") == "roaming":
+			var navigator: Variant = roam_state.get("_route_navigator")
+			if navigator != null and navigator.has_active_route():
+				var route: CaminoBot = navigator.get_current_route()
+				cooldown_label.text = "Camino: %s" % route.name if route != null else "Camino: --"
 			else:
-				cooldown_label.text = "CubosCD: 0"
+				cooldown_label.text = "Camino: directo"
 		else:
-			cooldown_label.text = "Cubo: --"
+			cooldown_label.text = "Camino: --"
 	elif _player and is_instance_valid(_player):
 		move_label.text = "Mov: --"
 		stuck_label.text = "Stuck: --"

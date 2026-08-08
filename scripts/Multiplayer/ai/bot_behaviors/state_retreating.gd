@@ -63,6 +63,9 @@ func enter(_previous_state: BotState) -> void:
 func execute(_delta: float) -> void:
 	if bot == null or bot.is_dead:
 		return
+	if bot.tactical_sys != null and bot.tactical_sys.should_force_flee():
+		change_state(BotState.StateType.FLEEING)
+		return
 
 	# ── 1. Verificar transiciones ──
 	if _check_transitions():

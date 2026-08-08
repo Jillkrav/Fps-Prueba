@@ -48,6 +48,9 @@ var combat_sys: CombatSystem = null
 ## Sistema de armas (FASE 5). Gestiona selección táctica y perfiles AI.
 var weapon_sys: WeaponSystem = null
 
+## Sistema táctico de supervivencia. Evalúa recursos, presión y modo Huir.
+var tactical_sys: TacticalUtilitySystem = null
+
 # ── Estado del NPC ────────────────────────
 var is_dead: bool = false
 var max_health: float = 100.0
@@ -61,6 +64,16 @@ var is_frozen: bool = false
 var _frozen_timer: SceneTreeTimer = null
 
 # (Jump-to-cube variables removed — now handled externally by controllers)
+
+## Compatibilidad para triggers SaltoInicio/SaltoFin. La física real vive en
+## MovementSystem, que conserva la propiedad exclusiva de velocity.
+func start_authored_jump(finish: SaltoFin) -> bool:
+	return movement_sys != null and movement_sys.start_authored_jump(finish)
+
+
+func finish_authored_jump(finish: SaltoFin, _next_path: NodePath = NodePath()) -> void:
+	if movement_sys != null:
+		movement_sys.finish_authored_jump(finish)
 
 # ── Core / Objective System ──────────────
 var _enemy_core: Node3D = null
@@ -80,6 +93,10 @@ var _weapon: Weapon = null
 const DROPPED_WEAPON: PackedScene = preload("res://scenes/Compartido/pickups/dropped_weapon.tscn")
 const DEBUG_OVERLAY: PackedScene = preload("res://scenes/Multiplayer/objetos/bots/bot_debug_overlay.tscn")
 var _debug_overlay: Node3D = null
+
+# ── Visual de modo cobarde ─────────────────
+var _coward_light: OmniLight3D = null
+var _coward_material_overrides: Dictionary = {}
 
 # ── Pickup system ─────────────────────────
 var _pickup_target: Node = null
@@ -217,6 +234,10 @@ func _ready() -> void:
 	weapon_sys.name = "WeaponSystem"
 	add_child(weapon_sys)
 	
+	tactical_sys = TacticalUtilitySystem.new()
+	tactical_sys.name = "TacticalUtilitySystem"
+	add_child(tactical_sys)
+	
 	combat_sys = CombatSystem.new()
 	combat_sys.name = "CombatSystem"
 	add_child(combat_sys)
@@ -232,13 +253,6 @@ func _ready() -> void:
 	
 	# ── Inicializar rol táctico ──
 	_tactical_role = TacticalRole.for_npc(self)
-	
-	# ── Cargar puntos semánticos del mapa ────────────────────
-	# Los puntos semánticos (SemanticPointMarker) se cargan una
-	# sola vez para todos los bots. El primer bot que se inicializa
-	# los carga; los siguientes ya los encuentran cargados.
-	if not NavigationSystem._semantic_points_loaded:
-		NavigationSystem.load_semantic_points()
 	
 	# Encontrar core enemigo como objetivo principal
 	call_deferred("_find_enemy_core")
@@ -312,6 +326,14 @@ func _add_fsm_states() -> void:
 	var hit: BotState = load("res://Scripts/Multiplayer/ai/bot_behaviors/state_hit.gd").new()
 	hit.name = "State_Hit"
 	decision_sys.add_child(hit)
+	
+	var fleeing: BotState = load("res://Scripts/Multiplayer/ai/bot_behaviors/state_fleeing.gd").new()
+	fleeing.name = "State_Fleeing"
+	decision_sys.add_child(fleeing)
+	
+	var cover_reload: BotState = load("res://Scripts/Multiplayer/ai/bot_behaviors/state_cover_reload.gd").new()
+	cover_reload.name = "State_CoverReload"
+	decision_sys.add_child(cover_reload)
 	
 
 
@@ -388,6 +410,10 @@ func _physics_process(delta: float) -> void:
 	if ai_tick:
 		_check_core_proximity()
 	
+	# ── FASE 2c: Necesidades tácticas (solo en ai_tick) ──
+	if ai_tick and tactical_sys:
+		tactical_sys.update(delta)
+	
 	# ── FASE 3: Decisión FSM (solo en ai_tick) ────────────
 	if ai_tick and decision_sys:
 		decision_sys.process(delta)
@@ -455,12 +481,24 @@ func _check_for_pickups(delta: float) -> bool:
 			return true
 		return false
 	
-	# Prioridad 2: Baja munición
-	var ammo_pct: float = 1.0
-	if _weapon and _weapon.max_ammo > 0:
-		ammo_pct = float(_weapon.ammo_in_mag + _weapon.reserve_ammo) / float(_weapon.max_ammo + _weapon.clip_size)
+	# Prioridad 2: Salud baja → buscar un botiquín (Type.HEALTH = 1)
+	var health_pct: float = _get_health_pct()
+	if health_pct < 0.5:
+		var medkit = _pickup_manager.get_nearest_pickup(global_position, 1, 12.0)
+		if medkit:
+			_pickup_target = medkit
+			_move_to_pickup()
+			return true
 	
+	# Prioridad 3: Baja munición → primero un paquete de munición (Type.AMMO = 2),
+	#               luego un arma en el suelo (que también da munición).
+	var ammo_pct: float = _get_ammo_pct()
 	if ammo_pct < 0.5:
+		var ammo_pack = _pickup_manager.get_nearest_pickup(global_position, 2, 12.0)
+		if ammo_pack:
+			_pickup_target = ammo_pack
+			_move_to_pickup()
+			return true
 		var weapon_pickup = _pickup_manager.get_nearest_pickup(global_position, 0, 10.0)
 		if weapon_pickup:
 			_pickup_target = weapon_pickup
@@ -468,6 +506,33 @@ func _check_for_pickups(delta: float) -> bool:
 			return true
 	
 	return false
+
+
+## Porcentaje de salud del bot (0.0 a 1.0).
+func _get_health_pct() -> float:
+	if max_health <= 0.0:
+		return 1.0
+	return float(current_health) / float(max_health)
+
+
+## Porcentaje de munición del arma equipada (0.0 a 1.0).
+func _get_ammo_pct() -> float:
+	if not _weapon or not is_instance_valid(_weapon):
+		return 1.0
+	if _weapon.max_ammo <= 0:
+		return 1.0
+	return float(_weapon.ammo_in_mag + _weapon.reserve_ammo) / float(_weapon.max_ammo + _weapon.clip_size)
+
+
+## Reabastece la munición del arma equipada (llamado por AmmoPack).
+func refill_ammo(amount: int) -> void:
+	if _weapon and is_instance_valid(_weapon):
+		_weapon.reserve_ammo = min(_weapon.reserve_ammo + amount, _weapon.max_ammo)
+		if weapon_sys:
+			weapon_sys.sync_from_current_weapon()
+		_pickup_target = null
+		if tactical_sys:
+			tactical_sys.notify_resource_collected(int(Pickup.Type.AMMO))
 
 
 ## Navega hacia el pickup objetivo usando MovementSystem.
@@ -489,7 +554,15 @@ func _on_pickup_area_entered(pickup: Node) -> void:
 		return
 	if not is_instance_valid(pickup):
 		return
+	var ptype: int = pickup.get("pickup_type") if "pickup_type" in pickup else -1
+	# No desperdiciar: si está a tope de salud/municion, ignorar el pickup.
+	if ptype == int(Pickup.Type.HEALTH) and _get_health_pct() >= 0.99:
+		return
+	if ptype == int(Pickup.Type.AMMO) and _get_ammo_pct() >= 0.99:
+		return
 	pickup.pick_up(self)
+	if tactical_sys:
+		tactical_sys.notify_resource_collected(ptype)
 
 
 ## Recibe un arma recogida del suelo y la equipa.
@@ -552,9 +625,19 @@ func take_damage(amount: float, zone: String = "Torso", killer_id: int = -1) -> 
 	if is_dead: return
 	var mult: float = 2.0 if zone == "Cabeza" else 1.0
 	current_health -= amount * mult
+	current_health = clampf(current_health, 0.0, max_health)
 	
 	# ── Hit direction: calcular vector desde el atacante ──
 	_compute_hit_direction(killer_id)
+	var attacker_node: Node3D = null
+	if killer_id > 0:
+		var attacker_instance: Object = instance_from_id(killer_id)
+		if attacker_instance is Node3D and is_instance_valid(attacker_instance):
+			attacker_node = attacker_instance as Node3D
+	if tactical_sys:
+		tactical_sys.notify_damage(attacker_node)
+	if decision_sys:
+		decision_sys.notify_take_damage(amount * mult, attacker_node)
 	
 	# ── Hook: notificar al rol del daño recibido (FASE 7) ──
 	if _tactical_role and killer_id > 0:
@@ -587,6 +670,8 @@ func take_damage(amount: float, zone: String = "Torso", killer_id: int = -1) -> 
 func die(killer_id: int = -1) -> void:
 	if is_dead: return
 	is_dead = true
+	if tactical_sys:
+		tactical_sys.reset()
 	_drop_weapon()
 	
 	if is_instance_valid(MatchManager):
@@ -804,6 +889,48 @@ func _aplicar_texturas_skin(skin_data: SkinData, model_instance: Node3D) -> void
 	skin_data.apply_textures_to(model_instance)
 
 
+## Activa o limpia la señal visual temporal del modo cobarde.
+func set_coward_visual(enabled: bool) -> void:
+	if enabled:
+		if _coward_light == null:
+			_coward_light = OmniLight3D.new()
+			_coward_light.name = "CowardGlow"
+			_coward_light.light_color = Color(1.0, 0.76, 0.12)
+			_coward_light.light_energy = 3.0
+			_coward_light.omni_range = 4.0
+			_coward_light.shadow_enabled = false
+			add_child(_coward_light)
+		_apply_coward_materials(true)
+		return
+	if _coward_light != null and is_instance_valid(_coward_light):
+		_coward_light.queue_free()
+	_coward_light = null
+	_apply_coward_materials(false)
+
+
+func _apply_coward_materials(enabled: bool) -> void:
+	var meshes: Array[Node] = find_children("*", "MeshInstance3D", true, false)
+	if enabled:
+		for node: Node in meshes:
+			var mesh: MeshInstance3D = node as MeshInstance3D
+			if mesh == null or mesh.mesh == null:
+				continue
+			if not _coward_material_overrides.has(mesh):
+				_coward_material_overrides[mesh] = mesh.get_surface_override_material(0)
+			var glow_material: StandardMaterial3D = StandardMaterial3D.new()
+			glow_material.albedo_color = Color(1.0, 0.72, 0.08)
+			glow_material.emission_enabled = true
+			glow_material.emission = Color(1.0, 0.3, 0.02)
+			glow_material.emission_energy_multiplier = 2.5
+			mesh.set_surface_override_material(0, glow_material)
+		return
+	for mesh_key: Variant in _coward_material_overrides.keys():
+		var mesh: MeshInstance3D = mesh_key as MeshInstance3D
+		if mesh != null and is_instance_valid(mesh):
+			mesh.set_surface_override_material(0, _coward_material_overrides[mesh_key])
+	_coward_material_overrides.clear()
+
+
 # ─────────────────────────────────────────
 # RESPAWN
 # ─────────────────────────────────────────
@@ -812,6 +939,8 @@ func respawn() -> void:
 	is_dead = false
 	is_frozen = false  # Seguridad: descongelar siempre al respawnear
 	current_health = max_health
+	if tactical_sys:
+		tactical_sys.reset()
 	
 	set_physics_process(true)
 	set_process(true)
@@ -826,6 +955,8 @@ func respawn() -> void:
 	_team_objective = Vector3.ZERO
 	_pickup_target = null
 	_pickup_check_timer = 0.0
+	if tactical_sys:
+		tactical_sys.reset()
 	
 	if perception_sys:
 		perception_sys.reset()

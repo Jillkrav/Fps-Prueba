@@ -23,8 +23,12 @@ enum Type { WEAPON, HEALTH, AMMO, ARMOR, SPECIAL }
 # ─── Configuración exportada ──────────────────────────────────────────
 ## Tipo de pickup (WEAPON, HEALTH, AMMO, etc.)
 @export var pickup_type: int = Type.WEAPON
-## Segundos antes de desaparecer automáticamente (0 = permanente)
-@export var lifetime: float = 30.0
+## Segundos antes de desaparecer automáticamente (0 = permanente).
+@export var lifetime: float = 0.0
+## Si está activo, el pickup se oculta y reaparece en su punto inicial tras recogerlo.
+@export var respawn_on_pickup: bool = true
+## Tiempo de reaparición para los recursos persistentes del mapa.
+@export_range(1.0, 120.0, 0.5) var respawn_delay: float = 10.0
 
 # ─── Datos específicos del contenido ──────────────────────────────────
 ## Diccionario genérico con los datos del pickup.
@@ -34,8 +38,12 @@ enum Type { WEAPON, HEALTH, AMMO, ARMOR, SPECIAL }
 var pickup_data: Dictionary = {}
 
 # ─── Señales ──────────────────────────────────────────────────────────
-## Se emite cuando alguien recoge el pickup, justo antes de destruirlo.
+## Se emite cuando alguien recoge el pickup.
 signal picked_up(pickup: Node, picker: Node)
+## Se emite cuando el pickup inicia su cuenta de reaparición.
+signal respawn_started(pickup: Node, delay: float)
+## Se emite cuando el pickup vuelve a estar disponible.
+signal respawned(pickup: Node)
 
 # ─── Referencias a nodos hijo ─────────────────────────────────────────
 @onready var pickup_area: Area3D = $PickupArea
@@ -43,8 +51,20 @@ signal picked_up(pickup: Node, picker: Node)
 @onready var label_3d: Label3D = $Label3D
 @onready var _pickup_manager = get_node("/root/PickupManager")
 
+var _spawn_transform: Transform3D = Transform3D.IDENTITY
+var _is_available: bool = true
+var _respawn_timer: Timer = null
+var _item_mesh: MeshInstance3D = null
+var _collision_shape: CollisionShape3D = null
+
 # ─── Inicialización ───────────────────────────────────────────────────
 func _ready() -> void:
+	_spawn_transform = global_transform
+	_item_mesh = get_node_or_null("ItemMesh") as MeshInstance3D
+	_collision_shape = get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if pickup_type == Type.WEAPON:
+		respawn_on_pickup = false
+	_setup_respawn_timer()
 	# Registrar en el gestor global de pickups
 	if _pickup_manager:
 		_pickup_manager.register(self)
@@ -103,20 +123,26 @@ func _update_visual() -> void:
 # ─── Recoger el pickup ────────────────────────────────────────────────
 ## Llamado cuando un personaje válido toca el área de recogida.
 func pick_up(picker: Node) -> void:
-	if not is_instance_valid(picker):
+	if not _is_available or not is_instance_valid(picker):
 		return
 
 	# Llamar a la lógica específica del subtipo
 	_on_picked_up(picker)
 	picked_up.emit(self, picker)
 
-	# Limpieza
+	if respawn_on_pickup:
+		_begin_respawn()
+		return
+
+	# Limpieza para pickups desechables (por ejemplo armas del suelo).
 	if _pickup_manager:
 		_pickup_manager.unregister(self)
 	queue_free()
 
 # ─── Detección por área ───────────────────────────────────────────────
 func _on_area_body_entered(body: Node) -> void:
+	if not _is_available:
+		return
 	if not body is CharacterBody3D:
 		return
 
@@ -139,6 +165,78 @@ func _on_area_body_exited(body: Node) -> void:
 	
 	if body.has_method("_on_pickup_area_exited"):
 		body._on_pickup_area_exited(self)
+
+# ─── Reaparición de recursos del mapa ─────────────────────────────────
+func _setup_respawn_timer() -> void:
+	if not respawn_on_pickup:
+		return
+	_respawn_timer = Timer.new()
+	_respawn_timer.name = "RespawnTimer"
+	_respawn_timer.one_shot = true
+	_respawn_timer.timeout.connect(_on_respawn_timeout)
+	add_child(_respawn_timer)
+
+
+func _begin_respawn() -> void:
+	if not _is_available:
+		return
+	_is_available = false
+	freeze = true
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	collision_layer = 0
+	collision_mask = 0
+	if _collision_shape != null:
+		_collision_shape.set_deferred("disabled", true)
+	if pickup_area != null:
+		pickup_area.set_deferred("monitoring", false)
+		pickup_area.set_deferred("monitorable", false)
+	if _item_mesh != null:
+		_item_mesh.hide()
+	# El rótulo permanece visible como indicador del respawn.
+	_update_respawn_label(respawn_delay)
+	if _pickup_manager:
+		_pickup_manager.unregister(self)
+	if _respawn_timer != null:
+		_respawn_timer.start(respawn_delay)
+	respawn_started.emit(self, respawn_delay)
+
+
+func _on_respawn_timeout() -> void:
+	global_transform = _spawn_transform
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	freeze = false
+	sleeping = false
+	gravity_scale = 1.0
+	collision_layer = 1
+	collision_mask = 1
+	if _collision_shape != null:
+		_collision_shape.set_deferred("disabled", false)
+	if pickup_area != null:
+		pickup_area.set_deferred("monitoring", true)
+		pickup_area.set_deferred("monitorable", true)
+	if _item_mesh != null:
+		_item_mesh.show()
+	_is_available = true
+	call_deferred("_disable_player_collision")
+	_update_visual()
+	if _pickup_manager:
+		_pickup_manager.register(self)
+	respawned.emit(self)
+
+
+func _process(_delta: float) -> void:
+	if not _is_available and _respawn_timer != null:
+		_update_respawn_label(_respawn_timer.time_left)
+
+
+func _update_respawn_label(seconds_left: float) -> void:
+	if label_3d == null:
+		return
+	label_3d.text = "Reaparece: %02d s" % maxi(0, ceili(seconds_left))
+	label_3d.modulate = Color(0.75, 0.75, 0.82)
+
 
 # ─── Transición a FASE 2: desactivar colisión con personajes ──────────
 ## Detecta cuando el RigidBody entra en reposo (sleeping) y desactiva
@@ -176,6 +274,8 @@ func _on_physics_body_entered(_body: Node) -> void:
 
 # ─── Despawn por tiempo ───────────────────────────────────────────────
 func _on_despawn_timeout() -> void:
+	if respawn_on_pickup:
+		return
 	if _pickup_manager:
 		_pickup_manager.unregister(self)
 	queue_free()

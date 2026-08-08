@@ -2,14 +2,17 @@
 
 [ext_resource type="PackedScene" uid="uid://c5b3j7nqv6dnc" path="res://scenes/Multiplayer/objetos/objectives/core.tscn" id="1_p4o1l"]
 [ext_resource type="PackedScene" uid="uid://dg0u4rsk2u6o7" path="res://scenes/Compartido/player.tscn" id="1_player"]
-[ext_resource type="PackedScene" uid="uid://b7kxkiq2bk3y8" path="res://scenes/Multiplayer/objetos/puntossem/patrol_point.tscn" id="2_hdv2m"]
 [ext_resource type="PackedScene" uid="uid://bsh2o1h3r4mno" path="res://scenes/Compartido/pickups/resupply_box.tscn" id="2_resupply"]
 [ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/Compartido/hud.tscn" id="4_hud"]
 [ext_resource type="PackedScene" uid="uid://dyutk26wqfg3y" path="res://scenes/Multiplayer/objetos/team_weapon_selector.tscn" id="5_selector"]
 [ext_resource type="Script" uid="uid://bu7be1i0jbcht" path="res://Scripts/Multiplayer/match/spawner.gd" id="6"]
-[ext_resource type="PackedScene" uid="uid://b7f3m2xq5lag1" path="res://scenes/Multiplayer/objetos/puntossem/assault_point.tscn" id="7_l2lx5"]
-[ext_resource type="PackedScene" uid="uid://c6pwbvjjd3nky" path="res://scenes/Multiplayer/objetos/puntossem/freeze_cube.tscn" id="8_646el"]
-[ext_resource type="PackedScene" uid="uid://cq06glnmavlmp" path="res://scenes/Multiplayer/objetos/puntossem/alternate_point.tscn" id="8_d31ot"]
+[ext_resource type="PackedScene" path="res://scenes/Compartido/props/Coverturas 1 sentido/one_way_low_wall.tscn" id="8_xocmb"]
+[ext_resource type="PackedScene" uid="uid://c5wvk6rnwgry" path="res://scenes/Compartido/pickups/ammo_pack.tscn" id="11_r14vl"]
+[ext_resource type="PackedScene" uid="uid://brrao005ro4vd" path="res://scenes/Compartido/pickups/medkit.tscn" id="12_qr7xf"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/saltos/salto_inicio.tscn" id="13_87nk2"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/flanqueador/camino_flanqueador.tscn" id="14_xocmb"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/saltos/salto_fin.tscn" id="14_xtf5g"]
+[ext_resource type="PackedScene" uid="uid://m2a7hb06js7e" path="res://scenes/Multiplayer/caminos/asalto/camino_asalto_1.tscn" id="16_fav8q"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_2f"]
 sky_horizon_color = Color(0.45, 0.55, 0.7, 1)
@@ -75,7 +78,7 @@ navigation_mesh = SubResource("NavMesh_2f")
 [node name="Geometry" type="Node3D" parent="NavigationRegion3D" unique_id=1531487936]
 
 [node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=806239676]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12207031, -3.3400993, 31.906868)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.116233826, -3.3836622, 31.889603)
 use_collision = true
 size = Vector3(55.75586, 6.851074, 127.813736)
 material = SubResource("Mat_ground")
@@ -196,78 +199,6 @@ material = SubResource("Mat_bwall")
 
 [node name="Patrullaje y defensa" type="Node3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=884488829]
 
-[node name="PatrolPoint" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1148092875 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5.776085)
-
-[node name="PatrolPoint2" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=285454388 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20.49974)
-
-[node name="PatrolPoint3" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=166757229 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.585285, 0, -20.49974)
-
-[node name="PatrolPoint4" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=815208553 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.585285, 0, -20.49974)
-
-[node name="PatrolPoint5" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=503208375 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.585285, 0, -49.67932)
-
-[node name="PatrolPoint6" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1541187637 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36901665, 0, -49.67932)
-
-[node name="PatrolPoint7" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1742056598 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.032265, 0, -29.25174)
-
-[node name="PatrolPoint8" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=680334609 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.722164, 0, -47.751495)
-
-[node name="PatrolPoint9" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1202808264 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.722164, 5.7575903, -34.565765)
-
-[node name="PatrolPoint10" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1621909625 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.722164, 6.8233185, -20.558792)
-
-[node name="PatrolPoint11" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1335342780 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.722164, 5.6771293, 1.4861679)
-
-[node name="PatrolPoint12" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=334812892 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.627304, 5.128163, 2.2099953)
-
-[node name="PatrolPoint13" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=78604909 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.991234, 5.128163, 2.2099953)
-
-[node name="PatrolPoint14" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1504462408 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.556599, -0.5370959, 0.9562416)
-
-[node name="PatrolPoint15" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=668839491 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.154169, -0.15523875, 1.3675041)
-
-[node name="PatrolPoint16" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1753493036 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.444778, -0.15523875, 1.3675041)
-
-[node name="PatrolPoint17" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=516079595 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.444778, -0.15523875, -18.783226)
-
-[node name="PatrolPoint18" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=52029446 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.36776, 6.8233185, -28.686024)
-
-[node name="PatrolPoint19" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=1902941293 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.36776, 6.8233185, -49.066704)
-
-[node name="PatrolPoint20" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=182406181 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.288431, 6.8233185, -49.066704)
-
-[node name="PatrolPoint21" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=194854893 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.369387, 6.8233185, -49.066704)
-
-[node name="PatrolPoint22" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=979149783 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.369387, 6.8233185, -20.15768)
-
-[node name="PatrolPoint23" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=940539886 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9285402, 6.8233185, -20.15768)
-
-[node name="PatrolPoint24" parent="NavigationRegion3D/Geometry/BlueBase/Patrullaje y defensa" unique_id=362651645 instance=ExtResource("2_hdv2m")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9285402, 6.8233185, -6.094757)
-
 [node name="BlueWall18" type="CSGBox3D" parent="NavigationRegion3D/Geometry/BlueBase" unique_id=1956213881]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 24.493448, 31.578428, 41.070892)
 use_collision = true
@@ -308,12 +239,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, 0)
 use_collision = true
 size = Vector3(16, 0.1, 28)
 material = SubResource("Mat_bridge")
-
-[node name="BridgeRailW" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1816479463]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7414734, 1.1022277, 62.616226)
-use_collision = true
-size = Vector3(2.1119142, 2.0044556, 11.391207)
-material = SubResource("Mat_rail")
 
 [node name="BridgeRailE" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=368746883]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.867841, 2.957727, 66.76056)
@@ -499,6 +424,12 @@ use_collision = true
 size = Vector3(13.148633, 18.531555, 0.680357)
 material = SubResource("Mat_rail")
 
+[node name="Rampla3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge/Exterior" unique_id=220466708]
+transform = Transform3D(6.764924e-09, 1, -7.923193e-08, 0.9063077, -3.961597e-08, -0.42261824, -0.42261824, -6.894955e-08, -0.9063077, -1.7536131, -0.45508885, -5.3781104)
+use_collision = true
+size = Vector3(7.507617, 9.216726, 13.786964)
+material = SubResource("Mat_rail")
+
 [node name="Rampla" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=203152387]
 transform = Transform3D(-4.377216e-08, -1, 0, 0.9063077, -3.961597e-08, -0.42261824, 0.42261827, -1.8626451e-08, 0.90630776, -19.418892, -2.5, 17.408773)
 use_collision = true
@@ -518,9 +449,9 @@ size = Vector3(0.3, 5.715454, 12.961044)
 material = SubResource("Mat_rail")
 
 [node name="BridgeRailE3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=1482397467]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.270221, 2.957727, 11.1833)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.270221, 2.957727, 9.555428)
 use_collision = true
-size = Vector3(5.604663, 5.715454, 77.41482)
+size = Vector3(5.604663, 5.715454, 74.15907)
 material = SubResource("Mat_rail")
 
 [node name="BridgeRailW2" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Bridge" unique_id=305037325]
@@ -585,53 +516,68 @@ material = SubResource("Mat_cover")
 
 [node name="Covers" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=785890854]
 
-[node name="Cover3" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=614471535]
-transform = Transform3D(-1, 3.694646e-08, 7.923193e-08, 0, 0.9063077, -0.42261824, -8.742278e-08, -0.42261824, -0.9063077, 1.2334747, -0.656389, -5.995632)
-use_collision = true
-size = Vector3(17.602386, 7.3169975, 14.93539)
-material = SubResource("Mat_cover")
+[node name="OneWayLowWall6" parent="NavigationRegion3D/Geometry/Covers" unique_id=1082293985 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -22.059597, 0, 32.997284)
 
-[node name="Cover4" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1567737721]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6361041, 1, -26.242489)
-use_collision = true
-size = Vector3(7.342285, 2, 1.1656494)
-material = SubResource("Mat_cover")
+[node name="OneWayLowWall7" parent="NavigationRegion3D/Geometry/Covers" unique_id=1080782432 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-6.556708e-08, 0, 1.5, 0, 1.5, 0, -1.5, 0, -6.556708e-08, -15.392477, 0.057058573, 32.997284)
 
-[node name="Cover5" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1799535204]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.841825, 1, 72.38858)
-use_collision = true
-size = Vector3(10.525269, 2, 2)
-material = SubResource("Mat_cover")
+[node name="OneWayLowWall8" parent="NavigationRegion3D/Geometry/Covers" unique_id=1103977318 instance=ExtResource("8_xocmb")]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -14.290811, 4.625703, -16.596212)
 
-[node name="Cover6" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1780746118]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.127737, 1, 64.320946)
-use_collision = true
-size = Vector3(4, 2, 15.044189)
-material = SubResource("Mat_cover")
+[node name="OneWayLowWall9" parent="NavigationRegion3D/Geometry/Covers" unique_id=491158746 instance=ExtResource("8_xocmb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.454843, 0.05364585, -24.558279)
 
-[node name="Cover7" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1659876755]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.230385, 1, -8.033508)
-use_collision = true
-size = Vector3(4, 2, 2)
-material = SubResource("Mat_cover")
+[node name="OneWayLowWall10" parent="NavigationRegion3D/Geometry/Covers" unique_id=1719441979 instance=ExtResource("8_xocmb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.507942, 0, -6.5381193)
 
-[node name="Cover8" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=244653942]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.818676, 1, -7.405342)
-use_collision = true
-size = Vector3(4, 2, 2)
-material = SubResource("Mat_cover")
+[node name="OneWayLowWall11" parent="NavigationRegion3D/Geometry/Covers" unique_id=885853955 instance=ExtResource("8_xocmb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.797987, 0, 28.143806)
 
-[node name="Cover9" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=1082927969]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.755399, 4.623169, 35.541264)
-use_collision = true
-size = Vector3(4.810562, 9.246338, 2)
-material = SubResource("Mat_cover")
+[node name="OneWayLowWall5" parent="NavigationRegion3D/Geometry/Covers" unique_id=1684282299 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 13.533133, 0, 59.439095)
 
-[node name="Cover10" type="CSGBox3D" parent="NavigationRegion3D/Geometry/Covers" unique_id=645514469]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.935083, 4.1531982, 35.541264)
-use_collision = true
-size = Vector3(2.2796326, 8.3063965, 2)
-material = SubResource("Mat_cover")
+[node name="OneWayLowWall4" parent="NavigationRegion3D/Geometry/Covers" unique_id=1038729579 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 23.68771, -4.7683716e-07, 67.40203)
+
+[node name="OneWayLowWall14" parent="NavigationRegion3D/Geometry/Covers" unique_id=1920211527 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 25.863853, -4.7683716e-07, 86.61022)
+
+[node name="OneWayLowWall17" parent="NavigationRegion3D/Geometry/Covers" unique_id=1879061363 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-1.5320889, 0, 1.2855753, 0, 2, 0, -1.2855753, 0, -1.5320889, -18.6143, 0.041273594, 61.039276)
+
+[node name="OneWayLowWall18" parent="NavigationRegion3D/Geometry/Covers" unique_id=909020660 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, -7.2428875, -4.7683716e-07, 70.73102)
+
+[node name="OneWayLowWall12" parent="NavigationRegion3D/Geometry/Covers" unique_id=1215407529 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-2, 0, -1.7484555e-07, 0, 2, 0, 1.7484555e-07, 0, -2, -2.4229953, 4.6139936, 22.113777)
+
+[node name="OneWayLowWall13" parent="NavigationRegion3D/Geometry/Covers" unique_id=1515326828 instance=ExtResource("8_xocmb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.6595287, 11.763715)
+
+[node name="OneWayLowWall3" parent="NavigationRegion3D/Geometry/Covers" unique_id=1134910425 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -24.988693, 0.1255405, 66.696724)
+
+[node name="OneWayLowWall2" parent="NavigationRegion3D/Geometry/Covers" unique_id=1454331298 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -0.20811892, -0.06406593, 49.618366)
+
+[node name="OneWayLowWall" parent="NavigationRegion3D/Geometry/Covers" unique_id=1030904895 instance=ExtResource("8_xocmb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.102965, 0, -20.815926)
+
+[node name="OneWayLowWall" parent="NavigationRegion3D/Geometry/Covers/OneWayLowWall" unique_id=1280176881 instance=ExtResource("8_xocmb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.184723, 0, -30.06356)
+
+[node name="OneWayLowWall2" parent="NavigationRegion3D/Geometry/Covers/OneWayLowWall" unique_id=1677710647 instance=ExtResource("8_xocmb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.717012, 0, -52.880554)
+
+[node name="OneWayLowWall3" parent="NavigationRegion3D/Geometry/Covers/OneWayLowWall" unique_id=1265246242 instance=ExtResource("8_xocmb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.031654, 6.5460014, -14.46273)
+
+[node name="OneWayLowWall15" parent="NavigationRegion3D/Geometry/Covers" unique_id=1101971784 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 17.240171, -4.7683716e-07, 91.55532)
+
+[node name="OneWayLowWall16" parent="NavigationRegion3D/Geometry/Covers" unique_id=1802048835 instance=ExtResource("8_xocmb")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -14.982878, 0.1255405, 80.834465)
 
 [node name="RedBase" type="Node3D" parent="NavigationRegion3D/Geometry" unique_id=1490434569]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58123493, 101.88663)
@@ -740,272 +686,147 @@ transform = Transform3D(0.9999988, 0, 0, 0, 0.99999905, 0, 0, 0, 1, -33.009037, 
 
 [node name="TeamWeaponSelector" parent="." unique_id=1872856244 instance=ExtResource("5_selector")]
 
-[node name="Ai" type="Node3D" parent="." unique_id=1150736687]
+[node name="Puntos clave" type="Node3D" parent="." unique_id=1092747774]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58191514, 0)
 
-[node name="Base Azul" type="Node3D" parent="Ai" unique_id=1217508944]
+[node name="Municion y vida" type="Node3D" parent="Puntos clave" unique_id=44055859]
 
-[node name="Primer Piso" type="Node3D" parent="Ai/Base Azul" unique_id=1357802191]
+[node name="AmmoPack" parent="Puntos clave/Municion y vida" unique_id=1621690266 instance=ExtResource("11_r14vl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.2834024, 0, -2.0597405)
 
-[node name="AssaultPoint19" parent="Ai/Base Azul/Primer Piso" unique_id=1876631521 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.2989492, 1.3590517, -50.518894)
+[node name="Medkit" parent="Puntos clave/Municion y vida/AmmoPack" unique_id=109594212 instance=ExtResource("12_qr7xf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7719603, 0, 0)
 
-[node name="Segundo Piso" type="Node3D" parent="Ai/Base Azul" unique_id=1994495410]
+[node name="AmmoPack2" parent="Puntos clave/Municion y vida" unique_id=1818918651 instance=ExtResource("11_r14vl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.6170645, 0, 31.26543)
 
-[node name="Exterior" type="Node3D" parent="Ai" unique_id=996928611]
+[node name="Medkit" parent="Puntos clave/Municion y vida/AmmoPack2" unique_id=153213940 instance=ExtResource("12_qr7xf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2975044, 0, 2.093605)
 
-[node name="Primer piso" type="Node3D" parent="Ai/Exterior" unique_id=1601816754]
+[node name="AmmoPack3" parent="Puntos clave/Municion y vida" unique_id=2009352469 instance=ExtResource("11_r14vl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.052044, 0, 52.682213)
 
-[node name="Asalto" type="Node3D" parent="Ai/Exterior/Primer piso" unique_id=1125519627]
+[node name="Medkit" parent="Puntos clave/Municion y vida/AmmoPack3" unique_id=1194658138 instance=ExtResource("12_qr7xf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2130451, 0, 0)
 
-[node name="Amarillo" type="Node3D" parent="Ai/Exterior/Primer piso/Asalto" unique_id=711005319]
+[node name="AmmoPack4" parent="Puntos clave/Municion y vida" unique_id=1096429839 instance=ExtResource("11_r14vl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.813841, 0, 48.44742)
 
-[node name="AssaultPoint15" parent="Ai/Exterior/Primer piso/Asalto/Amarillo" unique_id=56831847 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.213903, 0.91028, 51.333614)
+[node name="Medkit" parent="Puntos clave/Municion y vida/AmmoPack4" unique_id=1428882652 instance=ExtResource("12_qr7xf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.0493698, 0, 0)
 
-[node name="Medio" type="Node3D" parent="Ai/Exterior/Primer piso/Asalto" unique_id=1345456867]
+[node name="AmmoPack5" parent="Puntos clave/Municion y vida" unique_id=1703766899 instance=ExtResource("11_r14vl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.601912, 6.174346, 46.9228)
 
-[node name="Pasillo" type="Node3D" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=121055842]
+[node name="Medkit" parent="Puntos clave/Municion y vida/AmmoPack5" unique_id=1203917074 instance=ExtResource("12_qr7xf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.8044434)
 
-[node name="AssaultPoint21" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=17599606 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.582233, 1.0259373, 12.019535)
+[node name="AmmoPack6" parent="Puntos clave/Municion y vida" unique_id=229154190 instance=ExtResource("11_r14vl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.995942, 6.174346, 25.25786)
 
-[node name="AssaultPoint22" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1330296100 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.526212, 1.0196333, 3.326602)
+[node name="Medkit" parent="Puntos clave/Municion y vida/AmmoPack6" unique_id=626530980 instance=ExtResource("12_qr7xf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1679096, 0, 0)
 
-[node name="AssaultPoint23" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=829990376 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.078294, 0.7530621, 17.49353)
+[node name="AmmoPack7" parent="Puntos clave/Municion y vida" unique_id=1674546989 instance=ExtResource("11_r14vl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.07349, 4.363558, -1.3813512)
 
-[node name="AssaultPoint24" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=774597529 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.078294, 0.97452486, 22.357471)
+[node name="Medkit" parent="Puntos clave/Municion y vida/AmmoPack7" unique_id=1165490350 instance=ExtResource("12_qr7xf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3910427, 0, 0)
 
-[node name="AssaultPoint10" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1482980113 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.096834, 0.8699441, -14.030834)
+[node name="AmmoPack8" parent="Puntos clave/Municion y vida" unique_id=1795611103 instance=ExtResource("11_r14vl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.67367, 6.5906467, -53.10563)
 
-[node name="AssaultPoint11" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1146707961 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.078294, 0.9313235, -2.6760533)
+[node name="Medkit" parent="Puntos clave/Municion y vida" unique_id=601759715 instance=ExtResource("12_qr7xf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.67367, 6.5906467, -51.650608)
 
-[node name="AssaultPoint25" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=2078828992 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.184859, 0.91590905, 29.054295)
+[node name="AmmoPack9" parent="Puntos clave/Municion y vida" unique_id=506374691 instance=ExtResource("11_r14vl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.192899, 0, 93.2097)
 
-[node name="AssaultPoint26" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=108019374 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.628279, 0.91590905, 29.054295)
+[node name="Medkit" parent="Puntos clave/Municion y vida/AmmoPack9" unique_id=1587722858 instance=ExtResource("12_qr7xf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2130451, 0, 0)
 
-[node name="AssaultPoint27" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1835118943 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.519325, 0.91590905, 35.353733)
+[node name="Saltos" type="Node3D" parent="Puntos clave" unique_id=450839325]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.87521696, -17.677883)
 
-[node name="AssaultPoint28" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1634925369 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.519325, 0.91590905, 40.142097)
+[node name="1" type="Node3D" parent="Puntos clave/Saltos" unique_id=1229051532]
 
-[node name="AssaultPoint20" parent="Ai/Exterior/Primer piso/Asalto/Medio/Pasillo" unique_id=1213658887 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.078294, 1.2122352, 6.767274)
+[node name="SaltoInicio" parent="Puntos clave/Saltos/1" unique_id=1330230449 instance=ExtResource("13_87nk2")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, 9.820918, 5.635209, -3.155529)
+jump_id = &"bridge_jump_a"
+target_finish = NodePath("../SaltoFin")
+enabled = false
 
-[node name="AssaultPoint13" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=606768668 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.421362, 1.4492514, -26.196066)
+[node name="SaltoInicio2" parent="Puntos clave/Saltos/1" unique_id=1934869552 instance=ExtResource("13_87nk2")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, 9.820918, 5.635209, 0.7409439)
+jump_id = &"bridge_jump_a"
+target_finish = NodePath("../SaltoFin")
+enabled = false
 
-[node name="AssaultPoint11" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1605636935 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.90834, 1.0165522, 43.579796)
+[node name="SaltoInicio3" parent="Puntos clave/Saltos/1" unique_id=1615978633 instance=ExtResource("13_87nk2")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, 9.820918, 5.635209, 4.3959675)
+jump_id = &"bridge_jump_a"
+target_finish = NodePath("../SaltoFin")
+enabled = false
 
-[node name="AssaultPoint7" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1391695044 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4771962, 0.9522519, 71.99747)
+[node name="SaltoInicio4" parent="Puntos clave/Saltos/1" unique_id=1539460199 instance=ExtResource("13_87nk2")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, 9.820918, 5.635209, 8.759026)
+jump_id = &"bridge_jump_b"
+target_finish = NodePath("../SaltoFin2")
+enabled = false
 
-[node name="AssaultPoint6" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=658282300 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.4973736, 0.66692793, 85.70353)
+[node name="SaltoInicio5" parent="Puntos clave/Saltos/1" unique_id=26829614 instance=ExtResource("13_87nk2")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, 9.820918, 5.635209, 12.907522)
+jump_id = &"bridge_jump_b"
+target_finish = NodePath("../SaltoFin2")
+enabled = false
 
-[node name="AssaultPoint18" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1818562333 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5650535, 0.9600487, -25.969496)
+[node name="SaltoFin" parent="Puntos clave/Saltos/1" unique_id=248935740 instance=ExtResource("14_xtf5g")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 4.0486526, 0, 0)
+jump_id = &"bridge_jump_a"
+enabled = false
 
-[node name="AssaultPoint8" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1754634872 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.248567, 0.4624405, 72.05673)
+[node name="SaltoFin2" parent="Puntos clave/Saltos/1" unique_id=1032704052 instance=ExtResource("14_xtf5g")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 4.0486526, 0, 10.8365755)
+jump_id = &"bridge_jump_b"
+enabled = false
 
-[node name="AssaultPoint9" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=856133681 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.248567, 1.1752234, 62.236122)
+[node name="Caminos" type="Node3D" parent="Puntos clave" unique_id=1260148535]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.736691, -19.508595)
 
-[node name="AssaultPoint10" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1334848714 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.248567, 1.0904214, 50.61536)
+[node name="Asalto" type="Node3D" parent="Puntos clave/Caminos" unique_id=956797661]
 
-[node name="AssaultPoint12" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=262469818 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6656542, 0.66692793, 89.68835)
+[node name="CaminoAsalto_1" parent="Puntos clave/Caminos/Asalto" unique_id=460758673 instance=ExtResource("16_fav8q")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06498802, -0.5256469, -10.607729)
 
-[node name="AssaultPoint19" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=293997045 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2253547, 1.3590517, -15.286223)
+[node name="DebugRoute" type="MeshInstance3D" parent="Puntos clave/Caminos/Asalto/CaminoAsalto_1" unique_id=1620620111]
 
-[node name="AssaultPoint20" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=1154368426 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.9702287, 0.68565726, -15.286223)
+[node name="@MeshInstance3D@175394" type="MeshInstance3D" parent="Puntos clave/Caminos/Asalto/CaminoAsalto_1" unique_id=1924511442]
 
-[node name="AssaultPoint21" parent="Ai/Exterior/Primer piso/Asalto/Medio" unique_id=905043437 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1476295, 2.2556977, -8.334297)
+[node name="@MeshInstance3D@190614" type="MeshInstance3D" parent="Puntos clave/Caminos/Asalto/CaminoAsalto_1" unique_id=1860389330]
+visible = false
 
-[node name="Verde" type="Node3D" parent="Ai/Exterior/Primer piso/Asalto" unique_id=863119839]
+[node name="@MeshInstance3D@192270" type="MeshInstance3D" parent="Puntos clave/Caminos/Asalto/CaminoAsalto_1" unique_id=183444268]
+visible = false
 
-[node name="Segundo piso" type="Node3D" parent="Ai/Exterior" unique_id=54808831]
+[node name="@MeshInstance3D@193974" type="MeshInstance3D" parent="Puntos clave/Caminos/Asalto/CaminoAsalto_1" unique_id=91428899]
+visible = false
 
-[node name="Asalto" type="Node3D" parent="Ai/Exterior/Segundo piso" unique_id=1084134087]
+[node name="@MeshInstance3D@194050" type="MeshInstance3D" parent="Puntos clave/Caminos/Asalto/CaminoAsalto_1" unique_id=1974086037]
+visible = false
 
-[node name="AssaultPoint17" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=834367749 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.950656, 6.457164, -26.67728)
+[node name="Flanco" type="Node3D" parent="Puntos clave/Caminos" unique_id=1630076169]
 
-[node name="AssaultPoint12" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=40778958 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.745243, 6.457164, 2.0457196)
+[node name="CaminoFlanqueador" parent="Puntos clave/Caminos/Flanco" unique_id=590370676 instance=ExtResource("14_xocmb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.643429, 0, -10.966139)
 
-[node name="AssaultPoint14" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=697907782 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.517698, 4.5489264, 18.840649)
+[node name="DebugRoute" type="MeshInstance3D" parent="Puntos clave/Caminos/Flanco/CaminoFlanqueador" unique_id=368754225]
+visible = false
 
-[node name="AssaultPoint13" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=524914504 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.692581, 6.457164, 24.36497)
+[node name="@MeshInstance3D@192271" type="MeshInstance3D" parent="Puntos clave/Caminos/Flanco/CaminoFlanqueador" unique_id=1658261800]
+visible = false
 
-[node name="AssaultPoint21" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1145013390 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.442589, 6.457164, 32.567154)
+[node name="@MeshInstance3D@193975" type="MeshInstance3D" parent="Puntos clave/Caminos/Flanco/CaminoFlanqueador" unique_id=859839485]
+visible = false
 
-[node name="AssaultPoint22" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1738940683 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4565802, 6.457164, 47.947536)
-
-[node name="AssaultPoint23" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=324849276 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.96579, 6.457164, 53.916225)
-
-[node name="AssaultPoint29" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1528149334 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.96579, 6.457164, 75.21725)
-
-[node name="AssaultPoint11" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1004085772 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.324316, 5.3032136, -29.37386)
-
-[node name="AssaultPoint15" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=148989770 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.9253197, 5.5333962, -28.29873)
-
-[node name="AssaultPoint18" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1616542736 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.491966, 6.457164, -19.15209)
-
-[node name="AssaultPoint19" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1451766423 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.147238, 6.457164, -10.860789)
-
-[node name="AssaultPoint20" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=169492861 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.650356, 6.457164, -1.3131313)
-
-[node name="AssaultPoint24" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=787901722 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.673464, 6.457164, 4.043634)
-
-[node name="AssaultPoint27" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1580394041 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.472055, 6.457164, 4.9078746)
-
-[node name="AssaultPoint28" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1704546809 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.189535, 6.457164, 1.5004029)
-
-[node name="AssaultPoint16" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1907193948 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.6829214, 5.9977264, 13.487833)
-
-[node name="AssaultPoint30" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=420643084 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.348483, 5.9977264, 27.170479)
-
-[node name="AssaultPoint31" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1505733954 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.581211, 6.894584, 31.835445)
-
-[node name="AssaultPoint32" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1800646628 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.581211, 1.2482431, 44.873466)
-
-[node name="AssaultPoint33" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=2014771490 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.581211, 1.0696874, 17.809938)
-
-[node name="AssaultPoint34" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=540545075 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.96623, 3.9085803, 38.327213)
-
-[node name="AssaultPoint35" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1560477535 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.96623, 3.9085803, 24.565538)
-
-[node name="AssaultPoint36" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=2005285707 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4656153, 5.2164516, 29.143204)
-
-[node name="AssaultPoint37" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=896997103 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.960668, 6.457164, 47.947536)
-
-[node name="AssaultPoint41" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1335128276 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.082653, 1.1951592, 75.21725)
-
-[node name="AssaultPoint42" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=4473877 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.082653, 0.9247925, 65.81963)
-
-[node name="AssaultPoint43" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=54007742 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.956926, 0.95719075, 65.81963)
-
-[node name="AssaultPoint44" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1313208617 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.175497, 0.7232685, 84.94064)
-
-[node name="AssaultPoint45" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1758467488 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.116302, 0.8360584, 88.6287)
-
-[node name="AssaultPoint46" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1398428408 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.192863, 1.2393801, 79.69227)
-
-[node name="AssaultPoint47" parent="Ai/Exterior/Segundo piso/Asalto" unique_id=1574738177 instance=ExtResource("7_l2lx5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.844397, 6.457164, 14.072427)
-
-[node name="Saltos" type="Node3D" parent="Ai/Exterior/Segundo piso" unique_id=1489580097]
-
-[node name="1" type="Node3D" parent="Ai/Exterior/Segundo piso/Saltos" unique_id=330175989]
-
-[node name="FreezeCube" parent="Ai/Exterior/Segundo piso/Saltos/1" unique_id=1732588968 instance=ExtResource("8_646el")]
-transform = Transform3D(0.4183129, 0, 0, 0, 1, 0, 0, 0, 25.637821, 6.8057966, 5.6531453, 65.71521)
-
-[node name="FreezeCube3" parent="Ai/Exterior/Segundo piso/Saltos/1" unique_id=1396876735 instance=ExtResource("8_646el")]
-transform = Transform3D(10.373922, 0, 0, 0, 1, 0, 0, 0, 0.52880377, 21.827099, 5.6531453, 7.2615414)
-
-[node name="FreezeCube4" parent="Ai/Exterior/Segundo piso/Saltos/1" unique_id=1024593998 instance=ExtResource("8_646el")]
-transform = Transform3D(14.945646, 0, 0, 0, 1, 0, 0, 0, 0.52880377, 19.61273, 5.6531453, 51.516354)
-
-[node name="2" type="Node3D" parent="Ai/Exterior/Segundo piso/Saltos" unique_id=818107442]
-
-[node name="0" type="Node3D" parent="Ai/Exterior/Segundo piso/Saltos" unique_id=1551448003]
-
-[node name="Flanco" type="Node3D" parent="Ai" unique_id=346040979]
-
-[node name="AlternatePoint" parent="Ai/Flanco" unique_id=114622450 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.844189, 0.830001, -10.9163475)
-
-[node name="AlternatePoint2" parent="Ai/Flanco" unique_id=1569595373 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.233128, 1.1248312, 32.693798)
-
-[node name="AlternatePoint3" parent="Ai/Flanco" unique_id=34028833 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.670465, 1.1248312, 56.972446)
-
-[node name="AlternatePoint4" parent="Ai/Flanco" unique_id=1702344063 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.732553, 1.1248312, 79.55109)
-
-[node name="AlternatePoint5" parent="Ai/Flanco" unique_id=1856656696 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.925169, 1.1248312, 79.55109)
-
-[node name="AlternatePoint6" parent="Ai/Flanco" unique_id=1514971732 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.5097, 0.9312959, 50.408955)
-
-[node name="AlternatePoint7" parent="Ai/Flanco" unique_id=101312782 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.213655, 3.5248127, 15.307091)
-
-[node name="AlternatePoint8" parent="Ai/Flanco" unique_id=1132145668 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.026377, 0.13333988, -28.29528)
-
-[node name="AlternatePoint9" parent="Ai/Flanco" unique_id=700334368 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.844189, 0.8430786, -29.317982)
-
-[node name="AlternatePoint10" parent="Ai/Flanco" unique_id=1572294275 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.6471963, 0.93061674, -29.317982)
-
-[node name="AlternatePoint11" parent="Ai/Flanco" unique_id=925342572 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.658907, 0.7162641, -29.83821)
-
-[node name="AlternatePoint12" parent="Ai/Flanco" unique_id=1692852461 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.107197, 1.1248312, -51.23407)
-
-[node name="AlternatePoint13" parent="Ai/Flanco" unique_id=1913021218 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1236367, 0.794605, -51.660774)
-
-[node name="AlternatePoint14" parent="Ai/Flanco" unique_id=683153293 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.06703, 0.794605, -45.381477)
-
-[node name="AlternatePoint15" parent="Ai/Flanco" unique_id=1127567936 instance=ExtResource("8_d31ot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.026377, 0.13333988, -15.525034)
-
-[node name="AlternatePoint16" parent="Ai/Flanco" unique_id=313350018 instance=ExtResource("8_d31ot")]
-transform = Transform3D(0.9999099, -0.007858235, -0.0108827455, 0.00790482, 0.9999597, 0.004243412, 0.010848955, -0.0043290714, 0.99993175, -21.84368, 4.731635, -7.0593596)
-
-[node name="AlternatePoint17" parent="Ai/Flanco" unique_id=1593783340 instance=ExtResource("8_d31ot")]
-transform = Transform3D(0.9999099, -0.007858235, -0.0108827455, 0.00790482, 0.9999597, 0.004243412, 0.010848955, -0.0043290714, 0.99993175, -18.748917, 4.731635, 3.406577)
-
-[node name="AlternatePoint18" parent="Ai/Flanco" unique_id=586102267 instance=ExtResource("8_d31ot")]
-transform = Transform3D(0.9999099, -0.007858235, -0.0108827455, 0.00790482, 0.9999597, 0.004243412, 0.010848955, -0.0043290714, 0.99993175, -21.84368, 0.60779333, 33.119675)
+[node name="@MeshInstance3D@194051" type="MeshInstance3D" parent="Puntos clave/Caminos/Flanco/CaminoFlanqueador" unique_id=2105188068]
+visible = false

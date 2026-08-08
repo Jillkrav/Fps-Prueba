@@ -22,6 +22,7 @@ class_name StateRoaming
 # ══════════════════════════════════════════════════════════════════
 
 const PRIORITY_PATROL: float = 10.0
+const ROUTE_RECHECK_INTERVAL: float = 1.0
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -31,33 +32,13 @@ const PRIORITY_PATROL: float = 10.0
 var _objective_reached: bool = false
 var _nav_target: Vector3 = Vector3.ZERO
 
-# ── Cooldown de cubos semánticos ──────────────────────────────────
-# La duración se obtiene de SemanticPointRules.get_cooldown().
+## Cobertura actualmente reservada por este estado. Se libera al cambiar
+## de objetivo/estado para evitar que un punto quede bloqueado indefinidamente.
+var _reserved_cover: Node = null
 
-## Cooldown corto cuando el bot no pudo llegar al punto (FASE 6).
-const FAILED_COOLDOWN: float = 10.0
-# Dict: "x,y,z" → timestamp de expiración
-var _semantic_cooldowns: Dictionary = {}
-
-# El tipo de cubo al que el bot está navegando actualmente (-1 = no es cubo)
-var _last_semantic_type: int = -1
-
-# Timestamp del momento en que se fijó _nav_target (para detectar navegación fallida)
-var _nav_target_set_time: float = 0.0
-
-# ── Stack de ruta semántica (para CTF futuro) ───────────────────
-# Almacena los puntos semánticos visitados en orden de avance.
-var _semantic_path: Array[SemanticPoint] = []
-
-# ── Checkpoint celeste obligatorio ──────────────────────────────
-# Cuando el bot toca un cubo azul (OBJECTIVE) que tiene un CyanTarget,
-# se activa _must_visit_cyan y se guarda la posición del cubo celeste.
-# El bot DEBE ir a esa posición antes de continuar con su ruta normal.
-var _cyan_checkpoint: Vector3 = Vector3.ZERO
-var _must_visit_cyan: bool = false
-# Flag que se activa mientras estamos navegando al celeste,
-# para no aplicar cooldown del cubo azul en ese tramo intermedio.
-var _navigating_to_cyan: bool = false
+## Seguimiento de los caminos authored del mapa actual.
+var _route_navigator: BotAuthoredRouteNavigator = BotAuthoredRouteNavigator.new()
+var _next_route_search_time: float = 0.0
 
 # (FloorRouter removido — LinkJump3D eliminado del proyecto)
 
@@ -74,14 +55,16 @@ func _init() -> void:
 func enter(_previous_state: BotState) -> void:
 	_objective_reached = false
 	_nav_target = Vector3.ZERO
-	_last_semantic_type = -1
-	_nav_target_set_time = 0.0
-	_semantic_path.clear()
+	_release_reserved_cover()
+	_route_navigator.clear()
+	_next_route_search_time = 0.0
 	movement_cmd.reset()
 	if decision_system:
 		decision_system.combat_command.cease_fire = true
-	
-	# (FloorRouter initialization removed)
+
+	var stuck: StuckHandler = movement.stuck_handler if movement else null
+	if stuck != null and not stuck.stuck_resolved.is_connected(_on_stuck_resolved):
+		stuck.stuck_resolved.connect(_on_stuck_resolved)
 
 
 func execute(_delta: float) -> void:
@@ -97,6 +80,12 @@ func execute(_delta: float) -> void:
 
 	# ── Verificar transiciones prioritarias ──
 	if _check_transitions():
+		return
+
+	# El francotirador ocupa siempre una cobertura de un solo sentido y se
+	# mantiene allí hasta que aparezca un enemigo visible. Si el mapa no tiene
+	# una, conserva el comportamiento normal como fallback seguro.
+	if _maintain_sniper_camp():
 		return
 
 	# ── 1. Ejecutar según orden de TeamAI (FASE 6) ──
@@ -125,15 +114,9 @@ func execute(_delta: float) -> void:
 ## Verifica si debemos salir de Roaming por eventos externos.
 ## Retorna true si transicionó a otro estado.
 func _check_transitions() -> bool:
-	# ════════════════════════════════════════════════════════════════
-	# 🚫 TRAYECTO OBLIGATORIO: AZUL → CELESTE
-	# Mientras el bot navega del cubo azul al celeste, NO se permite
-	# ninguna interrupción (combate, cacería, retirada). El bot DEBE
-	# completar ese trayecto sin importar qué ocurra.
-	# ════════════════════════════════════════════════════════════════
-	if _navigating_to_cyan:
-		return false
-
+	if bot != null and bot.tactical_sys != null and bot.tactical_sys.should_force_flee():
+		change_state(BotState.StateType.FLEEING)
+		return true
 	# ── ¿Enemigo visible? → COMBAT ──
 	if perception and perception.has_visible_enemies():
 		change_state(BotState.StateType.COMBAT)
@@ -175,10 +158,19 @@ func _check_defense_radius() -> bool:
 # ══════════════════════════════════════════════════════════════════
 
 func _check_pickups() -> bool:
-	# Llamar directamente a BotBase._check_for_pickups
-	if bot and is_instance_valid(bot):
-		return bot._check_for_pickups(0.0)
-	return false
+	# Las necesidades de nivel 1 y 2 son objetivos oportunistas: no bloquean
+	# combate ni rutas, pero se atienden durante patrulla.
+	if bot == null or not is_instance_valid(bot) or bot.tactical_sys == null:
+		return false
+	if not bot.tactical_sys.has_noncritical_resource_need():
+		return false
+	var pickup: Node = bot.tactical_sys.get_priority_pickup()
+	if pickup == null or not is_instance_valid(pickup) or not pickup.is_inside_tree():
+		return false
+	_nav_target = pickup.global_position
+	movement_cmd.set_navigate(_nav_target, _role_speed(4.8))
+	movement_cmd.sprint = true
+	return true
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -212,74 +204,221 @@ func _advance_to_core() -> void:
 		return
 
 	var core: Node = bot._enemy_core
-	var dist_to_core: float = bot.global_position.distance_to(core.global_position)
-
-	if dist_to_core < 4.0:
+	if bot.global_position.distance_to(core.global_position) < 4.0:
 		_objective_reached = true
 
+	if _follow_authored_route():
+		return
+
+	# Con salud baja, buscar cobertura antes que seguir avanzando.
+	if _get_health_pct() < 0.35 and _seek_cover():
+		return
+	_release_reserved_cover()
+
+	# Fallback seguro para mapas que todavía no tienen caminos configurados.
 	if _nav_target == Vector3.ZERO or _objective_reached or _is_nav_finished():
-		# ── Cooldown del punto al que intentamos llegar ──
-		# Siempre se aplica al terminar con un cubo, haya llegado o no.
-		# Así el bot no se queda atascado intentando un cubo inalcanzable
-		# ni se devuelve a buscar uno que quedó atrás.
-		# El cooldown se aplica a todos los puntos alcanzados (incluido OBJECTIVE).
-		if _nav_target != Vector3.ZERO and _last_semantic_type >= 0 and not _navigating_to_cyan:
-			# FASE 6: si la navegación terminó pero el bot está lejos del target, asumir fallo
-			var nav_failed: bool = _is_nav_finished() and bot.global_position.distance_to(_nav_target) > 5.0
-			_add_semantic_cooldown(_nav_target, _last_semantic_type, nav_failed)
-
-		# ── ¡CONGELAR 5s al tocar punto_inicio_salto! ──
-		# El bot acaba de llegar a un OBJECTIVE (punto_inicio_salto)
-		# que tiene un CyanTarget (punto_final_salto) enlazado.
-		# Se congela completamente durante 5 segundos.
-		if _must_visit_cyan:
-			bot.freeze(5.0)
-			_must_visit_cyan = false
-			_cyan_checkpoint = Vector3.ZERO
-			movement_cmd.set_hold()
-			combat_cmd.cease_fire = true
-			_debug("¡Punto inicio salto alcanzado! Congelado 5 segundos")
-			return
-
-		# ── Elegir punto semantico según el rol (desde JSON) ──
-		var role: TacticalRole = _get_role()
-		var target_point: SemanticPoint = null
-		var point_label: String = ""
-
-		if role != null:
-			var point_type: int = SemanticPointRules.get_point_type_for_role(role.type)
-			target_point = _get_semantic_point_nearby(point_type, role)
-			if target_point != null:
-				point_label = SemanticPointRules.get_point_type_name(point_type)
-
-		if target_point != null:
-			_nav_target = target_point.position
-			_last_semantic_type = target_point.point_type
-			_nav_target_set_time = Time.get_ticks_msec() / 1000.0
-			_semantic_path.append(target_point)
-			_debug("Punto %s: navegando a (%.1f, %.1f, %.1f)" % [
-				point_label, target_point.position.x,
-				target_point.position.y, target_point.position.z])
-			_objective_reached = false
-			
-			# (FloorRouter/LinkJump3D check removed — ya no hay ruteo entre pisos)
-		else:
-			# Ir directo al core enemigo
-			_nav_target = core.global_position
-			_last_semantic_type = -1
-			_nav_target_set_time = 0.0
-			_objective_reached = false
+		# El offset de aproximación puede caer fuera del NavMesh (sobre una
+		# pared, un hueco o fuera de límites). Si dejáramos ese punto sin
+		# corregir, el bot elegiría un destino inalcanzable y se quedaría
+		# parado reeligiendo el mismo cada tick ("pegado" al avanzar).
+		var raw_target: Vector3 = core.global_position + _get_core_approach_offset()
+		_nav_target = _snap_to_navmesh(raw_target, core.global_position)
+		_objective_reached = false
 
 	movement_cmd.set_navigate(_nav_target, _role_speed(4.5))
-	# Sprint en largas distancias (solo metadata, Fase A)
-	if not _navigating_to_cyan and not bot.is_frozen:
+	if not bot.is_frozen:
 		movement_cmd.sprint = true
+
+
+func _follow_authored_route() -> bool:
+	if bot == null:
+		return false
+
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if _route_navigator.has_active_route():
+		_route_navigator.advance_if_reached(bot.global_position)
+		if _route_navigator.has_active_route():
+			_nav_target = _route_navigator.get_current_target()
+			movement_cmd.set_navigate(_nav_target, _role_speed(4.5))
+			movement_cmd.sprint = not bot.is_frozen
+			return true
+
+	if now < _next_route_search_time:
+		return false
+	_next_route_search_time = now + ROUTE_RECHECK_INTERVAL
+
+	var map_root: Node = _get_map_root()
+	var route_role: int = _get_route_role_for_bot()
+	if map_root == null or route_role < 0:
+		return false
+
+	var excluded_route_ids: Dictionary = _route_navigator.get_completed_route_ids()
+	var route: CaminoBot = _route_navigator.find_best_route(map_root, route_role, bot.global_position, excluded_route_ids)
+	if route == null or not _route_navigator.start_route(route, bot.global_position):
+		return false
+
+	_nav_target = _route_navigator.get_current_target()
+	movement_cmd.set_navigate(_nav_target, _role_speed(4.5))
+	movement_cmd.sprint = not bot.is_frozen
+	_debug("Camino %s seleccionado" % _get_route_label(route))
+	return true
+
+
+func _get_route_role_for_bot() -> int:
+	var role: TacticalRole = _get_role()
+	if role == null:
+		return -1
+	match role.type:
+		Roles.Type.ASALTO:
+			return CaminoBot.Role.ASSAULT
+		Roles.Type.FLANQUEADOR:
+			return CaminoBot.Role.FLANKER
+		Roles.Type.DEFENSOR:
+			return CaminoBot.Role.DEFENDER
+		Roles.Type.VERSATIL:
+			return CaminoBot.Role.FLANKER if role.flanking_bias > 0.5 else CaminoBot.Role.ASSAULT
+		Roles.Type.PATRULLADOR, Roles.Type.FRANCOTIRADOR, Roles.Type.APOYO:
+			return CaminoBot.Role.DEFENDER
+		_:
+			return -1
+
+
+func _get_map_root() -> Node:
+	if bot == null or not bot.is_inside_tree():
+		return null
+	var current_node: Node = bot
+	var scene_root: Node = bot.get_tree().current_scene
+	while current_node.get_parent() != null and current_node != scene_root:
+		current_node = current_node.get_parent()
+	return scene_root if scene_root != null else current_node
+
+
+## Offset de aproximación al core según el rol y con dispersión real.
+## FLANQUEADOR intenta atacar por los lados; DEFENSOR/APOYO se mantienen
+## a distancia; VERSÁTIL mezcla. El offset es determinista por bot (para
+## que sea estable entre ticks) pero varía ampliamente según el rol.
+func _get_core_approach_offset() -> Vector3:
+	var bot_seed: int = bot.get_instance_id() if bot else 0
+	var role: TacticalRole = _get_role()
+
+	# Radio base de dispersión (más amplio que el antiguo ±4).
+	var spread_base: float = 8.0
+	var lateral_bias: float = 0.0
+	var distance_bias: float = 0.0
+
+	if role:
+		match role.movement_profile:
+			Roles.MovementProfile.FLANKING:
+				# Flanquea por los costados: gran desplazamiento lateral.
+				lateral_bias = 6.0
+				spread_base = 10.0
+			Roles.MovementProfile.DEFENSIVE:
+				# Se mantiene a distancia: menos lateral, más lejos.
+				distance_bias = 6.0
+				spread_base = 7.0
+			Roles.MovementProfile.PATROL:
+				distance_bias = 3.0
+				spread_base = 8.0
+			_:
+				# AGGRESSIVE: adelante con algo de lateral.
+				lateral_bias = 3.0
+				spread_base = 8.0
+
+	# Variación determinista por bot (evita que todos se apilen).
+	var x_variation: float = float((bot_seed * 17) % int(spread_base * 2.0) - spread_base)
+	var z_variation: float = float((bot_seed * 31) % int(spread_base * 2.0) - spread_base)
+
+	# Lateral según sesgo de flanqueo del rol (si existe).
+	if role and role.flanking_bias > 0.0:
+		lateral_bias += role.flanking_bias * 4.0
+
+	# Elegir lado: derecha o izquierda según el seed del bot.
+	var side: float = 1.0 if (bot_seed % 2 == 0) else -1.0
+
+	return Vector3(
+		x_variation + side * lateral_bias,
+		0.0,
+		z_variation - distance_bias
+	)
+
+
+## Busca la cobertura más cercana disponible y navega hacia ella.
+## Retorna true si encontró y se dirigió a una cobertura.
+## El francotirador convierte los one_way_low_wall en puestos de tiro fijos.
+## No persigue el core ni genera wander mientras se desplaza o permanece en
+## su punto reservado. Al aparecer un enemigo, _check_transitions() conserva
+## prioridad y cambia a COMBAT normalmente.
+func _maintain_sniper_camp() -> bool:
+	var role: TacticalRole = _get_role()
+	if role == null or role.type != Roles.Type.FRANCOTIRADOR:
+		return false
+	if _reserved_cover == null or not is_instance_valid(_reserved_cover) or not _reserved_cover.is_inside_tree():
+		if bot == null or bot.tactical_sys == null:
+			return false
+		var camp: Node = bot.tactical_sys.get_nearest_available_cover()
+		if camp == null:
+			return false
+		_release_reserved_cover()
+		if camp.has_method("occupy"):
+			camp.occupy(bot)
+		_reserved_cover = camp
+		_nav_target = camp.get_cover_position()
+	
+	var camp_target: Vector3 = _reserved_cover.get_cover_position()
+	if bot.global_position.distance_to(camp_target) > 1.5:
+		movement_cmd.set_navigate(camp_target, _role_speed(3.2))
+		return true
+	movement_cmd.set_hold()
+	return true
+
+
+func _seek_cover() -> bool:
+	if bot == null or not bot.is_inside_tree() or bot.tactical_sys == null:
+		return false
+	# Centralizar la selección aquí evita que el fallback de poca salud salte
+	# las reglas por rol (asalto/flanqueo) o las preferencias de props.
+	var best: Node = bot.tactical_sys.get_nearest_available_cover()
+	if best == null:
+		return false
+
+	if best != _reserved_cover:
+		_release_reserved_cover()
+		if best.has_method("occupy"):
+			best.occupy(bot)
+		_reserved_cover = best
+	_nav_target = best.get_cover_position()
+	movement_cmd.set_navigate(_nav_target, _role_speed(4.0))
+	movement_cmd.sprint = true
+	_debug("Cobertura %s seleccionada" % best.name)
+	return true
+
+
+func exit(_next_state: BotState) -> void:
+	_release_reserved_cover()
+
+
+func _release_reserved_cover() -> void:
+	if _reserved_cover != null and is_instance_valid(_reserved_cover) and "release" in _reserved_cover:
+		_reserved_cover.release(bot)
+	_reserved_cover = null
+
+
+func _get_route_label(route: CaminoBot) -> String:
+	if route.route_id != StringName():
+		return str(route.route_id)
+	return route.name
 
 
 func _wander() -> void:
 	var wander_radius: float = _get_wander_radius()
 
 	if _nav_target == Vector3.ZERO or _is_nav_finished():
+		# ── Patrulla con propósito: recorrer coberturas/zonas del mapa ──
+		if _wander_to_cover_waypoint():
+			movement_cmd.set_navigate(_nav_target, _role_speed(3.5))
+			movement_cmd.sprint = true
+			return
+
 		# ── Posición aleatoria en el navmesh ──
 		var nav_map_rid: RID
 		if navigation and navigation.agent:
@@ -302,87 +441,57 @@ func _wander() -> void:
 	movement_cmd.sprint = true  # Wander también en sprint
 
 
+## Patrulla con propósito: recorre puntos relevantes del mapa (coberturas,
+## zonas) en vez de deambular sin rumbo. Retorna true si encontró un punto.
+func _wander_to_cover_waypoint() -> bool:
+	if bot == null or not bot.is_inside_tree():
+		return false
+	var role: TacticalRole = _get_role()
+	# Asalto y flanqueo no convierten props de cobertura en waypoints de ruta:
+	# solo los emplean desde COMBAT/COVER_RELOAD cuando realmente lo necesitan.
+	if role != null and role.type in [Roles.Type.ASALTO, Roles.Type.FLANQUEADOR]:
+		return false
+	var points: Array[Node] = []
+
+	# Reunir coberturas y zonas activas como puntos de patrulla.
+	# Duck-typing: CoverPoint/ZonePoint son props opcionales; usamos grupos.
+	# Los puntos de troneras/muros bajos reciben duplicación ponderada para que
+	# los bots los prefieran cuando no hay un objetivo más urgente.
+	var covers: Array[Node] = bot.get_tree().get_nodes_in_group(&"cover_points")
+	for cover: Node in covers:
+		if cover != null and is_instance_valid(cover):
+			points.append(cover)
+			var cover_parent: Node = cover.get_parent()
+			# Patrulladores y defensores prefieren puntos publicados por props
+			# reutilizables, pero la prioridad sigue siendo opcional: las zonas y
+			# otros CoverPoint continúan siendo destinos válidos.
+			if role != null and role.type in [Roles.Type.PATRULLADOR, Roles.Type.DEFENSOR] \
+			and cover_parent != null and cover_parent.is_in_group(&"cover_props"):
+				points.append(cover)
+				points.append(cover)
+			if cover.is_in_group(&"peek_cover_points"):
+				points.append(cover)
+				points.append(cover)
+	var zones: Array[Node] = bot.get_tree().get_nodes_in_group(&"zone_points")
+	for zone: Node in zones:
+		if zone != null and is_instance_valid(zone) and zone.get("is_active"):
+			points.append(zone)
+
+	if points.is_empty():
+		return false
+
+	# Elegir un punto distinto al actual (para no quedarse fijo).
+	var target: Node = points[randi() % points.size()]
+	if target.is_inside_tree():
+		_nav_target = target.global_position
+		return true
+	return false
+
+
 # (Freeze unificado en BotBase — FASE 4. El bot reanuda naturalmente
 #  al descongelarse porque execute() corre cada tick de decisión.)
 
 
-# ══════════════════════════════════════════════════════════════════
-# PUNTOS SEMANTICOS - FUNCION GENERICA
-# ══════════════════════════════════════════════════════════════════
-
-## Busca un punto de asalto (SemanticPoint.PointType.ASSAULT) cercano.
-## Solo los bots con rol ASSAULT pueden usarlo.
-##
-## ▶ Filtra cubos en cooldown (55s).
-## ▶ Solo considera puntos que estén ADELANTE (más cerca del core enemigo).
-## ▶ 50% de probabilidad de saltar al 2° cubo más cercano (más dinamismo).
-##
-## Retorna el punto seleccionado, o null si no hay puntos válidos.
-func _get_semantic_point_nearby(point_type: int, role: TacticalRole) -> SemanticPoint:
-	if role == null:
-		return null
-
-	if not SemanticPointRules.is_role_allowed(point_type, role.type):
-		return null
-
-	if not NavigationSystem._semantic_points_loaded:
-		NavigationSystem.load_semantic_points()
-
-	var points: Array[SemanticPoint] = NavigationSystem.get_points_sorted(
-		point_type,
-		bot.global_position,
-		bot.equipo_id,
-		99999.0
-	)
-	if points.is_empty():
-		return null
-
-	var enemy_core: Node = bot._enemy_core if bot else null
-	var own_core_dir: Node = _get_own_core()
-	var bot_to_core: float
-	if enemy_core and is_instance_valid(enemy_core):
-		bot_to_core = bot.global_position.distance_to(enemy_core.global_position)
-	else:
-		bot_to_core = -1.0
-
-	var now: float = Time.get_ticks_msec() / 1000.0
-	var use_spread: bool = role.flanking_bias > 0.5
-
-	var scored: Array[Dictionary] = []
-	for p in points:
-		var key: String = str(p.position)
-		if _semantic_cooldowns.has(key) and _semantic_cooldowns[key] > now:
-			continue
-		if bot_to_core >= 0.0:
-			var p_to_core: float = p.position.distance_to(enemy_core.global_position)
-			if p_to_core > bot_to_core + 5.0:
-				continue
-		if _requires_backtrack(p.position):
-			continue
-
-		var score: float
-		if use_spread:
-			var dist_to_bot: float = bot.global_position.distance_to(p.position)
-			var dist_from_ally: float = 0.0
-			if own_core_dir and is_instance_valid(own_core_dir):
-				dist_from_ally = p.position.distance_to(own_core_dir.global_position)
-			score = dist_to_bot - role.spread_weight * dist_from_ally
-		else:
-			score = bot.global_position.distance_to(p.position)
-
-		scored.append({"point": p, "score": score})
-
-	if scored.is_empty():
-		return null
-
-	scored.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return a.score < b.score
-	)
-
-	if scored.size() >= 2 and randf() < 0.5:
-		return scored[1].point
-
-	return scored[0].point
 
 
 
@@ -395,54 +504,6 @@ func _get_semantic_point_nearby(point_type: int, role: TacticalRole) -> Semantic
 
 
 
-
-
-# ══════════════════════════════════════════════════════════════════
-# COOLDOWN
-# ══════════════════════════════════════════════════════════════════
-
-## Registra un punto semántico en cooldown.
-## La duración depende del tipo de punto (ASSAULT=25s, TERCER=25s, ALTERNATE=15s, etc.).
-## Si failed=true, usa cooldown corto (10s) para reintentar pronto.
-## Mientras esté en cooldown, el bot ignorará ese cubo al buscar el siguiente.
-func _add_semantic_cooldown(pos: Vector3, point_type: int, failed: bool = false) -> void:
-	var duration: float = FAILED_COOLDOWN if failed else SemanticPointRules.get_cooldown(point_type)
-	var now: float = Time.get_ticks_msec() / 1000.0
-	var key: String = str(pos)
-	_semantic_cooldowns[key] = now + duration
-	_debug("Cubo en cooldown por %.0fs (failed=%s): (%.1f, %.1f, %.1f)" % [
-		duration, failed, pos.x, pos.y, pos.z])
-
-
-## Verifica si la navegación hacia `pos` requiere retroceder.
-## Si el primer paso del camino en la navmesh se aleja del core enemigo,
-## el punto requiere devolverse → debe descartarse.
-func _requires_backtrack(pos: Vector3) -> bool:
-	var enemy_core: Node = bot._enemy_core if bot else null
-	if not enemy_core or not is_instance_valid(enemy_core):
-		return false
-
-	var nav_map: RID
-	if navigation and navigation.agent:
-		nav_map = navigation.agent.get_navigation_map()
-	elif bot and bot.navigation_agent:
-		nav_map = bot.navigation_agent.get_navigation_map()
-
-	if not nav_map.is_valid() or not NavigationServer3D.map_is_active(nav_map):
-		return false
-
-	var path: PackedVector3Array = NavigationServer3D.map_get_path(
-		nav_map, bot.global_position, pos, true
-	)
-	if path.size() < 2:
-		return false
-
-	# Dirección del primer paso en la navmesh vs dirección al core
-	var first_step_dir: Vector3 = (path[1] - path[0]).normalized()
-	var to_core_dir: Vector3 = (enemy_core.global_position - bot.global_position).normalized()
-
-	# Si apunta en dirección opuesta al core (< -0.3) → retrocede
-	return first_step_dir.dot(to_core_dir) < -0.3
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -453,6 +514,13 @@ func _get_role() -> TacticalRole:
 	if bot:
 		return bot._tactical_role
 	return null
+
+
+## Porcentaje de salud del bot (0.0 a 1.0).
+func _get_health_pct() -> float:
+	if bot and bot.max_health > 0.0:
+		return float(bot.current_health) / float(bot.max_health)
+	return 1.0
 
 func _get_own_core() -> Node:
 	if bot:
@@ -491,6 +559,36 @@ func _is_nav_finished() -> bool:
 	if bot and bot.navigation_agent:
 		return bot.navigation_agent.is_navigation_finished()
 	return true
+
+
+## Devuelve el punto más cercano navegable a `raw_target` en el NavMesh.
+## Si el NavMesh no está disponible o el punto corregido queda muy lejos del
+## original (p. ej. el objetivo estaba fuera del mapa), cae a `fallback`.
+## Evita que los bots elijan destinos inalcanzables y se queden parados.
+func _snap_to_navmesh(raw_target: Vector3, fallback: Vector3) -> Vector3:
+	var nav_map_rid: RID
+	if navigation and navigation.agent:
+		nav_map_rid = navigation.agent.get_navigation_map()
+	elif bot and bot.navigation_agent:
+		nav_map_rid = bot.navigation_agent.get_navigation_map()
+	if nav_map_rid.is_valid() and NavigationServer3D.map_is_active(nav_map_rid):
+		var punto_corregido: Vector3 = NavigationServer3D.map_get_closest_point(nav_map_rid, raw_target)
+		# Si el punto corregido no está razonablemente cerca del objetivo
+		# original, el destino buscado no era navegable: usar el fallback.
+		if punto_corregido.distance_to(raw_target) <= 4.0:
+			return punto_corregido
+	return fallback
+
+
+## Reanuda el camino desde el punto más cercano después de una recuperación.
+func _on_stuck_resolved() -> void:
+	if bot == null:
+		return
+	if _route_navigator.reset_after_stuck(bot.global_position):
+		_nav_target = _route_navigator.get_current_target()
+	else:
+		_nav_target = Vector3.ZERO
+	_next_route_search_time = 0.0
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -532,6 +630,8 @@ func _execute_order() -> bool:
 			return true
 
 		TeamAI.OrderType.PATROL:
+			if _follow_authored_route():
+				return true
 			_wander()
 			return true
 
@@ -570,8 +670,14 @@ func _defend_position() -> void:
 		var dist_to_base: float = bot.global_position.distance_to(own_core.global_position)
 		var defense_range: float = 12.0
 
-		# Si está cerca de la base, patrullar alrededor
+		# Si está cerca de la base, priorizar un camino defensivo si existe.
 		if dist_to_base < defense_range:
+			if _follow_authored_route():
+				return
+			# Defensa prefiere cubrir el perímetro, sin volverlo obligatorio:
+			# las rutas y la patrulla aleatoria siguen siendo alternativas válidas.
+			if (_nav_target == Vector3.ZERO or _is_nav_finished()) and randf() < 0.65 and _seek_cover():
+				return
 			var wander_radius: float = 8.0
 			if _nav_target == Vector3.ZERO or _is_nav_finished():
 				# Wander aleatorio dentro del radio defensivo

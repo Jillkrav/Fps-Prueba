@@ -54,6 +54,10 @@ const ENEMY_NEAR_CORE_DIST: float = 15.0
 ## Esto evita el cuello de botella O(n²) con muchos bots.
 const MAX_ENEMIES_PER_SCAN: int = 6
 
+## Apertura total del cono de visión. La mitad se aplica a cada lado del
+## eje del arma; así la detección representa adónde está apuntando el bot.
+const DEFAULT_WEAPON_FOV_DEGREES: float = 110.0
+
 
 # ══════════════════════════════════════════════════════════════════
 # PROPIEDADES
@@ -119,6 +123,9 @@ func update(delta: float) -> void:
 	
 	var role: TacticalRole = bot._tactical_role
 	var bodies: Array = bot.area_vision.get_overlapping_bodies()
+	var weapon_aim_origin: Vector3 = _get_weapon_aim_origin()
+	var weapon_forward: Vector3 = _get_weapon_forward()
+	var weapon_fov_degrees: float = _get_weapon_fov_degrees()
 	
 	# ── Ordenar por distancia (los más cercanos primero) ─────────
 	# Así los enemigos prioritarios reciben verificación LOS primero,
@@ -143,8 +150,15 @@ func update(delta: float) -> void:
 		if not GameState.son_enemigos(bot.equipo_id, body_equipo):
 			continue
 		
-		var target_pos: Vector3 = body.global_position + Vector3.UP * 1.5
+		var target_pos: Vector3 = body.global_position + Vector3.UP * 0.9
 		var dist: float = bot_pos.distance_to(body.global_position)
+		
+		# Un enemigo debe estar dentro del cono que describe el arma del bot.
+		# AreaVision mantiene la lista de candidatos por distancia; este filtro
+		# añade dirección real sin depender de una cámara ni de la orientación del
+		# cuerpo en el frame anterior.
+		if not _is_inside_weapon_fov(weapon_aim_origin, weapon_forward, target_pos, weapon_fov_degrees):
+			continue
 		
 		# Filtro por rango de reacción del rol
 		if role and dist > role.reaction_range:
@@ -157,27 +171,10 @@ func update(delta: float) -> void:
 			break
 		enemies_processed += 1
 		
-		# Chequeo de LOS (Line of Sight) — doble verificación
-		var local_target: Vector3 = bot.to_local(target_pos)
-		bot.raycast_vision.target_position = local_target
-		bot.raycast_vision.force_raycast_update()
-		
-		# Raycast 1: desde el cuerpo (actual)
-		var collider_1: Node = bot.raycast_vision.get_collider()
-		
-		# Raycast 2: desde la cabeza (offset vertical)
-		var head_pos: Vector3 = bot.head.global_position if bot.head else bot.global_position + Vector3.UP * 0.9
-		var space_state: PhysicsDirectSpaceState3D = bot.get_world_3d().direct_space_state
-		var query = PhysicsRayQueryParameters3D.create(head_pos, target_pos)
-		query.collision_mask = bot.raycast_vision.collision_mask
-		query.exclude = [bot]
-		var result: Dictionary = space_state.intersect_ray(query)
-		var collider_2 = result.get("collider", null) if not result.is_empty() else null
-		
-		# LOS requiere que AMBOS rayos impacten al enemigo
-		var has_los: bool = _is_target(body, collider_1) and _is_target(body, collider_2)
-		
-		if not has_los:
+		# La visibilidad se calcula desde el origen de tiro, no desde el centro
+		# del collider. Un único raycast hasta torso/cabeza evita falsos negativos
+		# de muros bajos sin permitir ver o disparar a través de paredes.
+		if not _has_weapon_line_of_sight(body, weapon_aim_origin, target_pos):
 			continue
 		
 		# Calcular % de vida del enemigo
@@ -270,6 +267,65 @@ func _select_target(role: TacticalRole) -> void:
 		if previous_target != null:
 			emit_signal("entity_lost", previous_target)
 		emit_signal("entity_detected", _target_enemy, _last_seen_position)
+
+
+## Origen físico de la visión: muzzle si existe; cabeza como respaldo.
+func _get_weapon_aim_origin() -> Vector3:
+	if bot == null:
+		return Vector3.ZERO
+	var weapon: Weapon = bot.get_current_weapon()
+	if weapon != null and is_instance_valid(weapon) and weapon.is_inside_tree():
+		return weapon._get_muzzle_position()
+	if bot.head != null and is_instance_valid(bot.head):
+		return bot.head.global_position
+	return bot.global_position + Vector3.UP * 0.9
+
+
+## Eje de visión real: el forward del arma, o el de cabeza/cuerpo si aún no se creó.
+func _get_weapon_forward() -> Vector3:
+	if bot == null:
+		return Vector3.FORWARD
+	var weapon: Weapon = bot.get_current_weapon()
+	if weapon != null and is_instance_valid(weapon) and weapon.is_inside_tree():
+		return -weapon.global_transform.basis.z.normalized()
+	if bot.head != null and is_instance_valid(bot.head):
+		return -bot.head.global_transform.basis.z.normalized()
+	return -bot.global_transform.basis.z.normalized()
+
+
+## Permite que cada arma declare su FOV opcionalmente; mantiene un valor seguro por defecto.
+func _get_weapon_fov_degrees() -> float:
+	if bot != null:
+		var weapon: Weapon = bot.get_current_weapon()
+		if weapon != null and is_instance_valid(weapon):
+			var configured_fov: Variant = weapon.get("ai_vision_fov_degrees")
+			if configured_fov is float or configured_fov is int:
+				return clampf(float(configured_fov), 20.0, 170.0)
+	return DEFAULT_WEAPON_FOV_DEGREES
+
+
+func _is_inside_weapon_fov(origin: Vector3, forward: Vector3, target_pos: Vector3, fov_degrees: float) -> bool:
+	var direction_to_target: Vector3 = target_pos - origin
+	if direction_to_target.length_squared() <= 0.0001:
+		return true
+	var normalized_forward: Vector3 = forward.normalized()
+	var normalized_direction: Vector3 = direction_to_target.normalized()
+	var half_fov_radians: float = deg_to_rad(fov_degrees * 0.5)
+	return normalized_forward.dot(normalized_direction) >= cos(half_fov_radians)
+
+
+func _has_weapon_line_of_sight(target: Node3D, origin: Vector3, target_pos: Vector3) -> bool:
+	if bot == null or not bot.is_inside_tree():
+		return false
+	var space_state: PhysicsDirectSpaceState3D = bot.get_world_3d().direct_space_state
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, target_pos)
+	query.collision_mask = bot.raycast_vision.collision_mask if bot.raycast_vision != null else 15
+	query.exclude = [bot]
+	var result: Dictionary = space_state.intersect_ray(query)
+	if result.is_empty():
+		return false
+	var collider: Node = result.get("collider", null) as Node
+	return _is_target(target, collider)
 
 
 # ── HELPER: Verifica si un collider es el cuerpo objetivo ─────

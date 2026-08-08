@@ -92,6 +92,15 @@ enum MovementGait {
 # RVO avoidance (nativo de NavigationServer3D)
 var _rvo_safe_velocity: Vector3 = Vector3.ZERO
 
+# ── Superficies tácticas ────────────────────────────────────────────
+# Se consulta de forma limitada, no por frame, para que mapas con muchos bots
+# no paguen búsquedas de grupos innecesarias. Los AvoidFloorProp publican el
+# grupo `avoid_surfaces` y exponen duck-typing para no acoplar movimiento a props.
+const TACTICAL_SURFACE_RECHECK_INTERVAL: float = 0.35
+var _requested_navigation_target: Vector3 = Vector3.ZERO
+var _tactical_navigation_target: Vector3 = Vector3.ZERO
+var _next_tactical_surface_check_time: float = 0.0
+
 
 # ══════════════════════════════════════════════════════════════════
 # PROPIEDADES
@@ -126,6 +135,20 @@ var _vault_controller: VaultController = null
 # ── Auto-jump (solicitado por NavigationSystem) ──
 var auto_jump_pending: bool = false
 var auto_jump_velocity: float = 7.0
+
+# ── Saltos authored ─────────────────────────────────────────────────
+## Movimiento balístico breve activado por SaltoInicio. Vive aquí para que
+## MovementSystem siga siendo el único escritor de velocity del bot.
+const AUTHORED_JUMP_HORIZONTAL_SPEED: float = 9.0
+const AUTHORED_JUMP_MIN_DURATION: float = 0.35
+const AUTHORED_JUMP_MAX_DURATION: float = 1.35
+const AUTHORED_JUMP_MAX_VERTICAL_SPEED: float = 12.0
+const AUTHORED_JUMP_LANDING_DISTANCE: float = 2.4
+var _authored_jump_active: bool = false
+var _authored_jump_target: Vector3 = Vector3.ZERO
+var _authored_jump_elapsed: float = 0.0
+var _authored_jump_duration: float = 0.0
+var _authored_jump_finish_seen: bool = false
 
 # ── Stuck handler (unificado FASE 2) ──
 ## Fusiona ObstacleEvader + StuckRecovery en un solo sistema.
@@ -169,7 +192,12 @@ func process(delta: float) -> void:
 	if bot == null or bot.is_dead:
 		return
 	
-	# ── 0. Vault / Step-up 2: procesar si está en curso (antes de todo) ──
+	# ── 0. Saltos authored / Vault: procesar antes del movimiento normal ──
+	if _authored_jump_active:
+		_process_authored_jump(delta)
+		_update_gait()
+		_update_move_direction()
+		return
 	if _vault_controller and _vault_controller.is_vaulting():
 		_vault_controller.process_vault(delta, Time.get_ticks_msec() / 1000.0)
 		return  # Saltar gravedad, saltos, etc.
@@ -269,6 +297,84 @@ func process(delta: float) -> void:
 	# ── 7. Actualizar gait y dirección de movimiento (cada frame) ──
 	_update_gait()
 	_update_move_direction()
+	# ── 7b. Encara el cuerpo hacia la dirección de movimiento ──────────
+	# Cuando el bot NAVEGA (roaming, hunting sin objetivo vivo, etc.) el
+	# CombatSystem no rota el cuerpo (no apunta a nada), así que el bot
+	# avanzaba de espaldas. Aquí rotamos el cuerpo hacia donde se mueve,
+	# PERO solo si no estamos en combate activo, para no pelear con el
+	# CombatSystem que encara al objetivo.
+	_face_movement_direction(delta)
+
+
+## Inicia un salto authored hacia el Area3D de aterrizaje configurada.
+## Retorna false sin tocar movimiento si el destino no es viable.
+func start_authored_jump(finish: SaltoFin) -> bool:
+	if bot == null or finish == null or not is_instance_valid(finish) or not finish.is_inside_tree():
+		return false
+	if _authored_jump_active or not bot.is_on_floor():
+		return false
+	var destination: Vector3 = finish.global_position
+	var horizontal_offset: Vector3 = destination - bot.global_position
+	horizontal_offset.y = 0.0
+	var horizontal_distance: float = horizontal_offset.length()
+	if horizontal_distance < 0.5 or horizontal_distance > 12.0:
+		return false
+	var vertical_offset: float = destination.y - bot.global_position.y
+	# Para saltos descendentes se reserva tiempo suficiente de caída; de otro
+	# modo un trigger situado en una plataforma alta nunca alcanzaría su suelo.
+	var fall_duration: float = sqrt(maxf(-2.0 * vertical_offset / _gravity, 0.0))
+	var duration: float = clampf(
+		maxf(horizontal_distance / AUTHORED_JUMP_HORIZONTAL_SPEED, fall_duration),
+		AUTHORED_JUMP_MIN_DURATION,
+		AUTHORED_JUMP_MAX_DURATION)
+	var initial_vertical_speed: float = (vertical_offset + 0.5 * _gravity * duration * duration) / duration
+	if initial_vertical_speed < 0.0 or initial_vertical_speed > AUTHORED_JUMP_MAX_VERTICAL_SPEED:
+		return false
+	_authored_jump_active = true
+	_authored_jump_target = destination
+	_authored_jump_elapsed = 0.0
+	_authored_jump_duration = duration
+	_authored_jump_finish_seen = false
+	bot.velocity = horizontal_offset.normalized() * (horizontal_distance / duration)
+	bot.velocity.y = initial_vertical_speed
+	return true
+
+
+## La zona final comunica que el bot completó el tramo authored.
+func finish_authored_jump(finish: SaltoFin) -> void:
+	if not _authored_jump_active or finish == null or not is_instance_valid(finish):
+		return
+	if finish.global_position.distance_to(_authored_jump_target) <= AUTHORED_JUMP_LANDING_DISTANCE:
+		_authored_jump_finish_seen = true
+
+
+func _process_authored_jump(delta: float) -> void:
+	if bot == null:
+		_cancel_authored_jump()
+		return
+	_authored_jump_elapsed += delta
+	bot.velocity.y -= _gravity * delta
+	var horizontal_offset: Vector3 = _authored_jump_target - bot.global_position
+	horizontal_offset.y = 0.0
+	if horizontal_offset.length_squared() > 0.01:
+		var horizontal_speed: float = horizontal_offset.length() / maxf(_authored_jump_duration - _authored_jump_elapsed, 0.05)
+		horizontal_speed = minf(horizontal_speed, AUTHORED_JUMP_HORIZONTAL_SPEED * 1.25)
+		var direction: Vector3 = horizontal_offset.normalized()
+		bot.velocity.x = direction.x * horizontal_speed
+		bot.velocity.z = direction.z * horizontal_speed
+	if (_authored_jump_finish_seen or bot.global_position.distance_to(_authored_jump_target) <= AUTHORED_JUMP_LANDING_DISTANCE) \
+	and bot.is_on_floor() and bot.velocity.y <= 0.0:
+		_cancel_authored_jump()
+	elif _authored_jump_elapsed >= AUTHORED_JUMP_MAX_DURATION:
+		_cancel_authored_jump()
+
+
+func _cancel_authored_jump() -> void:
+	_authored_jump_active = false
+	_authored_jump_target = Vector3.ZERO
+	_authored_jump_elapsed = 0.0
+	_authored_jump_duration = 0.0
+	_authored_jump_finish_seen = false
 
 
 ## Post-procesa después de move_and_slide().
@@ -294,13 +400,15 @@ func post_process(delta: float) -> void:
 func _execute_navigate(delta: float, target: Vector3, speed: float) -> void:
 	if agent == null:
 		return
+
+	var effective_target: Vector3 = _resolve_tactical_navigation_target(target)
 	
 	# Actualizar target del agente si cambió
-	if target != Vector3.ZERO and target != last_agent_target:
-		agent.target_position = target
-		last_agent_target = target
-		nav_target = target
-		route_target_pos = target
+	if effective_target != Vector3.ZERO and effective_target != last_agent_target:
+		agent.target_position = effective_target
+		last_agent_target = effective_target
+		nav_target = effective_target
+		route_target_pos = effective_target
 	
 	# Verificar que el mapa de navegación esté listo
 	var nav_map_rid: RID = agent.get_navigation_map()
@@ -337,8 +445,11 @@ func _execute_navigate(delta: float, target: Vector3, speed: float) -> void:
 	# Sin este filtro, el auto-jump se dispara en CADA waypoint de rampa,
 	# sobreescribiendo climb_y y haciendo que el bot salte en vez de escalar.
 	# Doble verificación: _detect_ramp_ahead() asegura que no sea rampa.
+	# Suprimir si hay cobertura delante (debe cubrirse, no saltarla)
+	# y si el rol no permite franquear (jump_frequency == 0).
 	if on_floor and height_diff > AUTO_JUMP_HEIGHT and height_diff < AUTO_JUMP_MAX_HEIGHT \
-	and _detect_step_front(dir) and not _detect_ramp_ahead(dir):
+	and _detect_step_front(dir) and not _detect_ramp_ahead(dir) \
+	and _role_allows_big_climb() and not _is_cover_ahead(dir):
 		auto_jump_pending = true
 		# Velocidad de salto: sqrt(2*g*h) * 1.15 para compensar el frame de gravedad
 		auto_jump_velocity = clamp(sqrt(2.0 * _gravity * height_diff) * 1.15, 5.0, 12.0)
@@ -348,13 +459,16 @@ func _execute_navigate(delta: float, target: Vector3, speed: float) -> void:
 	# Detecta caras verticales de escalones/rampas y aplica impulso vertical.
 	# En rampas, _detect_step_front NO se activa porque el filtro normal.y < 0.3
 	# excluye superficies inclinadas. _detect_ramp_ahead es el que detecta rampas.
-	if on_floor and _detect_step_front(dir):
+	# Suprimido si hay cobertura delante (el bot debe refugiarse, no saltarla).
+	if on_floor and _detect_step_front(dir) and not _is_cover_ahead(dir):
 		bot.velocity.y = max(bot.velocity.y, STEP_ASSIST_VELOCITY)
 	
 	# ── Vault / Step-up 2: automático para bots ──────────────────────────
 	# Para obstáculos más grandes que el step-up assist pero dentro del
 	# rango vault (~0.78u a 1.56u). El VaultController detecta y ejecuta.
-	if on_floor and _vault_controller and not _vault_controller.is_vaulting():
+	# Suprimido si hay cobertura delante o el rol no permite franquear.
+	if on_floor and _vault_controller and not _vault_controller.is_vaulting() \
+	and _role_allows_big_climb() and not _is_cover_ahead(dir):
 		var v_time: float = Time.get_ticks_msec() / 1000.0
 		if _vault_controller.try_vault(dir, v_time):
 			pass  # Vault iniciado, la velocidad la controla process_vault
@@ -403,6 +517,45 @@ func _execute_navigate(delta: float, target: Vector3, speed: float) -> void:
 			bot.velocity.y = clamp(climb_y, -MAX_CLIMB_SPEED, MAX_CLIMB_SPEED)
 
 
+## Resuelve superficies que la IA no debe elegir como destino normal.
+## Si un bot nace o queda dentro de una AvoidFloorProp, la próxima navegación
+## sale primero del área; si el objetivo queda dentro, lo desvía a un borde.
+## La penalización de rutas largas se deja al horneado por regiones con travel_cost,
+## porque NavigationObstacle3D no modifica el pathfinding estático.
+func _resolve_tactical_navigation_target(requested_target: Vector3) -> Vector3:
+	if bot == null or not bot.is_inside_tree() or requested_target == Vector3.ZERO:
+		return requested_target
+
+	var now: float = Time.get_ticks_msec() / 1000.0
+	var target_changed: bool = requested_target != _requested_navigation_target
+	if not target_changed and now < _next_tactical_surface_check_time:
+		return _tactical_navigation_target
+
+	_requested_navigation_target = requested_target
+	_next_tactical_surface_check_time = now + TACTICAL_SURFACE_RECHECK_INTERVAL
+	_tactical_navigation_target = requested_target
+	var surfaces: Array[Node] = bot.get_tree().get_nodes_in_group(&"avoid_surfaces")
+	for surface: Node in surfaces:
+		if surface == null or not is_instance_valid(surface):
+			continue
+		if not surface.has_method(&"is_position_inside"):
+			continue
+
+		var bot_is_inside: bool = bool(surface.call(&"is_position_inside", bot.global_position))
+		if bot_is_inside and surface.has_method(&"get_exit_position"):
+			_tactical_navigation_target = surface.call(
+				&"get_exit_position", bot.global_position, requested_target) as Vector3
+			return _tactical_navigation_target
+
+		var target_is_inside: bool = bool(surface.call(&"is_position_inside", requested_target))
+		if target_is_inside and surface.has_method(&"get_detour_position"):
+			_tactical_navigation_target = surface.call(
+				&"get_detour_position", requested_target, bot.global_position) as Vector3
+			return _tactical_navigation_target
+
+	return _tactical_navigation_target
+
+
 ## Movimiento por vector directo (strafe, retreat).
 func _execute_direct(delta: float, dir: Vector3, speed: float) -> void:
 	if dir.length_squared() < 0.001:
@@ -417,11 +570,12 @@ func _execute_direct(delta: float, dir: Vector3, speed: float) -> void:
 	var desired: Vector3 = normalized_dir * speed
 	
 	# Step-up assist para movimento directo (strafe en rampas)
-	if bot.is_on_floor() and _detect_step_front(normalized_dir):
+	if bot.is_on_floor() and _detect_step_front(normalized_dir) and not _is_cover_ahead(normalized_dir):
 		bot.velocity.y = max(bot.velocity.y, 3.0)
 	
 	# ── Vault / Step-up 2: automático para bots (strafe) ──
-	if bot.is_on_floor() and _vault_controller and not _vault_controller.is_vaulting():
+	if bot.is_on_floor() and _vault_controller and not _vault_controller.is_vaulting() \
+	and _role_allows_big_climb() and not _is_cover_ahead(normalized_dir):
 		var v_time: float = Time.get_ticks_msec() / 1000.0
 		if _vault_controller.try_vault(normalized_dir, v_time):
 			pass  # Vault iniciado
@@ -483,6 +637,68 @@ func _on_agent_velocity_computed(safe_velocity: Vector3) -> void:
 
 # ── Stuck detection delegada a StuckHandler ──
 # (toda la lógica se movió a stuck_handler.gd en FASE 2)
+
+
+# ══════════════════════════════════════════════════════════════════
+# SUPRESIÓN DE FRANQUEO — Cobertura & rol
+# ══════════════════════════════════════════════════════════════════
+# Los bots tenían el problema de saltar/vaultear SOBRE las coberturas en
+# lugar de usarlas. El _detect_step_front() y try_vault() veían la cara
+# vertical de un muro (cobertura) como un obstáculo a franquear. Estas
+# dos comprobaciones lo corrigen:
+#   1. _is_cover_ahead(): PSA cuando hay un punto de cobertura delante en
+#      la dirección de movimiento → NO saltar, ir hacia la cobertura.
+#   2. _role_allows_big_climb(): gate por rol vía jump_frequency → los
+#      bots solo franquean obstáculos grandes si el rol lo permite.
+# El step-up assist (escalones PEQUEÑOS ≤ 0.42u) se conserva para la
+# movilidad; solo se suprime el franqueo GRANDE (vault + auto-jump).
+
+## Distancia horizontal de detección de cobertura delante del bot.
+const COVER_AHEAD_REACH: float = 2.2
+
+## Retorna true si hay un punto de cobertura delante en la dirección de
+## movimiento (dentro de COVER_AHEAD_REACH). Si lo hay, el bot NO debe
+## saltar/vaultear esa cobertura; debe refugiarse en su lugar.
+func _is_cover_ahead(move_dir: Vector3) -> bool:
+	if bot == null or not bot.is_inside_tree():
+		return false
+	var covers: Array[Node] = bot.get_tree().get_nodes_in_group(&"cover_points")
+	if covers.is_empty():
+		return false
+
+	var fwd: Vector3 = move_dir
+	fwd.y = 0.0
+	if fwd.length_squared() < 0.01:
+		return false
+	fwd = fwd.normalized()
+
+	var bot_pos: Vector3 = bot.global_position
+	for cover: Node in covers:
+		if cover == null or not is_instance_valid(cover) or not cover.is_inside_tree():
+			continue
+		# Posición concreta desde la que se toma cobertura (duck-typing).
+		var cover_pos: Vector3 = cover.global_position
+		if "get_cover_position" in cover:
+			cover_pos = cover.get_cover_position()
+		var to_cover: Vector3 = cover_pos - bot_pos
+		to_cover.y = 0.0
+		var horiz_dist: float = to_cover.length()
+		if horiz_dist > COVER_AHEAD_REACH:
+			continue
+		to_cover = to_cover.normalized()
+		# La cobertura debe estar delante (no detrás) para afectar el salto.
+		if to_cover.dot(fwd) > 0.5:
+			return true
+	return false
+
+
+## Retorna true si el rol del bot permite franquear obstáculos grandes
+## (vault + auto-jump). Controlado por jump_frequency en roles.
+## 0 → el bot NO salta ni vaulta (solo uso de escalones pequeños).
+func _role_allows_big_climb() -> bool:
+	if bot == null or bot._tactical_role == null:
+		return false
+	return bot._tactical_role.jump_frequency > 0.0
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -719,6 +935,56 @@ func get_move_direction() -> Vector2:
 
 
 # ══════════════════════════════════════════════════════════════════
+# ORIENTACIÓN DEL CUERPO (FACING)
+# ══════════════════════════════════════════════════════════════════
+
+## Velocidad de giro del cuerpo hacia la dirección de movimiento (rad/s).
+const TURN_SPEED: float = 10.0
+
+## Retorna true si el bot está en combate activo (con un objetivo vivo o un
+## comando de mira explícito). En esos casos el CombatSystem es quien controla
+## la rotación del cuerpo encarando al objetivo, así que MovementSystem NO debe
+## pelear por el facing.
+func _bot_is_in_combat() -> bool:
+	if bot == null or bot.decision_sys == null:
+		return false
+	# Objetivo vivo presente → el CombatSystem encara al objetivo.
+	if bot.decision_sys.has_target():
+		return true
+	# Comando de mira hacia un punto concreto (p.ej. hunting) → el
+	# CombatSystem rota hacia ese punto.
+	var cc: CombatCommand = bot.decision_sys.combat_command
+	if cc and cc.aim_at_position != Vector3.ZERO:
+		return true
+	return false
+
+
+## Rota suavemente el cuerpo del bot para encarar la dirección horizontal de
+## su movimiento. Se aplica solo cuando se mueve y NO está en combate activo,
+## evitando que el bot avance de espaldas durante la navegación.
+func _face_movement_direction(delta: float) -> void:
+	if bot == null:
+		return
+	# Solo rotar si el bot realmente se mueve horizontalmente.
+	var move_h: Vector3 = Vector3(bot.velocity.x, 0.0, bot.velocity.z)
+	if move_h.length_squared() < 0.01:
+		return
+	# En combate activo el CombatSystem controla el facing → no intervenir.
+	if _bot_is_in_combat():
+		return
+
+	var forward: Vector3 = move_h.normalized()
+	# Yaw que orienta el forward (-Z) del bot hacia la dirección de movimiento.
+	# forward = (-sin(yaw), 0, -cos(yaw)) → sin(yaw)=-forward.x, cos(yaw)=-forward.z
+	var target_yaw: float = atan2(-forward.x, -forward.z)
+	var current_yaw: float = bot.global_rotation.y
+	var delta_yaw: float = angle_difference(target_yaw, current_yaw)
+	var max_step: float = TURN_SPEED * delta
+	var new_yaw: float = current_yaw + clampf(delta_yaw, -max_step, max_step)
+	bot.global_rotation = Vector3(bot.global_rotation.x, new_yaw, bot.global_rotation.z)
+
+
+# ══════════════════════════════════════════════════════════════════
 # API PÚBLICA
 # ══════════════════════════════════════════════════════════════════
 
@@ -742,5 +1008,8 @@ func reset() -> void:
 	route_phase = 0
 	route_target_pos = Vector3.ZERO
 	last_agent_target = Vector3.ZERO
+	_requested_navigation_target = Vector3.ZERO
+	_tactical_navigation_target = Vector3.ZERO
+	_next_tactical_surface_check_time = 0.0
 	if agent:
 		agent.target_position = bot.global_position if bot else Vector3.ZERO

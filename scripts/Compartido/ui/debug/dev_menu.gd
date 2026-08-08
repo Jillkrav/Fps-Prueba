@@ -5,15 +5,15 @@ const BOT_SCENE: String = "res://scenes/Multiplayer/objetos/bots/bot.tscn"
 
 @onready var panel_principal: Panel        = $PanelPrincipal
 @onready var panel_npc: Panel              = $PanelNPC
-@onready var btn_invisible: Button         = $PanelPrincipal/VBox/BtnInvisible
-@onready var btn_generar: Button           = $PanelPrincipal/VBox/BtnGenerar
+@onready var btn_invisible: Button         = $PanelPrincipal/ScrollContainer/VBox/BtnInvisible
+@onready var btn_generar: Button           = $PanelPrincipal/ScrollContainer/VBox/BtnGenerar
 @onready var btn_spawn: Button             = $PanelNPC/VBox/BtnSpawn
 @onready var btn_volver: Button            = $PanelNPC/VBox/BtnVolver
 @onready var opt_relacion: OptionButton    = $PanelNPC/VBox/GridAtributos/OptRelacion
 @onready var opt_experiencia: OptionButton = $PanelNPC/VBox/GridAtributos/OptExperiencia
 @onready var opt_tipo_npc: OptionButton    = $PanelNPC/VBox/GridAtributos/OptArma
 @onready var opt_rol: OptionButton         = $PanelNPC/VBox/GridAtributos/OptRol
-@onready var lbl_status: Label             = $PanelPrincipal/VBox/LblStatus
+@onready var lbl_status: Label             = $PanelPrincipal/ScrollContainer/VBox/LblStatus
 
 var _panel_armas: PanelContainer    = null
 var _weapon_list: VBoxContainer     = null
@@ -21,6 +21,7 @@ var _panel_equipo: PanelContainer   = null
 var _armas_lista: Array[String]     = []
 var is_invisible: bool              = false
 var ai_disabled: bool               = false
+var _mostrar_caminos: bool          = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -73,10 +74,10 @@ func _seleccionar_opcion(opt: OptionButton, id: int) -> void:
 
 # ── Botones extras en panel principal ────────────────────────────────────────
 func _agregar_botones_extras() -> void:
-	var vbox: VBoxContainer = get_node_or_null("PanelPrincipal/VBox")
+	var vbox: VBoxContainer = get_node_or_null("PanelPrincipal/ScrollContainer/VBox")
 	if not vbox:
 		return
-	var lbl: Label = get_node_or_null("PanelPrincipal/VBox/LblStatus")
+	var lbl: Label = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/LblStatus")
 	var insert_idx: int = lbl.get_index() if lbl else vbox.get_child_count()
 
 	# Boton selector de armas
@@ -149,6 +150,16 @@ func _agregar_botones_extras() -> void:
 	btn_reassign.pressed.connect(_on_reassign_orders_pressed)
 	vbox.add_child(btn_reassign)
 	vbox.move_child(btn_reassign, insert_idx + 6)
+
+	# Botón mostrar/ocultar todos los caminos (rutas CaminoBot)
+	var btn_caminos := Button.new()
+	btn_caminos.name = "BtnMostrarCaminos"
+	btn_caminos.text = "Mostrar Caminos [OFF]"
+	btn_caminos.custom_minimum_size = Vector2(0, 36)
+	btn_caminos.add_theme_font_size_override("font_size", 16)
+	btn_caminos.pressed.connect(_on_mostrar_caminos_pressed)
+	vbox.add_child(btn_caminos)
+	vbox.move_child(btn_caminos, insert_idx + 7)
 
 	# Botón de puntos semánticos eliminado (migrados por el usuario)
 
@@ -277,7 +288,7 @@ func _on_equipo_elegido(id: int) -> void:
 		return
 	
 	# Actualizar texto del boton
-	var btn_eq: Button = get_node_or_null("PanelPrincipal/VBox/BtnCambiarEquipo")
+	var btn_eq: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnCambiarEquipo")
 	if is_instance_valid(btn_eq):
 		btn_eq.text = "Cambiar Equipo [%s]" % GameState.nombre_equipo(id)
 	_cerrar_panel_equipo()
@@ -373,7 +384,7 @@ func _on_invisible_pressed() -> void:
 
 func _on_ai_disable_pressed() -> void:
 	ai_disabled = !ai_disabled
-	var btn: Button = get_node_or_null("PanelPrincipal/VBox/BtnAiDisable")
+	var btn: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnAiDisable")
 	if not btn:
 		return
 
@@ -402,14 +413,14 @@ func _on_volver_pressed() -> void:
 
 func _on_bot_debug_pressed() -> void:
 	BotBase.toggle_debug_overlay_all()
-	var btn: Button = get_node_or_null("PanelPrincipal/VBox/BtnBotDebug")
+	var btn: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnBotDebug")
 	if btn:
 		btn.text = "Bot Debug Info [ON]" if BotDebugOverlay.enabled else "Bot Debug Info [OFF]"
 	lbl_status.text = "Bot Debug %s" % ("ACTIVADO" if BotDebugOverlay.enabled else "DESACTIVADO")
 
 func _on_unit_props_pressed() -> void:
 	BotDebugOverlay.toggle_unit_properties_all()
-	var btn: Button = get_node_or_null("PanelPrincipal/VBox/BtnUnitProps")
+	var btn: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnUnitProps")
 	if btn:
 		btn.text = "Propiedades de unidad [ON]" if BotDebugOverlay.enabled else "Propiedades de unidad [OFF]"
 	lbl_status.text = "Propiedades de unidad %s" % ("ACTIVADO" if BotDebugOverlay.enabled else "DESACTIVADO")
@@ -440,6 +451,23 @@ func _on_reassign_orders_pressed() -> void:
 	TeamAI.assign_orders_all()
 	lbl_status.text = "[ORDENES RE-ASIGNADAS a todos los bots]"
 	print("[DevMenu] Ordenes re-asignadas a todos los bots via TeamAI")
+
+
+## Muestra u oculta la geometría de todos los caminos (CaminoBot) en partida.
+func _on_mostrar_caminos_pressed() -> void:
+	_mostrar_caminos = not _mostrar_caminos
+	var rutas: Array[Node] = get_tree().get_nodes_in_group(&"bot_routes")
+	var visibles: int = 0
+	for ruta in rutas:
+		if ruta is CaminoBot:
+			ruta.show_debug = _mostrar_caminos
+			visibles += 1
+	var btn: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnMostrarCaminos")
+	if btn:
+		btn.text = "Mostrar Caminos [ON]" if _mostrar_caminos else "Mostrar Caminos [OFF]"
+	var estado: String = "VISIBLES" if _mostrar_caminos else "OCULTOS"
+	lbl_status.text = "Caminos %s (%d)" % [estado, visibles]
+	print("[DevMenu] Caminos %s: %d rutas" % [("mostrados" if _mostrar_caminos else "ocultos"), visibles])
 
 
 # Puntos semánticos eliminados (migrados por el usuario)

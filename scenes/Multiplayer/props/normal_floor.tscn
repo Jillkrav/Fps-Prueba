@@ -1,0 +1,30 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/normal_floor_prop.gd" id="1_script"]
+[ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
+[ext_resource type="Material" path="res://Assets/Multiplayer/props/materials/prop_floor_slate.tres" id="3_material"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(8, 0.2, 8)
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor"]
+size = Vector3(8, 0.2, 8)
+
+[node name="NormalFloor" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+prop_name = "Piso normal"
+prop_id = &"floor_normal"
+tactical_use = 1
+library_config = ExtResource("2_config")
+navigation_priority = 1.0
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.1, 0)
+mesh = SubResource("BoxMesh_floor")
+material_override = ExtResource("3_material")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.1, 0)
+shape = SubResource("BoxShape_floor")

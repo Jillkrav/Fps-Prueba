@@ -1,6 +1,7 @@
 # scripts/props/prop_base.gd
 # Base class for all Props — objetos de escena reutilizables
 # que los bots pueden recorrer (rampas, escaleras, etc).
+@tool
 class_name PropBase
 extends StaticBody3D
 

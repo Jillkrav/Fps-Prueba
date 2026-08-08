@@ -279,6 +279,28 @@ func update_enemy_distance(distance: float) -> void:
 	_last_enemy_distance = distance
 
 
+## Devuelve si el arma actual está recargando.
+func is_reloading() -> bool:
+	return _is_reloading
+
+
+## Solicita una recarga manual desde la lógica táctica.
+## Retorna true cuando la solicitud inició o la recarga ya estaba activa.
+func request_reload() -> bool:
+	if current_weapon == null or not is_instance_valid(current_weapon):
+		return false
+	if _is_reloading:
+		return true
+	if current_weapon.ammo_in_mag >= current_weapon.clip_size:
+		return false
+	if current_weapon.reserve_ammo <= 0:
+		return false
+	if bot != null and bot.weapon_equip_state != null and not bot.weapon_equip_state.can_reload():
+		return false
+	_start_reload()
+	return _is_reloading
+
+
 ## Obtiene el perfil AI del arma actual.
 func get_current_profile() -> WeaponAIProfile:
 	if current_weapon == null:
@@ -351,6 +373,15 @@ func _update_weapon_status() -> void:
 	# Emitir señal si la munición cambió
 	if ammo_count != prev_ammo or reserve_ammo != prev_reserve:
 		ammo_changed.emit(ammo_count, reserve_ammo)
+
+
+## Sincroniza el estado publicado tras una modificación externa de munición.
+func sync_from_current_weapon() -> void:
+	if current_weapon == null or not is_instance_valid(current_weapon):
+		return
+	ammo_count = current_weapon.ammo_in_mag
+	reserve_ammo = current_weapon.reserve_ammo
+	_update_weapon_status()
 
 
 ## Retorna true si el arma actual puede disparar.

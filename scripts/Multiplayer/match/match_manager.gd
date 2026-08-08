@@ -206,6 +206,23 @@ func registrar_spawn_points_equipo(team: int, points: Array[Marker3D]) -> void:
 	var count: int = spawn_points_blue.size() if team == int(Enums.Equipo.AZUL) else spawn_points_red.size()
 	print("[MatchManager] Spawn points registrados para %s: %d" % [GameState.nombre_equipo(team), count])
 
+## Devuelve los puntos de spawn válidos de un equipo para la IA táctica.
+func get_spawn_points_for_team(team: int) -> Array[Marker3D]:
+	var source_points: Array[Marker3D] = []
+	match team:
+		int(Enums.Equipo.AZUL):
+			source_points = spawn_points_blue
+		int(Enums.Equipo.ROJO):
+			source_points = spawn_points_red
+		_:
+			return []
+	var valid_points: Array[Marker3D] = []
+	for point: Marker3D in source_points:
+		if point != null and is_instance_valid(point) and point.is_inside_tree():
+			valid_points.append(point)
+	return valid_points
+
+
 func obtener_spawn_point(team: int, exclude_positions: Array = []) -> Marker3D:
 	var points: Array[Marker3D]
 	match team:

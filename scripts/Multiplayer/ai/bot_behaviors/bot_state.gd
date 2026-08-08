@@ -37,6 +37,8 @@ enum StateType {
 	HOLDING = 10,       # Quieto / mantener posición
 	FALLING = 11,       # Cayendo
 	TAKING_HIT = 12,    # Recibiendo daño / stun
+	FLEEING = 13,       # Supervivencia: arma guardada, buscar recurso/base
+	COVER_RELOAD = 14,  # Buscar cobertura y recargar bajo presión
 }
 
 

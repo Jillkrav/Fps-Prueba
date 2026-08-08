@@ -157,40 +157,12 @@ func _setup_match() -> void:
 	# 2.5 Mejorar navegación
 	_update_navigation()
 	
-	# 2.75 Instanciar puntos semánticos del mapa (si existen)
-	_instantiate_semantic_points()
-	
 	# 3. Conectar fin de partida
 	if GameStateMP.match_ended.is_connected(_on_match_ended):
 		GameStateMP.match_ended.disconnect(_on_match_ended)
 	GameStateMP.match_ended.connect(_on_match_ended)
 	
 	print("[MapManager] Mapa inicializado para partida de bots!")
-
-## Instancia los puntos semánticos del mapa si existe el archivo
-## correspondiente. Busca un archivo 'semantic_points_[map_name].tscn'
-## y lo agrega como hijo del mapa raíz.
-func _instantiate_semantic_points() -> void:
-	if not _map_root:
-		return
-	
-	# Determinar el nombre del mapa para buscar su archivo de puntos
-	var map_name: String = _map_root.name.to_lower()
-	var scene_path: String = "res://scenes/Multiplayer/mapas/semantic_points_%s.tscn" % map_name
-	
-	if ResourceLoader.exists(scene_path):
-		var sem_scene: PackedScene = load(scene_path)
-		if sem_scene:
-			var instance: Node = sem_scene.instantiate()
-			_map_root.add_child(instance)
-			instance.owner = _map_root
-			print("[MapManager] Puntos semánticos instanciados desde: %s" % scene_path)
-			
-			# Cargar los puntos en NavigationSystem inmediatamente
-			NavigationSystem.load_semantic_points()
-	else:
-		print("[MapManager] No hay puntos semánticos para: %s" % scene_path)
-
 
 func _replace_cores() -> void:
 	if not _map_root:
