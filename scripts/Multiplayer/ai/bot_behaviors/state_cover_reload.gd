@@ -4,7 +4,20 @@ class_name StateCoverReload
 
 const COVER_SPEED: float = 5.8
 const COVER_ARRIVAL_DISTANCE: float = 1.5
+const COVER_SEARCH_TIMEOUT: float = 10.0
+const COVER_USE_TIMEOUT: float = 15.0
+const NO_COVER_RETREAT_SPEED: float = 6.2
 
+## Si no queda cobertura disponible, no se queda inmóvil expuesto: se repliega
+## al origen propio mientras espera el watchdog de búsqueda o una cobertura libre.
+enum CoverPhase {
+	SEARCHING,
+	USING,
+	FALLBACK_RETREAT,
+}
+
+var _phase: int = CoverPhase.SEARCHING
+var _phase_started_at: float = 0.0
 var _reserved_cover: Node = null
 var _has_requested_reload: bool = false
 var _failed_cover_ids: Dictionary = {}
@@ -15,9 +28,13 @@ var _last_distance_to_cover: float = INF
 func _init() -> void:
 	state_type = StateType.COVER_RELOAD
 	state_name = "cover_reload"
+	# Los límites se aplican por fase usando reloj monotónico, no por tick de IA.
+	max_duration = INF
 
 
 func enter(_previous_state: BotState) -> void:
+	_phase = CoverPhase.SEARCHING
+	_phase_started_at = _now_seconds()
 	_has_requested_reload = false
 	_failed_cover_ids.clear()
 	_cover_attempt_started_at = 0.0
@@ -30,22 +47,30 @@ func enter(_previous_state: BotState) -> void:
 func execute(_delta: float) -> void:
 	if bot == null or bot.is_dead or bot.tactical_sys == null:
 		return
-	
+
 	combat_cmd.cease_fire = true
 	if bot.tactical_sys.should_force_flee():
 		change_state(BotState.StateType.FLEEING)
 		return
-	
 	if not bot.tactical_sys.requires_cover_for_reload():
 		_exit_cover_state()
 		return
-	
-	if not _reserve_cover():
-		# No hay cobertura libre. La condición crítica la sigue controlando el
-		# modo Huir; en otro caso, el combate puede continuar sin bloquearse.
-		_exit_cover_state()
+
+	# El límite sigue activo tanto buscando como replegándose sin cobertura.
+	# Solo se pausa cuando el bot ya alcanzó una cobertura y está recargando.
+	if _phase != CoverPhase.USING and _now_seconds() - _phase_started_at >= COVER_SEARCH_TIMEOUT:
+		_exit_to_route_re_evaluation("No encontró cobertura en %.1fs" % COVER_SEARCH_TIMEOUT)
 		return
-	
+
+	if not _reserve_cover():
+		# Mantener la búsqueda, pero sin dejar al bot quieto bajo fuego. El origen
+		# propio es el fallback semántico estable de todos los mapas compatibles.
+		_phase = CoverPhase.FALLBACK_RETREAT
+		_move_to_safe_origin()
+		return
+
+	if _phase == CoverPhase.FALLBACK_RETREAT:
+		_phase = CoverPhase.SEARCHING
 	var cover_target: Vector3 = _reserved_cover.get_cover_position()
 	var distance_to_cover: float = bot.global_position.distance_to(cover_target)
 	if distance_to_cover > COVER_ARRIVAL_DISTANCE:
@@ -56,12 +81,22 @@ func execute(_delta: float) -> void:
 		movement_cmd.set_navigate(cover_target, _role_speed(COVER_SPEED))
 		movement_cmd.sprint = true
 		return
-	
+
+	if _phase != CoverPhase.USING:
+		_phase = CoverPhase.USING
+		_phase_started_at = _now_seconds()
+
 	# Llegó al punto exacto: inmovilizarse evita la inquietud junto al prop.
 	movement_cmd.set_hold()
+	# Encarar el frente de la cobertura (hacia el enemigo) en vez de quedarse
+	# de espaldas a la amenaza mientras recarga.
+	_face_cover_front()
 	_request_reload_if_possible()
 	if _reload_finished():
 		_exit_cover_state()
+		return
+	if _now_seconds() - _phase_started_at >= COVER_USE_TIMEOUT:
+		_exit_to_route_re_evaluation("Uso de cobertura agotó %.1fs" % COVER_USE_TIMEOUT)
 
 
 func exit(_next_state: BotState) -> void:
@@ -72,6 +107,20 @@ func exit(_next_state: BotState) -> void:
 func on_take_damage(_amount: float, _attacker: Node3D) -> void:
 	# El cambio a Huir por daño crítico lo resuelve execute() mediante TacticalUtilitySystem.
 	pass
+
+
+## Repliegue conservador mientras no exista cobertura asignable. Si el origen
+## falta en un mapa antiguo, HOLD sigue siendo el fallback seguro sin inventar
+## un destino libre en el NavMesh.
+func _move_to_safe_origin() -> void:
+	if bot == null:
+		return
+	var origin: Node3D = bot._get_own_base_origin()
+	if origin == null or not is_instance_valid(origin) or not origin.is_inside_tree():
+		movement_cmd.set_hold()
+		return
+	movement_cmd.set_navigate(origin.global_position, _role_speed(NO_COVER_RETREAT_SPEED))
+	movement_cmd.sprint = true
 
 
 func _reserve_cover() -> bool:
@@ -120,6 +169,40 @@ func _release_cover() -> void:
 	_reserved_cover = null
 
 
+## Orienta al bot hacia el frente de la cobertura (el lado de la amenaza)
+## mientras recarga apostado. Sin esto, si el bot no tiene un objetivo vivo
+## (p.ej. se escondió para recargar), conserva la orientación con la que
+## llegó al punto y puede quedar de espaldas al enemigo tras un muro de
+## un sentido. El CombatSystem es el dueño del facing, así que le indicamos
+## el punto a mirar vía el comando (con cease_fire solo orienta, no dispara).
+func _face_cover_front() -> void:
+	if bot == null or _reserved_cover == null or not is_instance_valid(_reserved_cover):
+		return
+	# Si hay un objetivo vivo, el CombatSystem ya lo encara vía
+	# _aim_at_target_entity() (aim_at_position queda ZERO). No interferir.
+	if has_target():
+		return
+	var front: Vector3 = _cover_front_direction()
+	if front.length_squared() < 0.001:
+		return
+	combat_cmd.aim_at_position = bot.global_position + front * 10.0
+
+
+## Dirección global hacia el frente de la cobertura (lado del que protege).
+## Convención: el eje local +Z del CoverPoint apunta hacia el frente. Para el
+## muro bajo de un sentido, el CoverBack queda en el lado seguro (-Z) y su +Z
+## señala hacia el frente/enemigo (+Z).
+func _cover_front_direction() -> Vector3:
+	var cover: Node = _reserved_cover
+	if cover == null or not is_instance_valid(cover) or not (cover is Node3D):
+		return Vector3.ZERO
+	var node: Node3D = cover as Node3D
+	# En el árbol usamos la orientación global (respeta props rotados); fuera
+	# del árbol (tests) la local suele bastar y evita errores de get_global_transform.
+	var basis: Basis = node.global_transform.basis if node.is_inside_tree() else node.transform.basis
+	return basis.z.normalized()
+
+
 func _request_reload_if_possible() -> void:
 	if _has_requested_reload or bot == null or bot.weapon_sys == null:
 		return
@@ -143,6 +226,23 @@ func _exit_cover_state() -> void:
 		change_state(BotState.StateType.COMBAT)
 	else:
 		change_state(BotState.StateType.ROAMING)
+
+
+## El flujo de ROAMING retoma inmediatamente una ruta authored y reevalúa la
+## necesidad táctica. No se hace wander ni se reserva la cobertura expirada.
+func _exit_to_route_re_evaluation(reason: String) -> void:
+	_debug(reason + "; regreso a ruta y reevaluación.")
+	_release_cover()
+	change_state(BotState.StateType.ROAMING)
+
+
+func _now_seconds() -> float:
+	return float(Time.get_ticks_msec()) / 1000.0
+
+
+func _debug(message: String) -> void:
+	if bot != null:
+		bot._debug("[cover_reload] " + message)
 
 
 func _role_speed(base_speed: float) -> float:

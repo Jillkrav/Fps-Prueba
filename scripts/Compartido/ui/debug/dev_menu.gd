@@ -22,6 +22,7 @@ var _armas_lista: Array[String]     = []
 var is_invisible: bool              = false
 var ai_disabled: bool               = false
 var _mostrar_caminos: bool          = false
+var _mostrar_zonas_debug: bool      = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -160,6 +161,36 @@ func _agregar_botones_extras() -> void:
 	btn_caminos.pressed.connect(_on_mostrar_caminos_pressed)
 	vbox.add_child(btn_caminos)
 	vbox.move_child(btn_caminos, insert_idx + 7)
+
+	# Botón mostrar/ocultar las áreas semánticas de depuración del mapa.
+	var btn_zonas_debug: Button = Button.new()
+	btn_zonas_debug.name = "BtnMostrarZonasDebug"
+	btn_zonas_debug.text = "Mostrar Zonas Debug [OFF]"
+	btn_zonas_debug.custom_minimum_size = Vector2(0, 36)
+	btn_zonas_debug.add_theme_font_size_override("font_size", 16)
+	btn_zonas_debug.pressed.connect(_on_mostrar_zonas_debug_pressed)
+	vbox.add_child(btn_zonas_debug)
+	vbox.move_child(btn_zonas_debug, insert_idx + 8)
+
+	# Boton Modo Dios
+	var btn_dios := Button.new()
+	btn_dios.name = "BtnGodMode"
+	btn_dios.text = "Modo Dios [%s]" % ("ON" if GameState.god_mode else "OFF")
+	btn_dios.custom_minimum_size = Vector2(0, 36)
+	btn_dios.add_theme_font_size_override("font_size", 16)
+	btn_dios.pressed.connect(_on_god_mode_pressed)
+	vbox.add_child(btn_dios)
+	vbox.move_child(btn_dios, insert_idx + 9)
+
+	# Boton Fuego Amigo
+	var btn_amigo := Button.new()
+	btn_amigo.name = "BtnFuegoAmigo"
+	btn_amigo.text = "Fuego Amigo [%s]" % ("ON" if GameState.friendly_fire else "OFF")
+	btn_amigo.custom_minimum_size = Vector2(0, 36)
+	btn_amigo.add_theme_font_size_override("font_size", 16)
+	btn_amigo.pressed.connect(_on_friendly_fire_pressed)
+	vbox.add_child(btn_amigo)
+	vbox.move_child(btn_amigo, insert_idx + 10)
 
 	# Botón de puntos semánticos eliminado (migrados por el usuario)
 
@@ -468,6 +499,42 @@ func _on_mostrar_caminos_pressed() -> void:
 	var estado: String = "VISIBLES" if _mostrar_caminos else "OCULTOS"
 	lbl_status.text = "Caminos %s (%d)" % [estado, visibles]
 	print("[DevMenu] Caminos %s: %d rutas" % [("mostrados" if _mostrar_caminos else "ocultos"), visibles])
+
+
+## Muestra u oculta los volúmenes de Base Azul, Base Roja y Mitad del Mapa.
+## Solo cambia sus MeshInstance3D: las Area3D se mantienen sin colisión.
+func _on_mostrar_zonas_debug_pressed() -> void:
+	_mostrar_zonas_debug = not _mostrar_zonas_debug
+	var zones: Array[Node] = get_tree().get_nodes_in_group(&"map_debug_zones")
+	var updated: int = 0
+	for zone: Node in zones:
+		if zone is DebugMapZone:
+			(zone as DebugMapZone).set_display_enabled(_mostrar_zonas_debug)
+			updated += 1
+	var btn: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnMostrarZonasDebug") as Button
+	if btn != null:
+		btn.text = "Mostrar Zonas Debug [ON]" if _mostrar_zonas_debug else "Mostrar Zonas Debug [OFF]"
+	var state: String = "VISIBLES" if _mostrar_zonas_debug else "OCULTAS"
+	lbl_status.text = "Zonas Debug %s (%d)" % [state, updated]
+	print("[DevMenu] Zonas Debug %s: %d áreas" % [("mostradas" if _mostrar_zonas_debug else "ocultas"), updated])
+
+
+func _on_god_mode_pressed() -> void:
+	GameState.god_mode = !GameState.god_mode
+	var btn: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnGodMode")
+	if btn:
+		btn.text = "Modo Dios [%s]" % ("ON" if GameState.god_mode else "OFF")
+	lbl_status.text = "[MODO DIOS ACTIVO - INMORTAL]" if GameState.god_mode else "[Modo Dios desactivado]"
+	print("[DevMenu] Modo Dios = %s" % GameState.god_mode)
+
+
+func _on_friendly_fire_pressed() -> void:
+	GameState.friendly_fire = !GameState.friendly_fire
+	var btn: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnFuegoAmigo")
+	if btn:
+		btn.text = "Fuego Amigo [%s]" % ("ON" if GameState.friendly_fire else "OFF")
+	lbl_status.text = "[FUEGO AMIGO ACTIVO]" if GameState.friendly_fire else "[Fuego amigo DESACTIVADO - aliados no se dañan]"
+	print("[DevMenu] Fuego Amigo = %s" % GameState.friendly_fire)
 
 
 # Puntos semánticos eliminados (migrados por el usuario)

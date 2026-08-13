@@ -59,11 +59,16 @@ collision_mask = 0
 shape = SubResource("SphereShape3D_head")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=1870977625]
+# Evita que NavigationAgent3D arranque con el vector global cero, que el nodo
+# nativo rechaza antes de que MatchManager ubique al bot en su spawn.
+target_position = Vector3(0, 0, -0.01)
+path_desired_distance = 0.65
 target_desired_distance = 1.5
-path_max_distance = 1.5
+path_max_distance = 3.0
 avoidance_enabled = true
-radius = 0.8
-max_speed = 6.0
+radius = 0.65
+height = 1.8
+max_speed = 8.5
 
 [node name="AreaVision" type="Area3D" parent="." unique_id=466204919]
 collision_layer = 0

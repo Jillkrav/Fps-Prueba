@@ -58,25 +58,43 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	_background = ColorRect.new()
-	_background.color = Color(0.0, 0.0, 0.0, 0.75)
+	_background.color = Color(0.0, 0.0, 0.0, 0.7)
 	_background.anchors_preset = Control.PRESET_FULL_RECT
 	add_child(_background)
-	
+
+	# Panel centrado en el medio de la pantalla (en lugar de estirarse a los bordes)
+	var center: CenterContainer = CenterContainer.new()
+	center.anchors_preset = Control.PRESET_FULL_RECT
+	add_child(center)
+
+	var panel: PanelContainer = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(840, 0)
+	center.add_child(panel)
+
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.06, 0.06, 0.10, 0.95)
+	panel_style.border_width_left = 1
+	panel_style.border_width_top = 1
+	panel_style.border_width_right = 1
+	panel_style.border_width_bottom = 1
+	panel_style.border_color = Color(0.35, 0.35, 0.45, 1.0)
+	panel_style.corner_radius_top_left = 10
+	panel_style.corner_radius_top_right = 10
+	panel_style.corner_radius_bottom_left = 10
+	panel_style.corner_radius_bottom_right = 10
+	panel.add_theme_stylebox_override("panel", panel_style)
+
 	var main_margin: MarginContainer = MarginContainer.new()
-	main_margin.anchors_preset = Control.PRESET_FULL_RECT
-	main_margin.add_theme_constant_override("margin_left", 40)
-	main_margin.add_theme_constant_override("margin_right", 40)
-	main_margin.add_theme_constant_override("margin_top", 25)
-	main_margin.add_theme_constant_override("margin_bottom", 25)
-	main_margin.clip_contents = true
-	add_child(main_margin)
-	
+	main_margin.add_theme_constant_override("margin_left", 26)
+	main_margin.add_theme_constant_override("margin_right", 26)
+	main_margin.add_theme_constant_override("margin_top", 20)
+	main_margin.add_theme_constant_override("margin_bottom", 20)
+	panel.add_child(main_margin)
+
 	var main_vbox: VBoxContainer = VBoxContainer.new()
-	main_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	main_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	main_vbox.add_theme_constant_override("separation", 12)
 	main_margin.add_child(main_vbox)
-	
+
 	# Titulo
 	_title = Label.new()
 	_title.text = "SCOREBOARD"
@@ -86,13 +104,13 @@ func _build_ui() -> void:
 	_title.add_theme_color_override("font_outline_color", Color.BLACK)
 	_title.add_theme_constant_override("outline_size", 2)
 	main_vbox.add_child(_title)
-	
+
 	# Encabezado de columnas
 	var column_header: HBoxContainer = HBoxContainer.new()
 	column_header.add_theme_constant_override("separation", 2)
 	column_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column_header.clip_contents = true
-	
+
 	var header_labels: Array[String] = ["Nombre", "HP", "Kills", "Muertes", "Estado", "Rol activo"]
 	for i in range(header_labels.size()):
 		var hdr: Label = Label.new()
@@ -105,26 +123,26 @@ func _build_ui() -> void:
 		hdr.add_theme_font_size_override("font_size", 14)
 		column_header.add_child(hdr)
 	main_vbox.add_child(column_header)
-	
+
 	# Separador
 	var separator: HSeparator = HSeparator.new()
 	separator.add_theme_color_override("color", Color(0.5, 0.5, 0.5, 0.5))
 	main_vbox.add_child(separator)
-	
+
 	# Contenedor de equipos (dos columnas)
 	var teams_hbox: HBoxContainer = HBoxContainer.new()
 	teams_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	teams_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	teams_hbox.add_theme_constant_override("separation", 20)
 	main_vbox.add_child(teams_hbox)
-	
+
 	# Columna Azul
 	var blue_vbox: VBoxContainer = VBoxContainer.new()
 	blue_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	blue_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	blue_vbox.add_theme_constant_override("separation", 4)
 	teams_hbox.add_child(blue_vbox)
-	
+
 	_blue_header = Label.new()
 	_blue_header.text = "EQUIPO AZUL"
 	_blue_header.add_theme_color_override("font_color", COLOR_AZUL)
@@ -132,23 +150,27 @@ func _build_ui() -> void:
 	_blue_header.add_theme_constant_override("outline_size", 1)
 	_blue_header.add_theme_color_override("font_outline_color", Color.BLACK)
 	blue_vbox.add_child(_blue_header)
-	
+
+	# Scroll para que quepan muchos jugadores azules
+	var blue_scroll: ScrollContainer = ScrollContainer.new()
+	blue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	blue_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	blue_scroll.custom_minimum_size.y = 200.0
+	blue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	blue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	blue_vbox.add_child(blue_scroll)
+
 	_blue_container = VBoxContainer.new()
 	_blue_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_blue_container.add_theme_constant_override("separation", 2)
-	blue_vbox.add_child(_blue_container)
-	
-	var blue_spacer: Control = Control.new()
-	blue_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	blue_vbox.add_child(blue_spacer)
-	
+	blue_scroll.add_child(_blue_container)
+
 	# Columna Roja
 	var red_vbox: VBoxContainer = VBoxContainer.new()
 	red_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	red_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	red_vbox.add_theme_constant_override("separation", 4)
 	teams_hbox.add_child(red_vbox)
-	
+
 	_red_header = Label.new()
 	_red_header.text = "EQUIPO ROJO"
 	_red_header.add_theme_color_override("font_color", COLOR_ROJO)
@@ -156,21 +178,25 @@ func _build_ui() -> void:
 	_red_header.add_theme_constant_override("outline_size", 1)
 	_red_header.add_theme_color_override("font_outline_color", Color.BLACK)
 	red_vbox.add_child(_red_header)
-	
+
+	# Scroll para que quepan muchos jugadores rojos
+	var red_scroll: ScrollContainer = ScrollContainer.new()
+	red_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	red_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	red_scroll.custom_minimum_size.y = 200.0
+	red_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	red_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	red_vbox.add_child(red_scroll)
+
 	_red_container = VBoxContainer.new()
 	_red_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_red_container.add_theme_constant_override("separation", 2)
-	red_vbox.add_child(_red_container)
-	
-	var red_spacer: Control = Control.new()
-	red_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	red_vbox.add_child(red_spacer)
-	
+	red_scroll.add_child(_red_container)
+
 	# Separador inferior
 	var sep2: HSeparator = HSeparator.new()
 	sep2.add_theme_color_override("color", Color(0.5, 0.5, 0.5, 0.5))
 	main_vbox.add_child(sep2)
-	
+
 	# Informacion global
 	_global_info = Label.new()
 	_global_info.text = ""

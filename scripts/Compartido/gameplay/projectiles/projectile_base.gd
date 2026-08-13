@@ -40,11 +40,19 @@ var _ignore_shooter_collision: bool = true
 var _stick_offset: Transform3D
 var _original_collision_layer: int
 var _original_collision_mask: int
+var _prev_position: Vector3 = Vector3.ZERO  # Posición previa para raycast de personajes
 
 func _ready() -> void:
 	# Guardar valores originales de colisión
 	_original_collision_layer = collision_layer
 	_original_collision_mask = collision_mask
+	
+	# ── Separar física de detección de personajes ──────────────────────────
+	# Quitar la capa 2 (jugadores/bots) de la colisión FÍSICA del RigidBody
+	# para que las balas NO empujen a los personajes. La detección de impacto
+	# contra personajes se hace con un raycast por frame (sin colisión física).
+	var mask_sin_personajes: int = _original_collision_mask & ~(1 << 1)
+	_original_collision_mask = mask_sin_personajes
 	
 	# Desactivar colisión temporalmente (período de gracia) para evitar
 	# que el proyectil colisione con el shooter que acaba de dispararlo
@@ -63,7 +71,7 @@ func _ready() -> void:
 	freeze = false
 	gravity_scale = 0.0  # Controlaremos la gravedad manualmente en _physics_process
 	
-	# Conectar señal de colisión
+	# Conectar señal de colisión (paredes, objetivos, mundo)
 	body_entered.connect(_on_body_entered)
 	
 	# Aplicar velocidad inicial en dirección forward
@@ -71,6 +79,9 @@ func _ready() -> void:
 		linear_velocity = _direction * speed
 	else:
 		linear_velocity = _direction * 10.0
+	
+	# Posición inicial para el raycast de personajes
+	_prev_position = global_position
 	
 	# Timer de vida útil
 	_lifespan_timer = Timer.new()
@@ -102,6 +113,12 @@ func _physics_process(delta: float) -> void:
 		# (paralela a UP), usar RIGHT como vector de referencia
 		var up: Vector3 = Vector3.RIGHT if abs(dir.dot(Vector3.UP)) > 0.99 else Vector3.UP
 		look_at(global_position + dir, up)
+	
+	# Detección de impacto contra jugadores/bots (capa 2) por raycast.
+	# El RigidBody ya no colisiona físicamente con ellos (no los empuja),
+	# así que usamos un raycast por frame para detectar el impacto sin
+	# generar colisión física ni empuje.
+	_check_character_hits()
 
 func _process(_delta: float) -> void:
 	# Seguimiento del cuerpo donde está clavado (sin reparentear para evitar
@@ -151,6 +168,58 @@ func _on_grace_period_end() -> void:
 		return
 	collision_layer = _original_collision_layer
 	collision_mask = _original_collision_mask
+
+## Raycast por frame para detectar impactos contra jugadores/bots (capa 2).
+## El proyectil no colisiona físicamente con ellos (no los empuja), pero
+## este raycast detecta el impacto a lo largo del desplazamiento del frame.
+func _check_character_hits() -> void:
+	if not is_instance_valid(self) or is_queued_for_deletion():
+		return
+	# Solo tras el período de gracia
+	if collision_layer == 0:
+		_prev_position = global_position
+		return
+	
+	var space_state := get_world_3d().direct_space_state
+	var from: Vector3 = _prev_position
+	var to: Vector3 = global_position
+	
+	# Si no hay desplazamiento este frame, no hay nada que comprobar
+	if from.distance_squared_to(to) < 0.0001:
+		_prev_position = global_position
+		return
+	
+	# Detectar capas 1 (paredes) y 2 (jugadores/bots). Si la primera colisión
+	# es una pared, la bala no debe atravesarla (el RigidBody se encarga de
+	# destruirla al impactar); solo hacemos daño si el primer objeto es un personaje.
+	var query := PhysicsRayQueryParameters3D.create(
+		from,
+		to,
+		(1 << 0) | (1 << 1)  # Capa 1 (mundo) y capa 2 (jugadores/bots)
+	)
+	query.exclude = [get_rid()]
+	var result := space_state.intersect_ray(query)
+	
+	if not result.is_empty():
+		var body: Object = result.get("collider")
+		# El collider puede ser el CollisionShape3D del personaje; subir al body
+		while body is CollisionShape3D and body.get_parent():
+			body = body.get_parent()
+		if body is Node3D and body.has_method("take_damage"):
+			_on_detected_body(body)
+	
+	_prev_position = global_position
+
+## Procesa un cuerpo detectado por el raycast de personajes.
+func _on_detected_body(body: Node) -> void:
+	if not is_instance_valid(body):
+		return
+	# Ignorar al shooter y cuerpos ya impactados
+	if _ignore_shooter_collision and body == shooter:
+		return
+	if _hit_bodies.has(body):
+		return
+	on_hit(body)
 
 func _on_body_entered(body: Node) -> void:
 	if not is_instance_valid(body):

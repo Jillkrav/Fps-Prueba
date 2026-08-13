@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://djs103cwpepf7" path="res://Scripts/Compartido/gameplay/pickups/resupply_box.gd" id="1_resupply"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_box"]
-size = Vector3(1.2, 1.2, 1.2)
+size = Vector3(3.0, 2.0, 3.0)
 
 [sub_resource type="BoxMesh" id="BoxMesh_box"]
 size = Vector3(1.0, 1.0, 1.0)

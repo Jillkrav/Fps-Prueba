@@ -23,6 +23,18 @@ class_name DecisionSystem
 
 
 # ══════════════════════════════════════════════════════════════════
+# ANTI-FLAP (PROBLEMA 1)
+# ══════════════════════════════════════════════════════════════════
+
+## Debounce global: un estado debe estar activo al menos este tiempo antes de
+## permitir otra transición de estado, para evitar ping-pong rápido como
+## COMBAT ↔ RETREATING ↔ FLEEING cuando varias condiciones coinciden a la vez.
+## Cuando un bot recibe muchas señales simultáneas, se asienta en un estado en
+## lugar de oscilar de un lado a otro cada frame.
+const MIN_STATE_RESIDENCY: float = 0.6
+
+
+# ══════════════════════════════════════════════════════════════════
 # SEÑALES
 # ══════════════════════════════════════════════════════════════════
 
@@ -60,6 +72,12 @@ var combat_command: CombatCommand = CombatCommand.new()
 ## Punto focal hacia dónde mirar.
 ## ÚNICO escritor: DecisionSystem (o sus estados).
 var focus_point: Vector3 = Vector3.ZERO
+
+## Solicitud de atención reactiva emitida por PerceptionSystem/BotBase.
+## DecisionSystem la traduce a CombatCommand para conservar una única ruta de mando.
+var _attention_position: Vector3 = Vector3.ZERO
+var _attention_turn_speed: float = 0.0
+var _attention_expires_at: float = 0.0
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -149,14 +167,75 @@ func process(delta: float) -> void:
 		time_in_state += delta
 		current_state.execute(delta)
 
-	# ── 3. Validar comandos ──
+	# ── 3b. Watchdog: evitar estados pegados ──
+	# Si un estado lleva más de max_duration sin salir por sus propios medios
+	# (por ejemplo, una ruta inalcanzable o un recurso inexistente), forzamos
+	# la transición a timeout_fallback para que el bot nunca se quede bugeado
+	# repitiendo lo mismo. ROAMING (max_duration=INF) nunca se ve afectado.
+	if current_state and current_state.max_duration != INF \
+			and time_in_state > current_state.max_duration:
+		current_state.on_timeout_forced()
+		_debug_decision("Watchdog: %s superó %.1fs → %s" % [
+			current_state.state_name,
+			current_state.max_duration,
+			BotState.StateType.keys()[current_state.timeout_fallback]])
+		change_state(current_state.timeout_fallback)
+
+	# ── 3. Atención reactiva: mirar primero, evaluar combate después ──
+	_apply_attention_command()
+
+	# ── 4. Validar comandos ──
 	_validate_commands()
 
-	# ── 4. Procesar solicitud de dodge (CombatSystem → DecisionSystem) ──
+	# ── 5. Procesar solicitud de dodge (CombatSystem → DecisionSystem) ──
 	_evaluate_dodge_request()
 
-	# ── 5. Enviar comandos a sistemas ──
+	# ── 6. Enviar comandos a sistemas ──
 	_push_commands()
+
+
+## Solicita mirar hacia una amenaza que todavía no está dentro del POV del arma.
+## Si ya hay combate activo, no lo pisa: el objetivo confirmado conserva prioridad.
+func request_attention(target_pos: Vector3, turn_speed: float, duration: float) -> void:
+	if bot == null or bot.is_dead or target_pos == Vector3.ZERO:
+		return
+	if _has_live_character_target():
+		return
+	var now: float = Time.get_ticks_msec() / 1000.0
+	var expires_at: float = now + maxf(duration, 0.0)
+	if expires_at >= _attention_expires_at or turn_speed > _attention_turn_speed:
+		_attention_position = target_pos
+		_attention_turn_speed = maxf(turn_speed, 0.0)
+		_attention_expires_at = expires_at
+
+
+## Inserta la orden temporal de atención en el comando de combate del tick actual.
+func _apply_attention_command() -> void:
+	if _attention_position == Vector3.ZERO:
+		return
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if now >= _attention_expires_at:
+		_clear_attention()
+		return
+	if _has_live_character_target():
+		_clear_attention()
+		return
+	if combat_command.engage:
+		return
+	combat_command.set_attention(
+		_attention_position,
+		_attention_turn_speed,
+		_attention_expires_at - now)
+
+
+func _clear_attention() -> void:
+	_attention_position = Vector3.ZERO
+	_attention_turn_speed = 0.0
+	_attention_expires_at = 0.0
+
+
+func _has_live_character_target() -> bool:
+	return has_target() and target_entity is CharacterBody3D and not is_target_dead()
 
 
 ## Evalúa solicitudes de dodge del CombatSystem.
@@ -203,9 +282,10 @@ func _validate_commands() -> void:
 		combat_command.cease_fire = true
 		combat_command.engage = false
 
-	# No navegar a Vector3.ZERO
+	# NAVIGATE requiere un destino explícito; Vector3.ZERO es una coordenada
+	# authored válida y no debe usarse como centinela de "sin destino".
 	if movement_command.mode == MovementCommand.Mode.NAVIGATE:
-		if movement_command.target_position == Vector3.ZERO:
+		if not movement_command.has_target_position:
 			movement_command.mode = MovementCommand.Mode.NONE
 
 
@@ -245,6 +325,12 @@ func _push_commands() -> void:
 ## Llamar desde un estado con: decision_system.change_state(type)
 func change_state(new_type: int) -> void:
 	if new_type == current_state.state_type if current_state else false:
+		return
+	# Debounce global anti-flap (problema 1): si acabamos de entrar en el estado
+	# actual hace muy poco, bloqueamos la transición para que el bot se asiente
+	# y no oscile entre estados. El estado puede salir por su propia lógica o el
+	# watchdog; solo se retrasa el "chicle" de cambiar cada frame.
+	if current_state and time_in_state < MIN_STATE_RESIDENCY:
 		return
 	_change_state(new_type)
 

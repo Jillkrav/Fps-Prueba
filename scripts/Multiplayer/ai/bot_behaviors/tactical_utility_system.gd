@@ -30,6 +30,15 @@ const HIGH_THRESHOLD: float = 0.10
 const MAGAZINE_COVER_THRESHOLD: float = 0.15
 const DAMAGE_MEMORY_SECONDS: float = 2.5
 const PICKUP_SEARCH_RADIUS: float = 250.0
+const COVER_PROTECTION_BONUS: float = 35.0
+const COVER_EXPOSURE_PENALTY: float = 18.0
+const COVER_FACING_BONUS: float = 8.0
+
+## Enfriamiento tras abandonar un intento de huir: durante este tiempo el bot
+## no vuelve a forzar FLEEING, para evitar un bucle FLEEING → ROAMING → FLEEING
+## cuando no hay un recurso disponible que recoger. El bot deambula y reaprovecha
+## la recogida oportunista de pickups en ROAMING.
+const FLEE_ABANDON_COOLDOWN: float = 6.0
 
 var bot: BotBase = null
 var ammo_search_level: int = NeedLevel.NONE
@@ -42,6 +51,7 @@ var coward_mode_active: bool = false
 var _last_damage_time: float = -INF
 var _last_attacker: Node3D = null
 var _base_detour_pending: bool = false
+var _last_flee_abandoned_at: float = -INF
 
 
 func _ready() -> void:
@@ -70,11 +80,23 @@ func reset() -> void:
 	_base_detour_pending = false
 	_last_damage_time = -INF
 	_last_attacker = null
+	_last_flee_abandoned_at = -INF
 	set_coward_mode(false)
 
 
 func should_force_flee() -> bool:
+	# Enfriamiento tras abandonar un intento de huir: evitar re-entrada inmediata.
+	if _now_seconds() - _last_flee_abandoned_at < FLEE_ABANDON_COOLDOWN:
+		return false
 	return under_attack_level == UnderAttackLevel.FLEE
+
+
+## El bot renunció a un intento de huir (por ejemplo, tras el watchdog de
+## FLEEING). Termina el modo huir y mete un enfriamiento para evitar el bucle
+## FLEEING → ROAMING → FLEEING cuando no hay recurso que recoger.
+func abandon_flee() -> void:
+	end_flee()
+	_last_flee_abandoned_at = _now_seconds()
 
 
 func begin_flee() -> void:
@@ -82,9 +104,11 @@ func begin_flee() -> void:
 		return
 	flee_mode_active = true
 	flee_reason = _get_highest_flee_reason()
-	_base_detour_pending = randf() < 0.10
-	if _base_detour_pending:
-		set_coward_mode(true)
+	# La retirada crítica ya tiene una política determinista de 15s →
+	# origen_base. Se retira el desvío aleatorio a spawn para no sacar bots de
+	# la red authored ni competir con el retorno forzado.
+	_base_detour_pending = false
+	set_coward_mode(false)
 
 
 func end_flee() -> void:
@@ -117,6 +141,13 @@ func notify_resource_collected(pickup_type: int) -> void:
 	elif pickup_type == int(Pickup.Type.HEALTH) and flee_reason == FleeReason.HEALTH:
 		end_flee()
 	elif pickup_type == int(Pickup.Type.WEAPON) and flee_reason == FleeReason.NO_WEAPON:
+		end_flee()
+
+
+## ResupplyBox restaura simultáneamente salud y munición. Por eso finaliza
+## cualquier causa de FLEEING sin necesitar simular dos pickups distintos.
+func notify_resupply_collected() -> void:
+	if flee_mode_active:
 		end_flee()
 
 
@@ -163,9 +194,9 @@ func get_priority_pickup() -> Node:
 	if flee_mode_active:
 		match flee_reason:
 			FleeReason.AMMO:
-				return get_nearest_pickup(int(Pickup.Type.AMMO))
+				return _nearest_resource_candidate(int(Pickup.Type.AMMO), true)
 			FleeReason.HEALTH:
-				return get_nearest_pickup(int(Pickup.Type.HEALTH))
+				return _nearest_resource_candidate(int(Pickup.Type.HEALTH), true)
 			FleeReason.NO_WEAPON:
 				return get_nearest_pickup(int(Pickup.Type.WEAPON))
 			_:
@@ -174,14 +205,44 @@ func get_priority_pickup() -> Node:
 	if health_search_level == NeedLevel.NONE and ammo_search_level == NeedLevel.NONE:
 		return null
 	if health_search_level > ammo_search_level:
-		return get_nearest_pickup(int(Pickup.Type.HEALTH))
+		return _nearest_resource_candidate(int(Pickup.Type.HEALTH), true)
 	if ammo_search_level > health_search_level:
-		return get_nearest_pickup(int(Pickup.Type.AMMO))
+		return _nearest_resource_candidate(int(Pickup.Type.AMMO), true)
 	
 	# Con la misma prioridad, resuelve por el déficit relativo y no por azar.
 	if get_health_ratio() <= get_ammo_ratio():
-		return get_nearest_pickup(int(Pickup.Type.HEALTH))
-	return get_nearest_pickup(int(Pickup.Type.AMMO))
+		return _nearest_resource_candidate(int(Pickup.Type.HEALTH), true)
+	return _nearest_resource_candidate(int(Pickup.Type.AMMO), true)
+
+
+## Fuente de recurso unificada para estados que no deben conocer la clase
+## concreta: ResupplyBox activo, ammo o health según la necesidad actual.
+func get_priority_resource_source() -> Node:
+	return get_priority_pickup()
+
+
+## Prefiere una ResupplyBox activa cuando resuelve la necesidad solicitada,
+## pero mantiene AmmoPack/Medkit como alternativas si la caja está más lejos.
+func _nearest_resource_candidate(pickup_type: int, allow_resupply: bool) -> Node:
+	var best_candidate: Node = get_nearest_pickup(pickup_type)
+	var best_distance_squared: float = INF
+	if best_candidate != null and is_instance_valid(best_candidate):
+		best_distance_squared = bot.global_position.distance_squared_to(best_candidate.global_position)
+	if not allow_resupply or bot == null or not bot.is_inside_tree():
+		return best_candidate
+	var boxes: Array[Node] = bot.get_tree().get_nodes_in_group(&"resupply_boxes")
+	for box: Node in boxes:
+		if box == null or not is_instance_valid(box) or not box.is_inside_tree():
+			continue
+		if not bool(box.get("is_active")):
+			continue
+		if not (box is Node3D):
+			continue
+		var distance_squared: float = bot.global_position.distance_squared_to((box as Node3D).global_position)
+		if distance_squared < best_distance_squared:
+			best_distance_squared = distance_squared
+			best_candidate = box
+	return best_candidate
 
 
 func get_nearest_pickup(pickup_type: int) -> Node:
@@ -196,9 +257,12 @@ func get_nearest_pickup(pickup_type: int) -> Node:
 ## Devuelve una cobertura disponible con preferencias explícitas por rol.
 ## `excluded_cover_ids` permite a un estado evitar un punto que resultó
 ## inaccesible, sin bloquear los demás puntos del mapa.
+## Cuando se conoce la última amenaza, prefiere puntos con bloqueo físico de
+## línea de tiro en vez de elegir únicamente el CoverPoint más cercano.
 func get_nearest_available_cover(excluded_cover_ids: Dictionary = {}) -> Node:
 	if bot == null or not bot.is_inside_tree() or not _role_may_use_cover_now():
 		return null
+	var threat_position: Vector3 = get_recent_threat_position()
 	var covers: Array[Node] = bot.get_tree().get_nodes_in_group(&"cover_points")
 	var best_cover: Node = null
 	var best_score: float = INF
@@ -211,15 +275,85 @@ func get_nearest_available_cover(excluded_cover_ids: Dictionary = {}) -> Node:
 			continue
 		if cover.has_method("is_available") and not cover.is_available(bot):
 			continue
-		var priority: float = maxf(float(cover.get("priority")), 0.1)
-		var distance: float = bot.global_position.distance_to(cover.global_position)
-		var score: float = distance / priority
-		if _role_prefers_cover_props() and _is_cover_prop_point(cover):
-			score *= 0.55
+		var score: float = _score_cover_candidate(cover, threat_position)
 		if score < best_score:
 			best_score = score
 			best_cover = cover
 	return best_cover
+
+
+## La amenaza reciente procede primero del atacante que dañó al bot. Si no hubo
+## daño, usa el objetivo confirmado; si tampoco existe, la cobertura conserva la
+## heurística histórica de distancia/prioridad.
+func get_recent_threat_position() -> Vector3:
+	if bot == null:
+		return Vector3.ZERO
+	if _last_attacker != null and is_instance_valid(_last_attacker) and _last_attacker.is_inside_tree():
+		if _now_seconds() - _last_damage_time <= DAMAGE_MEMORY_SECONDS:
+			return _last_attacker.global_position + Vector3.UP * 0.9
+	if bot.decision_sys != null and bot.decision_sys.has_target():
+		var target: Node3D = bot.decision_sys.target_entity
+		if target != null and is_instance_valid(target) and target.is_inside_tree():
+			return target.global_position + Vector3.UP * 0.9
+	return Vector3.ZERO
+
+
+func _score_cover_candidate(cover: Node, threat_position: Vector3) -> float:
+	if bot == null or not (cover is Node3D):
+		return INF
+	var priority: float = maxf(float(cover.get("priority")), 0.1)
+	var cover_node: Node3D = cover as Node3D
+	var cover_position: Vector3 = cover.get_cover_position() if cover.has_method("get_cover_position") else (cover_node.global_position if cover_node.is_inside_tree() else cover_node.position)
+	var bot_position: Vector3 = bot.global_position if bot.is_inside_tree() else bot.position
+	var score: float = bot_position.distance_to(cover_position) / priority
+	if _role_prefers_cover_props() and _is_cover_prop_point(cover):
+		score *= 0.55
+	if threat_position == Vector3.ZERO:
+		return score
+	if _cover_blocks_threat(cover_position, threat_position):
+		score -= COVER_PROTECTION_BONUS
+	else:
+		score += COVER_EXPOSURE_PENALTY
+	if _cover_faces_threat(cover, cover_position, threat_position):
+		score -= COVER_FACING_BONUS
+	return score
+
+
+## Raycast físico liviano: una cobertura solo obtiene el bonus fuerte si una
+## geometría estática realmente separa amenaza y punto de refugio. El bot y la
+## amenaza se excluyen, y un ray sin impacto significa exposición.
+func _cover_blocks_threat(cover_position: Vector3, threat_position: Vector3) -> bool:
+	if bot == null or not bot.is_inside_tree():
+		return false
+	var start: Vector3 = threat_position
+	var end: Vector3 = cover_position + Vector3.UP * 0.8
+	if start.distance_squared_to(end) <= 0.01:
+		return false
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(start, end)
+	query.collision_mask = bot.collision_mask
+	query.exclude = [bot]
+	if _last_attacker != null and is_instance_valid(_last_attacker):
+		query.exclude.append(_last_attacker)
+	var result: Dictionary = bot.get_world_3d().direct_space_state.intersect_ray(query)
+	if result.is_empty():
+		return false
+	var collider: Object = result.get("collider", null) as Object
+	return collider is StaticBody3D or collider is CSGShape3D
+
+
+## Un punto orientado hacia la amenaza suele ofrecer un peek natural y evita
+## premiar la parte incorrecta de muros de un solo sentido.
+func _cover_faces_threat(cover: Node, cover_position: Vector3, threat_position: Vector3) -> bool:
+	if not (cover is Node3D):
+		return false
+	var node: Node3D = cover as Node3D
+	var basis: Basis = node.global_transform.basis if node.is_inside_tree() else node.transform.basis
+	var facing: Vector3 = basis.z.normalized()
+	var to_threat: Vector3 = threat_position - cover_position
+	to_threat.y = 0.0
+	if facing.length_squared() <= 0.001 or to_threat.length_squared() <= 0.001:
+		return false
+	return facing.dot(to_threat.normalized()) > 0.25
 
 
 ## Asalto y flanqueo solo consultan coberturas durante combate/recarga.
@@ -232,7 +366,8 @@ func _role_may_use_cover_now() -> bool:
 	if bot.decision_sys == null:
 		return false
 	return bot.decision_sys.is_in_state(BotState.StateType.COMBAT) \
-		or bot.decision_sys.is_in_state(BotState.StateType.COVER_RELOAD)
+		or bot.decision_sys.is_in_state(BotState.StateType.COVER_RELOAD) \
+		or bot.decision_sys.is_in_state(BotState.StateType.FLEEING)
 
 
 ## El francotirador solo reserva el lado seguro de los one_way_low_wall.
@@ -242,8 +377,10 @@ func _cover_matches_role_policy(cover: Node) -> bool:
 	return _is_one_way_low_wall_cover(cover)
 
 
+## Solo defensores (y francotiradores vía su campeo propio) prefieren muros
+## como cobertura. El patrullador NO debe campear un muro: debe recorrerlo.
 func _role_prefers_cover_props() -> bool:
-	return bot != null and bot.rol in [Roles.Type.PATRULLADOR, Roles.Type.DEFENSOR]
+	return bot != null and bot.rol in [Roles.Type.DEFENSOR]
 
 
 func _is_cover_prop_point(cover: Node) -> bool:

@@ -24,10 +24,17 @@ var _retreat_target: Vector3 = Vector3.ZERO
 ## ¿Estamos cerca de la base?
 var _near_base: bool = false
 
+## Tiempo máximo de retirada. Si el punto de retirada resulta inalcanzable
+## por el NavMesh o el destino desaparece, el watchdog fuerza a ROAMING en
+## lugar de quedarse intentando llegar a la base para siempre.
+const RETREAT_TIMEOUT: float = 12.0
+
 
 func _init() -> void:
 	state_type = StateType.RETREATING
 	state_name = "retreating"
+	max_duration = RETREAT_TIMEOUT
+	timeout_fallback = StateType.ROAMING
 
 
 # ══════════════════════════════════════════════════════════════════

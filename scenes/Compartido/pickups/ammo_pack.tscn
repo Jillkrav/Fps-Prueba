@@ -8,6 +8,9 @@ size = Vector3(0.7, 0.7, 0.7)
 [sub_resource type="BoxMesh" id="BoxMesh_item"]
 size = Vector3(0.3, 0.3, 0.3)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_u7dpx"]
+size = Vector3(3, 2, 3)
+
 [node name="AmmoPack" type="RigidBody3D" unique_id=1621690266]
 mass = 0.5
 script = ExtResource("1_ammo")
@@ -25,9 +28,10 @@ outline_modulate = Color(0, 0, 0, 0.9)
 outline_size = 4
 
 [node name="PickupArea" type="Area3D" parent="." unique_id=312969446]
+transform = Transform3D(0.355, 0, 0, 0, 0.355, 0, 0, 0, 0.355, 0, 0, 0)
 
 [node name="PickupCollision" type="CollisionShape3D" parent="PickupArea" unique_id=121952374]
-shape = SubResource("BoxShape_pickup")
+shape = SubResource("BoxShape3D_u7dpx")
 
 [node name="DespawnTimer" type="Timer" parent="." unique_id=890001079]
 wait_time = 30.0

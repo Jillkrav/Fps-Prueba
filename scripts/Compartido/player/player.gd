@@ -884,6 +884,12 @@ func _get_shoot_position() -> Vector3:
 func take_damage(amount: float, zona: String = "Torso", killer_id: int = -1) -> void:
 	if is_dead:
 		return
+	# ── Modo Dios (debug): el jugador nunca recibe daño ni muere ──
+	if GameState.god_mode:
+		return
+	# ── Fuego amigo desactivado: ignorar daño de aliados del mismo equipo ──
+	if GameState.es_dano_bloqueado_por_fff(killer_id, self):
+		return
 	var multiplicador: float = 1.0
 	match zona:
 		"Cabeza": multiplicador = ConfigManager.mult_cabeza

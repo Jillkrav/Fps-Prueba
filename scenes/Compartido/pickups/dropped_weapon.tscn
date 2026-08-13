@@ -5,6 +5,9 @@
 [sub_resource type="BoxShape3D" id="BoxShape_pickup"]
 size = Vector3(0.8, 0.4, 0.8)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_pickup_area"]
+size = Vector3(3.0, 2.0, 3.0)
+
 [sub_resource type="BoxMesh" id="BoxMesh_weapon"]
 size = Vector3(0.25, 0.08, 0.15)
 
@@ -27,7 +30,7 @@ outline_size = 4
 [node name="PickupArea" type="Area3D" parent="." unique_id=1482857292]
 
 [node name="PickupCollision" type="CollisionShape3D" parent="PickupArea" unique_id=675931783]
-shape = SubResource("BoxShape_pickup")
+shape = SubResource("BoxShape3D_pickup_area")
 
 [node name="DespawnTimer" type="Timer" parent="." unique_id=384310575]
 wait_time = 30.0

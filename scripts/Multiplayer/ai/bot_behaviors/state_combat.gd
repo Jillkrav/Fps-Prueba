@@ -29,6 +29,12 @@ const CHASE_RECALC_DIST: float = 5.0
 ## Esto evita que el bot se quede "wallhackeando" (disparando a través de paredes).
 const MAX_TIME_WITHOUT_LOS: float = 2.0
 
+## Tope de seguridad global del combate. Si una refriega dura más de este
+## tiempo sin resolverse, el watchdog fuerza a ROAMING (que re-evalúa y vuelve
+## a COMBAT si el enemigo sigue visible). Evita bots enganchados persiguiendo
+## o disparando sin progreso.
+const MAX_COMBAT_DURATION: float = 30.0
+
 
 # ══════════════════════════════════════════════════════════════════
 # ENUM — Sub-fases de combate
@@ -67,6 +73,8 @@ var _retreat_target: Vector3 = Vector3.ZERO
 func _init() -> void:
 	state_type = StateType.COMBAT
 	state_name = "combat"
+	max_duration = MAX_COMBAT_DURATION
+	timeout_fallback = StateType.ROAMING
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -177,12 +185,13 @@ func _check_exit_transitions() -> bool:
 # ══════════════════════════════════════════════════════════════════
 
 func _validate_target() -> bool:
-	# Si estamos atacando core, verificar que el core existe
+	# Si estamos atacando el objetivo destruible del modo, verificar que existe.
 	if phase == CombatPhase.CORE_ATTACK:
-		if bot and bot._enemy_core and is_instance_valid(bot._enemy_core) and bot._enemy_core.is_inside_tree():
-			if bot._enemy_core.get("is_destroyed") != true:
+		var attack_objective: Node3D = bot._enemy_attack_objective if bot else null
+		if attack_objective != null and is_instance_valid(attack_objective) and attack_objective.is_inside_tree():
+			if attack_objective.get("is_destroyed") != true:
 				return true
-		# Core destruido o inválido
+		# Objetivo destruido o inválido.
 		_re_evaluate()
 		return false
 
@@ -355,34 +364,34 @@ func _execute_strafe() -> void:
 
 
 # ══════════════════════════════════════════════════════════════════
-# SUB-FASE: CORE_ATTACK (atacar core enemigo)
+# SUB-FASE: CORE_ATTACK (atacar objetivo destruible del modo)
 # ══════════════════════════════════════════════════════════════════
 
 func _execute_core_attack() -> void:
-	if bot == null or bot._enemy_core == null:
+	if bot == null or bot._enemy_attack_objective == null:
 		_re_evaluate()
 		return
 
-	var core: Node = bot._enemy_core
-	if not is_instance_valid(core) or not core.is_inside_tree():
+	var attack_objective: Node3D = bot._enemy_attack_objective
+	if not is_instance_valid(attack_objective) or not attack_objective.is_inside_tree():
 		_re_evaluate()
 		return
 
-	var target_pos: Vector3 = core.global_position + Vector3.UP * 0.7
+	var target_pos: Vector3 = attack_objective.global_position + Vector3.UP * 0.7
 	combat_cmd.set_engage(target_pos, 0)
 	combat_cmd.force_fire = true
 
-	var dist: float = bot.global_position.distance_to(core.global_position)
+	var dist: float = bot.global_position.distance_to(attack_objective.global_position)
 	var role: TacticalRole = _get_role()
 	var engage_max: float = role.preferred_engagement_max if role else 15.0
 
 	if dist > engage_max:
-		# Lejos del core: navegar hacia él (sprint)
-		_core_target_last = core.global_position
+		# Lejos del objetivo: navegar hacia él (sprint)
+		_core_target_last = attack_objective.global_position
 		movement_cmd.set_navigate(_core_target_last, _role_speed(5.0))
 		movement_cmd.sprint = true
 	else:
-		# Cerca del core: disparar quieto
+		# Cerca del objetivo: disparar quieto
 		movement_cmd.set_hold()
 
 

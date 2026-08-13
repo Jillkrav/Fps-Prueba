@@ -60,6 +60,11 @@ var is_invisible: bool = false
 # ── Freeze state ──────────────────────────
 ## El NPC está congelado (no se mueve, no procesa IA).
 var is_frozen: bool = false
+
+## Velocidad de respuesta al recibir daño desde fuera del POV del arma.
+## 90°/s hace un giro visible, limitado y completado en 2–3 s para amenazas laterales.
+const DAMAGE_ATTENTION_TURN_SPEED: float = deg_to_rad(90.0)
+const DAMAGE_ATTENTION_TIMEOUT: float = 3.0
 ## Timer interno para descongelar automáticamente.
 var _frozen_timer: SceneTreeTimer = null
 
@@ -75,8 +80,12 @@ func finish_authored_jump(finish: SaltoFin, _next_path: NodePath = NodePath()) -
 	if movement_sys != null:
 		movement_sys.finish_authored_jump(finish)
 
-# ── Core / Objective System ──────────────
+# ── Base / Objective System ──────────────
+## Referencia heredada por compatibilidad: ahora apunta al marcador de base enemiga.
 var _enemy_core: Node3D = null
+## Objetivo destruible del modo actual (p.ej. Core Attack). Se mantiene separado
+## del marcador de base para que la navegación no dependa de un núcleo.
+var _enemy_attack_objective: Node3D = null
 var _is_attacking_core: bool = false
 var _team_objective: Vector3 = Vector3.ZERO
 
@@ -113,6 +122,10 @@ var _last_facing_angle: float = 0.0
 var last_hit_direction: Vector3 = Vector3.ZERO
 ## Dirección desde la que recibió el golpe mortal (para death anim).
 var death_direction: Vector3 = Vector3.ZERO
+
+## Ventana breve tras la reacción de impacto. Vive en BotBase en vez de un
+## estado temporal para que siga siendo válida después de salir de TAKING_HIT.
+var _damage_reaction_immunity_remaining: float = 0.0
 
 # ── Crouch state ──
 ## Indica si el bot está agachado (collision shape reducida).
@@ -254,7 +267,7 @@ func _ready() -> void:
 	# ── Inicializar rol táctico ──
 	_tactical_role = TacticalRole.for_npc(self)
 	
-	# Encontrar core enemigo como objetivo principal
+	# Resolver los marcadores semánticos de base para navegación y orientación.
 	call_deferred("_find_enemy_core")
 	
 	# ── Instanciar modelo visual opcional ────────────────
@@ -307,7 +320,9 @@ func _add_fsm_states() -> void:
 	if decision_sys == null:
 		return
 	
-	var roaming: BotState = load("res://Scripts/Multiplayer/ai/bot_behaviors/state_roaming.gd").new()
+	# Roaming estricto: sin wander aleatorio; la circulación normal usa únicamente
+	# CaminoBot authored y aplica los límites reales de retorno a origen_base.
+	var roaming: BotState = load("res://Scripts/Multiplayer/ai/bot_behaviors/state_roaming_policy.gd").new()
 	roaming.name = "State_Roaming"
 	decision_sys.add_child(roaming)
 	
@@ -375,7 +390,7 @@ func _physics_process(delta: float) -> void:
 	if is_frozen:
 		velocity = Vector3.ZERO
 		move_and_slide()
-		if navigation_agent:
+		if navigation_agent and global_position != Vector3.ZERO:
 			navigation_agent.target_position = global_position
 		return
 	
@@ -395,6 +410,9 @@ func _physics_process(delta: float) -> void:
 	_ai_tick_counter -= 1
 	var ai_tick: bool = _ai_tick_counter <= 0
 	
+	# ── Ventana post-impacto — siempre, independiente del tick de IA ──
+	_update_damage_reaction_immunity(delta)
+
 	# ── FASE 1: Percepción y memoria (solo en ai_tick) ─────
 	if ai_tick:
 		if perception_sys:
@@ -406,7 +424,7 @@ func _physics_process(delta: float) -> void:
 	if ai_tick:
 		_update_order_cache()
 	
-	# ── FASE 2: Proximidad al core enemigo (solo en ai_tick) ─
+	# ── FASE 2: Proximidad al objetivo de base (solo en ai_tick) ─
 	if ai_tick:
 		_check_core_proximity()
 	
@@ -535,6 +553,19 @@ func refill_ammo(amount: int) -> void:
 			tactical_sys.notify_resource_collected(int(Pickup.Type.AMMO))
 
 
+## Reabastecimiento completo usado por ResupplyBox. Conserva el recurso de
+## movimiento/FSM informado para que FLEEING y ROAMING puedan retomar la ruta.
+func resupply() -> void:
+	current_health = max_health
+	if _weapon != null and is_instance_valid(_weapon):
+		_weapon.resupply()
+	if weapon_sys != null:
+		weapon_sys.sync_from_current_weapon()
+	_pickup_target = null
+	if tactical_sys != null:
+		tactical_sys.notify_resupply_collected()
+
+
 ## Navega hacia el pickup objetivo usando MovementSystem.
 func _move_to_pickup() -> void:
 	if not _pickup_target or not is_instance_valid(_pickup_target) or not _pickup_target.is_inside_tree():
@@ -622,7 +653,16 @@ func _compute_hit_direction(killer_id: int) -> void:
 
 
 func take_damage(amount: float, zone: String = "Torso", killer_id: int = -1) -> void:
-	if is_dead: return
+	if is_dead:
+		return
+	# ── Fuego amigo desactivado: ignorar daño de aliados del mismo equipo ──
+	if GameState.es_dano_bloqueado_por_fff(killer_id, self):
+		return
+	# La inmunidad post-impacto se valida antes de restar salud. Antes la
+	# comprobación ocurría tarde: impedía el nuevo stun, no el daño ya aplicado.
+	if is_damage_reaction_immune():
+		_debug("Inmune a reacción post-impacto; se ignora %.1f de daño" % amount)
+		return
 	var mult: float = 2.0 if zone == "Cabeza" else 1.0
 	current_health -= amount * mult
 	current_health = clampf(current_health, 0.0, max_health)
@@ -638,22 +678,13 @@ func take_damage(amount: float, zone: String = "Torso", killer_id: int = -1) -> 
 		tactical_sys.notify_damage(attacker_node)
 	if decision_sys:
 		decision_sys.notify_take_damage(amount * mult, attacker_node)
+		_request_damage_attention(attacker_node)
 	
 	# ── Hook: notificar al rol del daño recibido (FASE 7) ──
 	if _tactical_role and killer_id > 0:
 		var attacker: Object = instance_from_id(killer_id)
 		if attacker is Node3D and is_instance_valid(attacker):
 			_tactical_role.on_took_damage(self, attacker as Node3D)
-
-	# ── Invulnerabilidad post-stun (FASE 7): ignorar daño si el
-	# estado actual tiene invulnerabilidad activa ──
-	var inv_timer: Variant = null
-	if decision_sys and decision_sys.current_state:
-		inv_timer = decision_sys.current_state.get("_invulnerability_timer")
-	var is_invulnerable: bool = inv_timer != null and inv_timer > 0.0
-	if is_invulnerable:
-		_debug("Invulnerable, ignorando %.1f de daño" % [amount * mult])
-		return
 
 	# ── Transicionar a estado HIT (stun) si el daño no es letal ──
 	# Solo si la FSM está activa y no estamos ya en hit/stun.
@@ -665,6 +696,43 @@ func take_damage(amount: float, zone: String = "Torso", killer_id: int = -1) -> 
 	if current_health <= 0:
 		death_direction = last_hit_direction
 		die(killer_id)
+
+
+## Activa la ventana posterior a la reacción de daño. Se conserva en el bot y
+## no en StateHit porque el estado se abandona antes de que termine la ventana.
+func activate_damage_reaction_immunity(duration: float) -> void:
+	_damage_reaction_immunity_remaining = maxf(duration, 0.0)
+
+
+## Consulta la ventana de inmunidad sin acoplar BotBase a una implementación de estado.
+func is_damage_reaction_immune() -> bool:
+	return _damage_reaction_immunity_remaining > 0.0
+
+
+## Actualización de alta frecuencia para que la ventana dure tiempo físico real.
+func _update_damage_reaction_immunity(delta: float) -> void:
+	if _damage_reaction_immunity_remaining <= 0.0:
+		return
+	_damage_reaction_immunity_remaining = maxf(_damage_reaction_immunity_remaining - maxf(delta, 0.0), 0.0)
+
+
+## Al recibir daño desde el costado, gira rápido pero nunca de forma instantánea.
+## El objetivo continúa siendo evaluado por PerceptionSystem solo cuando entre al POV.
+func _request_damage_attention(attacker: Node3D) -> void:
+	if decision_sys == null or attacker == null or not is_instance_valid(attacker):
+		return
+	if not attacker.is_inside_tree() or perception_sys == null:
+		return
+	var origin: Vector3 = perception_sys._get_weapon_aim_origin()
+	var forward: Vector3 = perception_sys._get_weapon_forward()
+	var attacker_pos: Vector3 = attacker.global_position + Vector3.UP * 0.9
+	var weapon_fov: float = perception_sys._get_weapon_fov_degrees()
+	if perception_sys._is_inside_weapon_fov(origin, forward, attacker_pos, weapon_fov):
+		return
+	decision_sys.request_attention(
+		attacker_pos,
+		DAMAGE_ATTENTION_TURN_SPEED,
+		DAMAGE_ATTENTION_TIMEOUT)
 
 
 func die(killer_id: int = -1) -> void:
@@ -686,7 +754,7 @@ func die(killer_id: int = -1) -> void:
 	if cs:
 		cs.disabled = true
 	
-	if navigation_agent:
+	if navigation_agent and global_position != Vector3.ZERO:
 		navigation_agent.target_position = global_position
 	
 	var killer_name: String = "desconocido"
@@ -720,6 +788,7 @@ func _drop_weapon() -> void:
 func _re_evaluar_enemigos() -> void:
 	_is_attacking_core = false
 	_enemy_core = null
+	_enemy_attack_objective = null
 	_team_objective = Vector3.ZERO
 	
 	if decision_sys:
@@ -729,74 +798,104 @@ func _re_evaluar_enemigos() -> void:
 
 
 # ─────────────────────────────────────────
-# CORE DETECTION
+# MARCADORES DE BASE
 # ─────────────────────────────────────────
 
+## Mantiene el nombre histórico para no romper estados existentes, pero resuelve
+## el prop semántico `BaseAnchor` de la base enemiga; no depende de un núcleo.
 func _find_enemy_core() -> void:
-	_enemy_core = null
+	_enemy_core = _get_base_anchor_for_team(_get_enemy_team_id())
+	_enemy_attack_objective = _get_attack_objective_for_team(_get_enemy_team_id())
 	_is_attacking_core = false
-	_team_objective = Vector3.ZERO
-	
-	var cores: Array[Node] = get_tree().get_nodes_in_group("core")
-	for core in cores:
-		if not is_instance_valid(core):
-			continue
-		if core.get("is_destroyed") == true:
-			continue
-		var core_team: int = core.get("team") if "team" in core else -1
-		if GameState.son_enemigos(equipo_id, core_team):
-			_enemy_core = core
-			_team_objective = core.global_position
-			_debug("OBJETIVO: Core %s en %s" % [GameState.nombre_equipo(core_team), str(_team_objective)])
-			return
-	
-	get_tree().create_timer(1.0).timeout.connect(_find_enemy_core)
+	_team_objective = _enemy_core.global_position if _enemy_core != null else Vector3.ZERO
+	if _enemy_core != null:
+		_debug("OBJETIVO: Base enemiga en %s" % str(_team_objective))
+		return
+	if is_inside_tree():
+		get_tree().create_timer(1.0).timeout.connect(_find_enemy_core, CONNECT_ONE_SHOT)
 
 
+## Conserva la comprobación de distancia/LOS para el objetivo destruible del modo actual.
+## BaseAnchor no se convierte en target_entity ni recibe daño: solo orienta y guía.
 func _check_core_proximity() -> void:
-	if not _enemy_core or not is_instance_valid(_enemy_core) or not _enemy_core.is_inside_tree():
+	if _enemy_core == null or not is_instance_valid(_enemy_core) or not _enemy_core.is_inside_tree():
 		_find_enemy_core()
 		return
-	if _enemy_core.get("is_destroyed") == true:
-		_enemy_core = null
+	if _enemy_attack_objective == null or not is_instance_valid(_enemy_attack_objective) \
+			or not _enemy_attack_objective.is_inside_tree():
+		_enemy_attack_objective = _get_attack_objective_for_team(_get_enemy_team_id())
+		return
+	if _enemy_attack_objective.get("is_destroyed") == true:
+		_enemy_attack_objective = null
 		_is_attacking_core = false
 		return
 	
-	var target_entity = decision_sys.target_entity if decision_sys else null
-	if target_entity and target_entity is CharacterBody3D and not target_entity.get("is_dead"):
+	var target_entity: Node3D = decision_sys.target_entity if decision_sys else null
+	if target_entity != null and target_entity is CharacterBody3D and not target_entity.get("is_dead"):
 		return
 	
-	var dist: float = global_position.distance_to(_enemy_core.global_position)
-	if dist > 25.0:
+	var dist: float = global_position.distance_to(_enemy_attack_objective.global_position)
+	if dist > 25.0 or raycast_vision == null:
 		return
 	
-	# Verificar línea de visión con el core
-	var target_pos: Vector3 = _enemy_core.global_position + Vector3.UP * 0.7
-	var local_target: Vector3 = to_local(target_pos)
-	raycast_vision.target_position = local_target
+	var target_pos: Vector3 = _enemy_attack_objective.global_position + Vector3.UP * 0.7
+	raycast_vision.target_position = to_local(target_pos)
 	raycast_vision.force_raycast_update()
-	
-	var collider = raycast_vision.get_collider()
-	var core_hit: bool = (collider == _enemy_core)
-	if not core_hit and collider:
-		var parent_check: Node = collider.get_parent()
-		while parent_check:
-			if parent_check == _enemy_core:
-				core_hit = true
-				break
-			parent_check = parent_check.get_parent()
-	
-	if core_hit:
+	if _raycast_hits_target(raycast_vision.get_collider(), _enemy_attack_objective):
 		if not _is_attacking_core:
 			_is_attacking_core = true
 			if decision_sys:
-				decision_sys.target_entity = _enemy_core
-			_debug("ATACANDO CORE enemigo! Distancia: %.1f" % dist)
-	else:
-		if _is_attacking_core:
-			_is_attacking_core = false
-			if decision_sys:
-				decision_sys.target_entity = null
+				decision_sys.target_entity = _enemy_attack_objective
+			_debug("ATACANDO objetivo de modo actual. Distancia: %.1f" % dist)
+	elif _is_attacking_core:
+		_is_attacking_core = false
+		if decision_sys:
+			decision_sys.target_entity = null
+
+
+func _get_base_anchor_for_team(team_id: int) -> Node3D:
+	if not is_inside_tree() or team_id < 0:
+		return null
+	var anchors: Array[Node] = get_tree().get_nodes_in_group(&"base_anchors")
+	for anchor: Node in anchors:
+		if not is_instance_valid(anchor) or not anchor is Node3D:
+			continue
+		if anchor.get("is_active") != true:
+			continue
+		if int(anchor.get("team")) == team_id:
+			return anchor as Node3D
+	return null
+
+
+func _get_enemy_team_id() -> int:
+	if equipo_id == int(Enums.Equipo.AZUL):
+		return int(Enums.Equipo.ROJO)
+	if equipo_id == int(Enums.Equipo.ROJO):
+		return int(Enums.Equipo.AZUL)
+	return -1
+
+
+func _get_attack_objective_for_team(team_id: int) -> Node3D:
+	if not is_inside_tree() or team_id < 0:
+		return null
+	var cores: Array[Node] = get_tree().get_nodes_in_group(&"core")
+	for core: Node in cores:
+		if core is Node3D and int(core.get("team")) == team_id and core.get("is_destroyed") != true:
+			return core as Node3D
+	return null
+
+
+func _is_attackable_objective(node: Node3D) -> bool:
+	return node.is_in_group(&"core") or node.has_method("take_damage")
+
+
+func _raycast_hits_target(collider: Node, target: Node3D) -> bool:
+	var current: Node = collider
+	while current != null:
+		if current == target:
+			return true
+		current = current.get_parent()
+	return false
 
 
 ## Devuelve el nombre del estado FSM activo.
@@ -938,6 +1037,7 @@ func _apply_coward_materials(enabled: bool) -> void:
 func respawn() -> void:
 	is_dead = false
 	is_frozen = false  # Seguridad: descongelar siempre al respawnear
+	_damage_reaction_immunity_remaining = 0.0
 	current_health = max_health
 	if tactical_sys:
 		tactical_sys.reset()
@@ -952,6 +1052,7 @@ func respawn() -> void:
 	
 	_is_attacking_core = false
 	_enemy_core = null
+	_enemy_attack_objective = null
 	_team_objective = Vector3.ZERO
 	_pickup_target = null
 	_pickup_check_timer = 0.0
@@ -989,7 +1090,7 @@ func set_frozen() -> void:
 	if is_dead or is_frozen:
 		return
 	is_frozen = true
-	if navigation_agent:
+	if navigation_agent and global_position != Vector3.ZERO:
 		navigation_agent.target_position = global_position
 	velocity = Vector3.ZERO
 
@@ -1004,7 +1105,7 @@ func freeze(duration: float) -> void:
 	is_frozen = true
 	
 	# Detener cualquier navegación activa
-	if navigation_agent:
+	if navigation_agent and global_position != Vector3.ZERO:
 		navigation_agent.target_position = global_position
 	
 	# Detener movimiento
@@ -1104,7 +1205,35 @@ func get_order_target_position() -> Vector3:
 # HELPERS
 # ─────────────────────────────────────────
 
+## Devuelve el prop Origen base del equipo para los retornos forzados de IA.
+## Si un mapa antiguo aún no lo tiene, conserva BaseAnchor/core como fallback.
+func _get_own_base_origin() -> Node3D:
+	if not is_inside_tree() or equipo_id < 0:
+		return null
+	var origins: Array[Node] = get_tree().get_nodes_in_group(&"base_origins")
+	var best_origin: Node3D = null
+	var best_distance_squared: float = INF
+	for origin: Node in origins:
+		if origin == null or not is_instance_valid(origin) or not (origin is Node3D):
+			continue
+		if int(origin.get("team_id")) != equipo_id:
+			continue
+		var origin_node: Node3D = origin as Node3D
+		var distance_squared: float = global_position.distance_squared_to(origin_node.global_position)
+		if distance_squared < best_distance_squared:
+			best_distance_squared = distance_squared
+			best_origin = origin_node
+	if best_origin != null:
+		return best_origin
+	return _get_base_anchor_for_team(equipo_id)
+
+
+## Mantiene el nombre histórico para estados existentes, pero usa el marcador
+## semántico de la base propia. El núcleo solo es fallback de mapas antiguos.
 func _get_own_core() -> Node:
+	var anchor: Node3D = _get_base_anchor_for_team(equipo_id)
+	if anchor != null:
+		return anchor
 	if equipo_id == int(Enums.Equipo.AZUL):
 		return GameStateMP.core_blue if is_instance_valid(GameStateMP.core_blue) else null
 	elif equipo_id == int(Enums.Equipo.ROJO):

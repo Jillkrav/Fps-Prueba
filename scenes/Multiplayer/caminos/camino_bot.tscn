@@ -12,3 +12,4 @@ point_count = 17
 [node name="CaminoBot" type="Path3D" unique_id=1142635285]
 curve = SubResource("Curve3D_default")
 script = ExtResource("1_script")
+role = 5

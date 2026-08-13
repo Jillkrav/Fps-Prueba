@@ -39,6 +39,9 @@ enum Mode {
 # ══════════════════════════════════════════════════════════════════
 
 var mode: int = Mode.NONE
+## Separa "hay destino" de la coordenada: Vector3.ZERO es un waypoint authored
+## válido y no debe descartarse como si fuera un valor centinela.
+var has_target_position: bool = false
 var target_position: Vector3 = Vector3.ZERO  # Para NAVIGATE
 var direction: Vector3 = Vector3.ZERO        # Para DIRECT
 var speed: float = 0.0
@@ -65,16 +68,47 @@ var _pending_dodge_impulse: float = 10.0
 # MÉTODOS DE CONFIGURACIÓN
 # ══════════════════════════════════════════════════════════════════
 
-## Configura modo NAVIGATE (pathfinding)
+## Configura modo NAVIGATE (pathfinding).
+## NavigationAgent3D no admite Vector3.ZERO. Las rutas authored que crucen el
+## origen se proyectan en MovementSystem antes de emitirse al agente; si no hay
+## una proyección navegable, el bot frena sin abrir un error nativo.
 func set_navigate(target_pos: Vector3, move_speed: float) -> void:
 	mode = Mode.NAVIGATE
+	has_target_position = true
 	target_position = target_pos
 	speed = move_speed
 	direction = Vector3.ZERO
 
+## Copia el contenido de otro comando sin compartir el mismo RefCounted.
+## MovementSystem conserva esta copia entre ticks de IA para actualizar
+## NavigationAgent3D/RVO todos los frames físicos, incluso con 100 bots.
+func copy_from(source: MovementCommand) -> void:
+	if source == null:
+		reset()
+		return
+	mode = source.mode
+	has_target_position = source.has_target_position
+	target_position = source.target_position
+	direction = source.direction
+	speed = source.speed
+	jump = source.jump
+	jump_velocity = source.jump_velocity
+	sprint = source.sprint
+	is_strafing = source.is_strafing
+	crouch = source.crouch
+	dodge_direction = source.dodge_direction
+	dodge_impulse = source.dodge_impulse
+	_pending_jump = source._pending_jump
+	_pending_jump_velocity = source._pending_jump_velocity
+	_pending_dodge = source._pending_dodge
+	_pending_dodge_direction = source._pending_dodge_direction
+	_pending_dodge_impulse = source._pending_dodge_impulse
+
+
 ## Configura modo DIRECT (vector directo, ej: strafe)
 func set_direct(dir: Vector3, move_speed: float) -> void:
 	mode = Mode.DIRECT
+	has_target_position = false
 	direction = dir
 	speed = move_speed
 	target_position = Vector3.ZERO
@@ -82,6 +116,7 @@ func set_direct(dir: Vector3, move_speed: float) -> void:
 ## Configura modo HOLD (quieto intencional)
 func set_hold() -> void:
 	mode = Mode.HOLD
+	has_target_position = false
 	target_position = Vector3.ZERO
 	direction = Vector3.ZERO
 	speed = 0.0
@@ -89,6 +124,7 @@ func set_hold() -> void:
 ## Configura modo DODGE (evasión)
 func set_dodge(dir: Vector3, impulse: float = 10.0) -> void:
 	mode = Mode.DODGE
+	has_target_position = false
 	dodge_direction = dir
 	dodge_impulse = impulse
 	speed = 0.0
@@ -96,6 +132,7 @@ func set_dodge(dir: Vector3, impulse: float = 10.0) -> void:
 ## Configura modo STOP (frenada inmediata)
 func set_stop() -> void:
 	mode = Mode.STOP
+	has_target_position = false
 	target_position = Vector3.ZERO
 	direction = Vector3.ZERO
 	speed = 0.0
@@ -132,6 +169,7 @@ func _clear_pending() -> void:
 ## NOTA: NO resetea los campos _pending_* (persisten entre ticks de IA).
 func reset() -> void:
 	mode = Mode.NONE
+	has_target_position = false
 	target_position = Vector3.ZERO
 	direction = Vector3.ZERO
 	speed = 0.0

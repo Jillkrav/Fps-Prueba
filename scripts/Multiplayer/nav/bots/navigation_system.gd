@@ -42,8 +42,10 @@ func get_next_path_position() -> Vector3:
 	return agent.get_next_path_position()
 
 
-## Establece el destino del NavigationAgent3D.
+## Establece un destino válido en el NavigationAgent3D.
+## El agente nativo rechaza Vector3.ZERO; MovementSystem proyecta esa coordenada
+## authored cuando corresponde, por lo que este adaptador la ignora con seguridad.
 func set_destination(target: Vector3) -> void:
-	if agent == null:
+	if agent == null or target == Vector3.ZERO:
 		return
 	agent.target_position = target

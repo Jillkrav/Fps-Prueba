@@ -463,8 +463,12 @@ func _find_free_direction(preferred_dir: Vector3) -> Vector3:
 
 
 func _force_path_recalculation() -> void:
+	var movement_system: MovementSystem = get_parent() as MovementSystem if get_parent() is MovementSystem else null
+	if movement_system != null:
+		movement_system.invalidate_navigation_target()
+		return
 	var agent: NavigationAgent3D = _bot.navigation_agent if _bot else null
-	if agent and is_instance_valid(agent):
+	if agent and is_instance_valid(agent) and _bot.global_position != Vector3.ZERO:
 		agent.target_position = _bot.global_position
 
 

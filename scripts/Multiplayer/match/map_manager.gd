@@ -10,7 +10,19 @@ extends Node
 @export var auto_find_map: bool = true  # Busca el mapa como autoload
 
 var _core_scene: PackedScene = preload("res://scenes/Multiplayer/objetos/objectives/core.tscn")
+var _base_anchor_scene: PackedScene = preload("res://scenes/Multiplayer/objetos/objectives/base_anchor.tscn")
+var _debug_zone_scene: PackedScene = preload("res://scenes/Compartido/debug/debug_map_zone.tscn")
 var _map_root: Node = null
+
+## Dimensiones físicas de NpcBase. El NavMesh debe usar la misma holgura que
+## la cápsula para no planificar pasos que el cuerpo real no puede completar.
+# Los valores de bake se ajustan a los vóxeles: ceil(0.65 / 0.30) * 0.30 = 0.90
+# y ceil(1.80 / 0.25) * 0.25 = 2.00. Así no se pierde holgura ni se emiten
+# advertencias de precisión durante el horneado.
+const BOT_NAVMESH_AGENT_RADIUS: float = 0.9
+const BOT_NAVMESH_AGENT_HEIGHT: float = 2.0
+const BOT_NAVMESH_CELL_SIZE: float = 0.3
+const BOT_NAVMESH_CELL_HEIGHT: float = 0.25
 
 func _ready() -> void:
 	if auto_start_match:
@@ -81,11 +93,14 @@ func _update_navigation() -> void:
 	nav_region.add_child(temp_root)
 	
 	var nav_mesh: NavigationMesh = NavigationMesh.new()
-	nav_mesh.agent_radius = 0.6     # 2 * cell_size = 0.6 (exacto)
-	nav_mesh.agent_height = 1.75    # 7 * cell_height = 1.75 (exacto)
-	nav_mesh.agent_max_climb = 0.5  # 2 * cell_height = 0.5 (múltiplo exacto, evita truncado)
-	nav_mesh.cell_size = 0.3
-	nav_mesh.cell_height = 0.25     # Coincide con el mapa de navegación por defecto
+	# El radio se alinea con la cápsula (0.65) para que el pathfinding deje
+	# espacio real alrededor de muros. El motor cuantiza internamente según
+	# cell_size cuando hornea; nunca reducimos la holgura por debajo del cuerpo.
+	nav_mesh.agent_radius = BOT_NAVMESH_AGENT_RADIUS
+	nav_mesh.agent_height = BOT_NAVMESH_AGENT_HEIGHT
+	nav_mesh.agent_max_climb = 0.5
+	nav_mesh.cell_size = BOT_NAVMESH_CELL_SIZE
+	nav_mesh.cell_height = BOT_NAVMESH_CELL_HEIGHT
 	
 	var source_geo: NavigationMeshSourceGeometryData3D = NavigationMeshSourceGeometryData3D.new()
 	# parse_source_geometry_data recorre los hijos de temp_root únicamente.
@@ -128,17 +143,85 @@ func _check_navmesh_coverage(nav_region: NavigationRegion3D) -> void:
 		var dist: float = pos.distance_to(closest)
 		var ok: String = "OK" if dist < 0.5 else "FUERA"
 		print("[MapManager] NavMesh[%s]: %s dist=%.2f" % [ok, label, dist])
+
+	# No continuar con rutas de diagnóstico cuando el NavMesh devuelve el vector
+	# cero para posiciones que quedaron fuera del horneado.
+	for label in test_positions:
+		var diagnostic_point: Vector3 = NavigationServer3D.map_get_closest_point(nav_map, test_positions[label])
+		if diagnostic_point == Vector3.ZERO:
+			return
 	
-	# Also test a path query
-	var test_path: PackedVector3Array = NavigationServer3D.map_get_path(nav_map, Vector3(0,0,0), Vector3(0,0,10), true)
-	print("[MapManager] Path test (0,0,0)->(0,0,10): size=%d" % test_path.size())
-	
-	# Test from spawn to core
-	var spawn_pos: Vector3 = test_positions.get("SpawnAzul1", Vector3())
-	var core_pos: Vector3 = test_positions.get("CoreRojo", Vector3())
-	if spawn_pos != Vector3() and core_pos != Vector3():
-		var full_path: PackedVector3Array = NavigationServer3D.map_get_path(nav_map, spawn_pos, core_pos, true)
-		print("[MapManager] Path spawn->core: size=%d" % full_path.size())
+	# Consultas de diagnóstico desactivadas: este mapa mantiene puntos de spawn y
+	# core fuera del NavMesh horneado, y NavigationServer3D registra errores al
+	# intentar trazar entre ellos. La validación real ocurre al emitir destinos
+	# authored válidos desde MovementSystem/NavigationAgent3D.
+
+## Configura una red macro mínima entre los corredores authored del mapa.
+## Los `CaminoBot` siguen guiando la intención; NavigationAgent3D conserva el
+## recorrido físico, los recursos y las coberturas como desvíos de corto alcance.
+func _configure_bot_route_graph() -> void:
+	if _map_root == null:
+		return
+	var route_paths: Dictionary = {
+		&"blue_hub": NodePath("NavigationRegion3D/Caminos (nav)/Base azul/CaminoGenericoBase"),
+		&"red_hub": NodePath("NavigationRegion3D/Caminos (nav)/Base roja/CaminoGenericoBase"),
+		&"assault_red_blue": NodePath("NavigationRegion3D/Caminos (nav)/General/Asalto/CaminoAsaltoBase"),
+		&"assault_blue_red_a": NodePath("NavigationRegion3D/Caminos (nav)/General/Asalto/CaminoAsaltoBase2"),
+		&"assault_blue_red_b": NodePath("NavigationRegion3D/Caminos (nav)/General/Asalto/CaminoAsaltoBase3"),
+		&"flank_blue_red_a": NodePath("NavigationRegion3D/Caminos (nav)/General/Flanco/CaminoFlancoBase"),
+		&"flank_red_blue_a": NodePath("NavigationRegion3D/Caminos (nav)/General/Flanco/CaminoFlancoBase2"),
+		&"flank_blue_red_b": NodePath("NavigationRegion3D/Caminos (nav)/General/Flanco/CaminoFlancoBase3"),
+		&"flank_red_blue_b": NodePath("NavigationRegion3D/Caminos (nav)/General/Flanco/CaminoFlancoBase4"),
+	}
+	var routes: Dictionary = {}
+	for route_id: StringName in route_paths:
+		var route_path: NodePath = route_paths[route_id] as NodePath
+		var route: CaminoBot = _map_root.get_node_or_null(route_path) as CaminoBot
+		if route == null or not route.is_usable():
+			return
+		routes[route_id] = route
+
+	# Las rutas abiertas se recorren en su dirección authored. Así la salida de
+	# una base no se puede tomar al revés y terminar en la conexión equivocada.
+	for route_id: StringName in routes:
+		var route: CaminoBot = routes[route_id] as CaminoBot
+		route.reverse_allowed = false
+		route.route_id = route_id
+
+	_configure_route_link(routes, &"blue_hub", [
+		&"assault_blue_red_a", &"assault_blue_red_b",
+		&"flank_blue_red_a", &"flank_blue_red_b",
+	], [1.2, 0.8, 1.0, 0.8])
+	_configure_route_link(routes, &"red_hub", [&"assault_red_blue"], [1.0])
+	_configure_route_link(routes, &"assault_red_blue", [&"blue_hub"], [1.0])
+	_configure_route_link(routes, &"assault_blue_red_a", [&"red_hub"], [1.0])
+	_configure_route_link(routes, &"assault_blue_red_b", [&"red_hub"], [1.0])
+	_configure_route_link(routes, &"flank_blue_red_a", [&"flank_red_blue_a"], [1.0])
+	_configure_route_link(routes, &"flank_red_blue_a", [&"blue_hub"], [1.0])
+	_configure_route_link(routes, &"flank_blue_red_b", [&"flank_red_blue_b"], [1.0])
+	_configure_route_link(routes, &"flank_red_blue_b", [&"blue_hub"], [1.0])
+	print("[MapManager] Red macro de rutas configurada: %d corredores." % routes.size())
+
+
+## Conecta una ruta a destinos del mismo árbol. `get_path_to()` evita NodePaths
+## frágiles en escena y permite que la configuración siga funcionando si el
+## autor reordena nodos contenedores sin renombrar rutas.
+func _configure_route_link(routes: Dictionary, source_id: StringName, destination_ids: Array[StringName], weights: Array[float]) -> void:
+	var source: CaminoBot = routes.get(source_id, null) as CaminoBot
+	if source == null:
+		return
+	var next_paths: Array[NodePath] = []
+	var next_weights: Array[float] = []
+	for index: int in range(destination_ids.size()):
+		var destination_id: StringName = destination_ids[index]
+		var destination: CaminoBot = routes.get(destination_id, null) as CaminoBot
+		if destination == null:
+			continue
+		next_paths.append(source.get_path_to(destination))
+		next_weights.append(weights[index] if index < weights.size() else 1.0)
+	source.next_paths = next_paths
+	source.next_path_weights = next_weights
+
 
 func _setup_match() -> void:
 	# 0. Sincronizar maximo de jugadores desde GameState (configurado desde el menu)
@@ -150,11 +233,17 @@ func _setup_match() -> void:
 	
 	# 1. Encontrar y reemplazar los cores CSGBox3D con core.tscn instancias
 	_replace_cores()
+
+	# 1.5 Crear referencias semánticas de base y áreas de depuración si faltan.
+	# No afectan el modo actual ni requieren que otros mapas tengan un núcleo.
+	_ensure_base_anchors()
+	_ensure_debug_zones()
 	
 	# 2. Asegurar que los spawners spawnen en sus equipos correctos
 	_configure_spawners()
 	
-	# 2.5 Mejorar navegación
+	# 2.5 Conectar corredores macro y mejorar navegación
+	_configure_bot_route_graph()
 	_update_navigation()
 	
 	# 3. Conectar fin de partida
@@ -203,6 +292,86 @@ func _asignar_o_reemplazar_core(core_node: Node, team_id: int) -> void:
 		parent.add_child(new_core)
 		new_core.position = pos
 		print("[MapManager] Core %s reemplazado (era CSGBox3D)" % team_name)
+
+## Crea los marcadores invisibles que la IA usa como bases semánticas.
+## Se anclan a núcleos existentes por compatibilidad, o a spawners si el modo no usa núcleo.
+func _ensure_base_anchors() -> void:
+	if _map_root == null or _base_anchor_scene == null:
+		return
+	for team_id: int in [int(Enums.Equipo.AZUL), int(Enums.Equipo.ROJO)]:
+		if _find_base_anchor(team_id) != null:
+			continue
+		var anchor: Node3D = _base_anchor_scene.instantiate() as Node3D
+		if anchor == null:
+			continue
+		anchor.name = "BaseAzul" if team_id == int(Enums.Equipo.AZUL) else "BaseRoja"
+		anchor.set("team", team_id)
+		var reference: Node3D = _find_base_reference(team_id)
+		_map_root.add_child(anchor)
+		if reference != null:
+			anchor.global_position = reference.global_position
+		anchor.owner = _map_root
+		print("[MapManager] Marcador de base creado: %s" % anchor.name)
+	if is_instance_valid(TeamAI):
+		TeamAI.refresh_objectives()
+
+
+func _find_base_anchor(team_id: int) -> Node3D:
+	var anchors: Array[Node] = get_tree().get_nodes_in_group(&"base_anchors")
+	for anchor: Node in anchors:
+		if anchor is Node3D and int(anchor.get("team")) == team_id:
+			return anchor as Node3D
+	return null
+
+
+func _find_base_reference(team_id: int) -> Node3D:
+	var core_name: String = "Core Azul" if team_id == int(Enums.Equipo.AZUL) else "Core Rojo"
+	var core: Node3D = _map_root.find_child(core_name, true, false) as Node3D
+	if core != null:
+		return core
+	var spawner_name: String = "BlueSpawner" if team_id == int(Enums.Equipo.AZUL) else "RedSpawner"
+	return _map_root.find_child(spawner_name, true, false) as Node3D
+
+
+## Añade tres volúmenes sin colisión para depuración si el mapa no los definió.
+func _ensure_debug_zones() -> void:
+	if _map_root == null or _debug_zone_scene == null:
+		return
+	var blue_base: Node3D = _find_base_anchor(int(Enums.Equipo.AZUL))
+	var red_base: Node3D = _find_base_anchor(int(Enums.Equipo.ROJO))
+	if blue_base == null or red_base == null:
+		return
+	var mid_position: Vector3 = (blue_base.global_position + red_base.global_position) * 0.5
+	var definitions: Array[Dictionary] = [
+		{"id": &"base_azul", "position": blue_base.global_position, "size": Vector3(55.0, 8.0, 35.0)},
+		{"id": &"base_roja", "position": red_base.global_position, "size": Vector3(55.0, 8.0, 35.0)},
+		{"id": &"mitad_mapa", "position": mid_position, "size": Vector3(55.0, 8.0, 10.0)},
+	]
+	for definition: Dictionary in definitions:
+		var zone_id: StringName = definition["id"] as StringName
+		if _find_debug_zone(zone_id) != null:
+			continue
+		var zone: DebugMapZone = _debug_zone_scene.instantiate() as DebugMapZone
+		if zone == null:
+			continue
+		var zone_position: Vector3 = definition["position"] as Vector3
+		var zone_size: Vector3 = definition["size"] as Vector3
+		zone.name = String(zone_id)
+		zone.zone_id = zone_id
+		_map_root.add_child(zone)
+		zone.global_position = zone_position
+		zone.set_zone_size(zone_size)
+		zone.owner = _map_root
+		print("[MapManager] Zona debug creada: %s" % zone.zone_id)
+
+
+func _find_debug_zone(zone_id: StringName) -> DebugMapZone:
+	var zones: Array[Node] = get_tree().get_nodes_in_group(&"map_debug_zones")
+	for zone: Node in zones:
+		if zone is DebugMapZone and (zone as DebugMapZone).zone_id == zone_id:
+			return zone as DebugMapZone
+	return null
+
 
 func _configure_spawners() -> void:
 	if not _map_root:

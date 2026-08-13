@@ -24,21 +24,13 @@ class_name BotState
 # ══════════════════════════════════════════════════════════════════
 
 enum StateType {
-	ACQUISITION = 0,    # Adquisición de objetivo
-	COMBAT = 1,         # Raíz de combate (elige sub-estado)
-	TACTICAL_MOVE = 2,  # Strafe táctico
-	CHARGING = 3,       # Carga frontal
-	RANGED_ATTACK = 4,  # Ataque a distancia
-	HUNTING = 5,        # Persecución de última posición conocida
-	STAKEOUT = 6,       # Vigilancia de un punto
-	RETREATING = 7,     # Retirada táctica
-	ROAMING = 8,        # Deambular / patrullar
-	WANDERING = 9,      # Vagabundeo aleatorio
-	HOLDING = 10,       # Quieto / mantener posición
-	FALLING = 11,       # Cayendo
-	TAKING_HIT = 12,    # Recibiendo daño / stun
-	FLEEING = 13,       # Supervivencia: arma guardada, buscar recurso/base
-	COVER_RELOAD = 14,  # Buscar cobertura y recargar bajo presión
+	ROAMING = 0,        # Deambular / patrullar
+	HUNTING = 1,        # Persecución de última posición conocida
+	COMBAT = 2,         # Raíz de combate (elige sub-estado)
+	RETREATING = 3,     # Retirada táctica
+	TAKING_HIT = 4,     # Recibiendo daño / stun
+	FLEEING = 5,        # Supervivencia: arma guardada, buscar recurso/base
+	COVER_RELOAD = 6,   # Buscar cobertura y recargar bajo presión
 }
 
 
@@ -51,6 +43,15 @@ enum StateType {
 
 ## Nombre legible para debug
 @export var state_name: String = "abstract"
+
+## Límite de tiempo (segundos) que este estado puede permanecer activo antes
+## de que el watchdog de DecisionSystem lo fuerce a `timeout_fallback`.
+## INF = sin límite (estado hogar, p.ej. ROAMING).
+var max_duration: float = INF
+
+## Estado al que ir si se supera `max_duration`.
+## Solo aplica si `max_duration` es finito.
+var timeout_fallback: int = StateType.ROAMING
 
 ## Referencia al DecisionSystem (padre)
 var decision_system: DecisionSystem = null
@@ -99,6 +100,13 @@ func execute(_delta: float) -> void:
 
 ## Llamado cuando este estado deja de ser el activo.
 func exit(_next_state: BotState) -> void:
+	pass
+
+
+## Llamado por DecisionSystem cuando el watchdog fuerza la salida de este
+## estado por superar `max_duration`. Útil para limpiar estado antes del
+## timeout (p.ej. FLEEING cancela el modo huir para evitar re-entrada).
+func on_timeout_forced() -> void:
 	pass
 
 

@@ -45,7 +45,7 @@ signal threat_assessed(visible_enemies: Array)
 # ══════════════════════════════════════════════════════════════════
 
 ## Distancia máxima para considerar que un enemigo está "cerca
-## del core enemigo"
+## de la base propia".
 const ENEMY_NEAR_CORE_DIST: float = 15.0
 
 ## Máximo de enemigos que se procesan con raycasts por cada update().
@@ -57,6 +57,14 @@ const MAX_ENEMIES_PER_SCAN: int = 6
 ## Apertura total del cono de visión. La mitad se aplica a cada lado del
 ## eje del arma; así la detección representa adónde está apuntando el bot.
 const DEFAULT_WEAPON_FOV_DEGREES: float = 110.0
+
+## Campo periférico amplio: AreaVision ya limita distancia y el raycast confirma
+## línea de visión. Con 360° los enemigos detrás se adquieren de forma gradual.
+const PERIPHERAL_FOV_DEGREES: float = 360.0
+
+## Giro de atención normal: como máximo 7 segundos para adquirir el POV.
+const PERIPHERAL_ATTENTION_TURN_SPEED: float = deg_to_rad(32.0)
+const PERIPHERAL_ATTENTION_TIMEOUT: float = 7.0
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -126,6 +134,8 @@ func update(delta: float) -> void:
 	var weapon_aim_origin: Vector3 = _get_weapon_aim_origin()
 	var weapon_forward: Vector3 = _get_weapon_forward()
 	var weapon_fov_degrees: float = _get_weapon_fov_degrees()
+	var best_peripheral_enemy: Node3D = null
+	var best_peripheral_distance: float = INF
 	
 	# ── Ordenar por distancia (los más cercanos primero) ─────────
 	# Así los enemigos prioritarios reciben verificación LOS primero,
@@ -153,11 +163,18 @@ func update(delta: float) -> void:
 		var target_pos: Vector3 = body.global_position + Vector3.UP * 0.9
 		var dist: float = bot_pos.distance_to(body.global_position)
 		
-		# Un enemigo debe estar dentro del cono que describe el arma del bot.
-		# AreaVision mantiene la lista de candidatos por distancia; este filtro
-		# añade dirección real sin depender de una cámara ni de la orientación del
-		# cuerpo en el frame anterior.
-		if not _is_inside_weapon_fov(weapon_aim_origin, weapon_forward, target_pos, weapon_fov_degrees):
+		# Un enemigo dentro del POV del arma se evalúa para combate normal.
+		# Si solo está dentro del arco periférico, se conserva como candidato
+		# de atención visual: el bot girará antes de considerarlo un objetivo.
+		var in_weapon_pov: bool = _is_inside_weapon_fov(
+			weapon_aim_origin, weapon_forward, target_pos, weapon_fov_degrees)
+		if not in_weapon_pov:
+			var within_peripheral_fov: bool = PERIPHERAL_FOV_DEGREES >= 359.0 \
+				or _is_inside_weapon_fov(weapon_aim_origin, weapon_forward, target_pos, PERIPHERAL_FOV_DEGREES)
+			var within_reaction_range: bool = role == null or dist <= role.reaction_range
+			if within_peripheral_fov and within_reaction_range and dist < best_peripheral_distance:
+				best_peripheral_enemy = body as Node3D
+				best_peripheral_distance = dist
 			continue
 		
 		# Filtro por rango de reacción del rol
@@ -200,17 +217,37 @@ func update(delta: float) -> void:
 		if memory != null:
 			memory.record_enemy_position(body, body.global_position)
 	
-	# ── Fase 2: Decidir objetivo actual ──────────────────────────
+	# ── Fase 2: Si hay amenaza periférica, adquirirla visualmente ──
+	# Un raycast adicional confirma que no se gira hacia alguien tras una pared.
+	# No modifica target_entity: solo pide un giro lento al DecisionSystem.
+	if best_peripheral_enemy != null and is_instance_valid(best_peripheral_enemy):
+		var peripheral_target: Vector3 = best_peripheral_enemy.global_position + Vector3.UP * 0.9
+		if _has_weapon_line_of_sight(best_peripheral_enemy, weapon_aim_origin, peripheral_target):
+			_request_peripheral_attention(best_peripheral_enemy)
+
+	# ── Fase 3: Decidir objetivo actual ──────────────────────────
 	_select_target(role)
 	
-	# ── Fase 3: Emitir señales de amenaza ────────────────────────
+	# ── Fase 4: Emitir señales de amenaza ────────────────────────
 	emit_signal("threat_assessed", visible_enemies)
 	
-	# ── Fase 4: Actualizar timer de objetivo ─────────────────────
+	# ── Fase 5: Actualizar timer de objetivo ─────────────────────
 	if _target_enemy != null and is_instance_valid(_target_enemy):
 		_time_on_target += delta
 	else:
 		_time_on_target = 0.0
+
+
+## Pide un giro lento hacia un enemigo visto periféricamente, sin seleccionarlo
+## como objetivo ni interrumpir la orden estratégica actual.
+func _request_peripheral_attention(enemy: Node3D) -> void:
+	if bot == null or bot.decision_sys == null or not is_instance_valid(enemy):
+		return
+	var attention_pos: Vector3 = enemy.global_position + Vector3.UP * 0.9
+	bot.decision_sys.request_attention(
+		attention_pos,
+		PERIPHERAL_ATTENTION_TURN_SPEED,
+		PERIPHERAL_ATTENTION_TIMEOUT)
 
 
 ## Selecciona el mejor objetivo enemigo.
@@ -248,8 +285,9 @@ func _select_target(role: TacticalRole) -> void:
 	if role:
 		var dist_to_base: float = bot._get_dist_to_own_core()
 		var enemy_near_core: bool = false
-		if bot._enemy_core and is_instance_valid(bot._enemy_core):
-			enemy_near_core = best_target.dist < ENEMY_NEAR_CORE_DIST
+		var own_base: Node = bot._get_own_core()
+		if own_base != null and is_instance_valid(own_base):
+			enemy_near_core = best_body.global_position.distance_to(own_base.global_position) < ENEMY_NEAR_CORE_DIST
 		
 		if not role.should_engage_enemy(
 			bot.global_position, best_body.global_position,

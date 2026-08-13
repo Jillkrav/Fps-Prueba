@@ -3,7 +3,12 @@ extends Path3D
 class_name CaminoBot
 
 ## Roles de ruta. No se comparan directamente con Roles.Type: usan enums distintos.
-enum Role { ASSAULT, FLANKER, DEFENDER }
+## PATROL = patrullaje continuo (recorrer el muro/perímetro).
+## DEFENDER = campeo (defensores y francotiradores se quedan fijos en un muro).
+## SUPPORT = recorrido de apoyo (unidades APOYO siguen su propio camino).
+## GENERIC = camino compartido usable por CUALQUIER rol. Es la ruta común a la
+## que todos los bots se adaptan (velocidad y gait según su propio rol).
+enum Role { ASSAULT, FLANKER, DEFENDER, PATROL, SUPPORT, GENERIC }
 
 const ROUTE_GROUP: StringName = &"bot_routes"
 
@@ -29,6 +34,12 @@ func _ready() -> void:
 ## Una ruta solo es utilizable si está habilitada y define al menos un tramo.
 func is_usable() -> bool:
 	return enabled and curve != null and curve.get_baked_points().size() >= 2
+
+
+## Retorna true si este camino acepta al rol solicitado. Un camino GENERIC es
+## compartido y sirve para cualquier rol; los demás solo a su rol específico.
+func is_compatible(requested_role: int) -> bool:
+	return enabled and (role == Role.GENERIC or role == requested_role)
 
 
 ## Devuelve los puntos horneados transformados al espacio global del mapa.
@@ -130,5 +141,11 @@ func _get_role_color() -> Color:
 			return Color.LIME_GREEN
 		Role.DEFENDER:
 			return Color.GOLD
+		Role.PATROL:
+			return Color.CYAN
+		Role.SUPPORT:
+			return Color.MAGENTA
+		Role.GENERIC:
+			return Color.WHITE
 		_:
 			return Color.RED

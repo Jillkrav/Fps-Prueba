@@ -299,11 +299,14 @@ func iniciar_partida(player_ref: Player, team_id: int) -> void:
 		bots_for_other_team if team_id == int(Enums.Equipo.AZUL) else bots_for_player_team
 	])
 	
-	# Crear todos los bots necesarios
+	# Crear todos los bots necesarios. El pool se construye antes de asignarlos,
+	# pero se mantiene inactivo hasta el próximo frame para que sus sistemas
+	# modulares terminen _ready() antes de recibir navegación/órdenes.
 	var total_bots: int = bots_for_player_team + bots_for_other_team
 	_crear_pool_de_bots(total_bots)
+	await get_tree().physics_frame
 	
-	# Asignar bots a sus equipos
+	# Asignar bots a sus equipos una vez listos.
 	_asignar_bots_a_equipos(team_id, bots_for_player_team, bots_for_other_team)
 	
 	# Registrar al jugador humano en el sistema central
@@ -904,8 +907,9 @@ func _kill_pawn_for_team_change(bot: BotBase) -> void:
 	if cs:
 		cs.disabled = true
 	
-	# Detener navegacion
-	if bot.navigation_agent:
+	# Detener navegacion. NavigationAgent3D rechaza Vector3.ZERO como target,
+	# así que en ese caso basta con dejar que el bot se detenga por velocity.
+	if bot.navigation_agent and bot.global_position != Vector3.ZERO:
 		bot.navigation_agent.target_position = bot.global_position
 	
 	# Iniciar timer de respawn para el NUEVO equipo (equipo_id ya se actualizo)

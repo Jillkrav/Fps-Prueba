@@ -43,6 +43,17 @@ var force_fire: bool = false
 ## Cesación inmediata de fuego
 var cease_fire: bool = false
 
+## Solicita una rotación reactiva sin abrir fuego. La escribe DecisionSystem
+## y la consume CombatSystem, que conserva la propiedad exclusiva del aim.
+var attention_enabled: bool = false
+
+## Velocidad angular máxima de atención en radianes por segundo.
+## 0.0 mantiene la puntería instantánea existente para combate normal.
+var attention_turn_speed: float = 0.0
+
+## Tiempo máximo que CombatSystem mantendrá esta atención antes de liberarla.
+var attention_timeout: float = 0.0
+
 
 # ══════════════════════════════════════════════════════════════════
 # MÉTODOS DE CONFIGURACIÓN
@@ -61,6 +72,17 @@ func set_aim(target_pos: Vector3) -> void:
 	aim_at_position = target_pos
 	cease_fire = false
 
+
+## Configura una atención visual con giro limitado y sin disparo.
+func set_attention(target_pos: Vector3, turn_speed: float, timeout: float) -> void:
+	engage = false
+	aim_at_position = target_pos
+	cease_fire = true
+	attention_enabled = true
+	attention_turn_speed = maxf(turn_speed, 0.0)
+	attention_timeout = maxf(timeout, 0.0)
+
+
 ## Detener fuego
 func set_cease_fire() -> void:
 	cease_fire = true
@@ -75,6 +97,9 @@ func reset() -> void:
 	aim_at_position = Vector3.ZERO
 	force_fire = false
 	cease_fire = false
+	attention_enabled = false
+	attention_turn_speed = 0.0
+	attention_timeout = 0.0
 
 
 # ══════════════════════════════════════════════════════════════════

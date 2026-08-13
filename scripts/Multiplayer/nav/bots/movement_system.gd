@@ -162,6 +162,32 @@ var route_waypoint: Vector3 = Vector3.ZERO
 var route_phase: int = 0
 var route_target_pos: Vector3 = Vector3.ZERO
 var last_agent_target: Vector3 = Vector3.ZERO
+## El comando conserva Vector3.ZERO para datos authored, pero _execute_navigate
+## nunca lo entrega a NavigationAgent3D porque el nodo nativo lo rechaza.
+var _has_last_agent_target: bool = false
+
+## Dirección horizontal deseada de movimiento (hacia dónde el bot QUIERE ir,
+## siguiendo el camino/navmesh). NO es la velocidad real (que RVO puede
+## desviar): es lo que debe mirar el cuerpo para no avanzar de espaldas.
+var _facing_dir: Vector3 = Vector3.FORWARD
+
+# ── Barrido de vigilancia (look-around 360°) ─────────────────────────
+## Referencia al nodo de la cabeza (para el barrido vertical natural).
+var _head: Node3D = null
+## Próximo instante (seg) para iniciar un barrido de vigilancia.
+var _next_look_around_time: float = 0.0
+## ¿Barrido de vigilancia en curso?
+var _look_around_active: bool = false
+## Ángulo (rad) que falta por girar en el barrido actual.
+var _look_around_remaining: float = 0.0
+## Velocidad angular del barrido actual (rad/s).
+var _look_around_speed: float = 0.0
+## Dirección del giro: +1 derecha (CW), -1 izquierda (CCW).
+var _look_around_dir: float = 1.0
+## Tiempo transcurrido del barrido actual (para el vaivén vertical).
+var _look_around_elapsed: float = 0.0
+## Pitch de la cabeza al iniciar el barrido (se restaura al terminar).
+var _look_around_start_pitch: float = 0.0
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -184,6 +210,11 @@ func _ready() -> void:
 	stuck_handler = StuckHandler.new()
 	stuck_handler.name = "StuckHandler"
 	add_child(stuck_handler)
+
+	# ── Barrido de vigilancia: cachear la cabeza e inicializar temporizador ──
+	_head = bot.get_node_or_null("Head") as Node3D
+	_next_look_around_time = Time.get_ticks_msec() / 1000.0 \
+		+ randf_range(LOOK_AROUND_MIN_INTERVAL, LOOK_AROUND_MAX_INTERVAL)
 
 
 ## Procesa el movimiento y ESCRIBE velocity (único lugar).
@@ -214,9 +245,9 @@ func process(delta: float) -> void:
 		# ── Apuntando: velocidad reducida a la mitad ──
 		if bot._is_bot_aiming():
 			move_speed *= 0.5
-		# ── Sprint: ×1.4 (Fase B) ──
-		if command.sprint and not command.crouch:
-			move_speed *= 1.4
+		# ── Sprint desactivado por petición del usuario (botas a velocidad normal) ──
+		# if command.sprint and not command.crouch:
+		# 	move_speed *= 1.4
 		# ── Crouch: ×0.5 (Fase B) ──
 		if command.crouch:
 			move_speed *= 0.5
@@ -304,6 +335,10 @@ func process(delta: float) -> void:
 	# PERO solo si no estamos en combate activo, para no pelear con el
 	# CombatSystem que encara al objetivo.
 	_face_movement_direction(delta)
+	# ── 7c. Barrido de vigilancia (giro 360° periódico) ─────────────────
+	# Cada 5–7 s el bot da una vuelta completa para inspeccionar si hay
+	# enemigos detrás o a los lados. Se salta en combate/disparando.
+	_update_look_around(delta)
 
 
 ## Inicia un salto authored hacia el Area3D de aterrizaje configurada.
@@ -400,13 +435,31 @@ func post_process(delta: float) -> void:
 func _execute_navigate(delta: float, target: Vector3, speed: float) -> void:
 	if agent == null:
 		return
+	# NavigationAgent3D no acepta Vector3.ZERO. Aunque el dato authored pueda
+	# representarlo, no se permite llegar al agente: el estado debe avanzar al
+	# siguiente waypoint o esperar una ruta utilizable, sin emitir errores nativos.
+	if target == Vector3.ZERO:
+		bot.velocity.x = move_toward(bot.velocity.x, 0.0, speed * delta * 3.0)
+		bot.velocity.z = move_toward(bot.velocity.z, 0.0, speed * delta * 3.0)
+		return
 
-	var effective_target: Vector3 = _resolve_tactical_navigation_target(target)
+	var requested_target: Vector3 = target
+	var effective_target: Vector3 = _resolve_tactical_navigation_target(requested_target)
 	
-	# Actualizar target del agente si cambió
-	if effective_target != Vector3.ZERO and effective_target != last_agent_target:
+	# Actualizar target del agente si cambió. La validez se representa mediante
+	# MovementCommand.has_target_position, por lo que (0,0,0) funciona como un
+	# waypoint authored legítimo.
+	if command.has_target_position and (not _has_last_agent_target or effective_target != last_agent_target):
+		# Última barrera: nunca asignar el vector cero al agente nativo. El comando
+		# puede representarlo para rutas authored, pero si no se logró proyectar a
+		# NavMesh se frena este frame y se deja que la FSM elija el siguiente nodo.
+		if effective_target == Vector3.ZERO:
+			bot.velocity.x = move_toward(bot.velocity.x, 0.0, speed * delta * 3.0)
+			bot.velocity.z = move_toward(bot.velocity.z, 0.0, speed * delta * 3.0)
+			return
 		agent.target_position = effective_target
 		last_agent_target = effective_target
+		_has_last_agent_target = true
 		nav_target = effective_target
 		route_target_pos = effective_target
 	
@@ -428,7 +481,12 @@ func _execute_navigate(delta: float, target: Vector3, speed: float) -> void:
 	
 	if dir.length_squared() < 0.001:
 		return
-	
+
+	# Dirección horizontal deseada (hacia dónde va el camino). Se usa para
+	# orientar el cuerpo hacia el frente del camino, NO hacia la velocidad
+	# (que RVO puede desviar, incluso hacia atrás).
+	_facing_dir = Vector3(dir.x, 0.0, dir.z).normalized()
+
 	# ── Detectar desnivel vertical entre el bot y el siguiente waypoint ──
 	var height_diff: float = next_pos.y - bot.global_position.y
 	var on_floor: bool = bot.is_on_floor()
@@ -566,7 +624,12 @@ func _execute_direct(delta: float, dir: Vector3, speed: float) -> void:
 	# Ya no aplanamos Y a 0 — el bot necesita la componente vertical
 	# para moverse correctamente en rampas y pendientes.
 	# normalized_dir.y = 0.0
-	
+
+	# Dirección horizontal deseada para el facing (los DIRECT suelen ser
+	# strafes/retrocesos tácticos: orientar el cuerpo hacia la dirección
+	# de desplazamiento para no arrastrarse de lado o de espaldas).
+	_facing_dir = Vector3(normalized_dir.x, 0.0, normalized_dir.z).normalized()
+
 	var desired: Vector3 = normalized_dir * speed
 	
 	# Step-up assist para movimento directo (strafe en rampas)
@@ -941,6 +1004,20 @@ func get_move_direction() -> Vector2:
 ## Velocidad de giro del cuerpo hacia la dirección de movimiento (rad/s).
 const TURN_SPEED: float = 10.0
 
+## Intervalo aleatorio entre barridos de vigilancia (5–7 s).
+const LOOK_AROUND_MIN_INTERVAL: float = 5.0
+const LOOK_AROUND_MAX_INTERVAL: float = 7.0
+## Velocidad angular base del barrido: ~360° en ~2.3 s.
+const LOOK_AROUND_BASE_SPEED: float = 2.7
+## Variación de velocidad angular por barrido (rad/s).
+const LOOK_AROUND_SPEED_VARIATION: float = 0.9
+## Fracción del giro usada para acelerar al inicio y frenar al final.
+const LOOK_AROUND_EASE_FRACTION: float = 0.18
+## Amplitud del barrido vertical de la cabeza (rad).
+const LOOK_AROUND_HEAD_PITCH_AMP: float = deg_to_rad(16.0)
+## Frecuencia del vaivén vertical de la cabeza (rad/s).
+const LOOK_AROUND_HEAD_PITCH_FREQ: float = 2.4
+
 ## Retorna true si el bot está en combate activo (con un objetivo vivo o un
 ## comando de mira explícito). En esos casos el CombatSystem es quien controla
 ## la rotación del cuerpo encarando al objetivo, así que MovementSystem NO debe
@@ -965,23 +1042,118 @@ func _bot_is_in_combat() -> bool:
 func _face_movement_direction(delta: float) -> void:
 	if bot == null:
 		return
-	# Solo rotar si el bot realmente se mueve horizontalmente.
-	var move_h: Vector3 = Vector3(bot.velocity.x, 0.0, bot.velocity.z)
-	if move_h.length_squared() < 0.01:
+	# Durante el barrido de vigilancia el giro lo controla _update_look_around.
+	if _look_around_active:
 		return
 	# En combate activo el CombatSystem controla el facing → no intervenir.
 	if _bot_is_in_combat():
 		return
+	# Solo rotar si el bot realmente se mueve horizontalmente.
+	var move_h: Vector3 = Vector3(bot.velocity.x, 0.0, bot.velocity.z)
+	if move_h.length_squared() < 0.01:
+		return
 
-	var forward: Vector3 = move_h.normalized()
+	# Orientar hacia la dirección DESEADA (del camino/navmesh), no hacia la
+	# velocidad real. La velocidad puede desviarse (RVO, jump assist) e incluso
+	# apuntar hacia atrás; si miráramos hacia ella el bot se vería de espalda.
+	var forward: Vector3 = _facing_dir
+	if forward.length_squared() < 0.001:
+		forward = move_h.normalized()
 	# Yaw que orienta el forward (-Z) del bot hacia la dirección de movimiento.
 	# forward = (-sin(yaw), 0, -cos(yaw)) → sin(yaw)=-forward.x, cos(yaw)=-forward.z
 	var target_yaw: float = atan2(-forward.x, -forward.z)
-	var current_yaw: float = bot.global_rotation.y
-	var delta_yaw: float = angle_difference(target_yaw, current_yaw)
+	# Se usa rotación local porque el bot es un CharacterBody3D raíz (sin
+	# parent rotated), así que local == global; además es testeable sin árbol.
+	var current_yaw: float = bot.rotation.y
+	var delta_yaw: float = angle_difference(current_yaw, target_yaw)
 	var max_step: float = TURN_SPEED * delta
 	var new_yaw: float = current_yaw + clampf(delta_yaw, -max_step, max_step)
-	bot.global_rotation = Vector3(bot.global_rotation.x, new_yaw, bot.global_rotation.z)
+	bot.rotation = Vector3(bot.rotation.x, new_yaw, bot.rotation.z)
+
+
+# ══════════════════════════════════════════════════════════════════
+# BARRIDO DE VIGILANCIA (LOOK-AROUND 360°)
+# ══════════════════════════════════════════════════════════════════
+
+## Inicia un giro completo de 360° del cuerpo mientras el bot escanea su
+## entorno buscando enemigos detrás o a los lados. Se dispara cada 5–7 s
+## aleatoriamente cuando el bot no está en combate ni disparando.
+func _start_look_around() -> void:
+	_look_around_active = true
+	# Dirección aleatoria para naturalidad (60% derecha, 40% izquierda).
+	_look_around_dir = 1.0 if randf() < 0.6 else -1.0
+	_look_around_speed = LOOK_AROUND_BASE_SPEED + randf_range(
+		-LOOK_AROUND_SPEED_VARIATION * 0.5, LOOK_AROUND_SPEED_VARIATION)
+	_look_around_remaining = TAU
+	_look_around_elapsed = 0.0
+	if _head:
+		_look_around_start_pitch = _head.rotation.x
+
+
+## Actualiza el barrido de vigilancia. Se llama cada frame (no solo en el
+## tick de IA) para que el giro se vea suave y continuo.
+func _update_look_around(delta: float) -> void:
+	if bot == null or bot.is_dead or bot.is_frozen:
+		return
+	# Abortar si entra en combate o vuelve a disparar: el CombatSystem toma
+	# el control del facing y no debe pelearse con el giro.
+	if _bot_is_in_combat() or bot._is_bot_firing():
+		if _look_around_active:
+			_finish_look_around(true)
+		return
+	if not _look_around_active:
+		var now: float = Time.get_ticks_msec() / 1000.0
+		if now >= _next_look_around_time:
+			_start_look_around()
+		return
+
+	# Barrido activo: frenar el avance y girar el cuerpo en el sitio.
+	bot.velocity.x = move_toward(bot.velocity.x, 0.0, 12.0 * delta)
+	bot.velocity.z = move_toward(bot.velocity.z, 0.0, 12.0 * delta)
+	_look_around_elapsed += delta
+
+	# Velocidad angular con suavizado al inicio/fin (acelera y frena para
+	# que el giro no se vea mecánico).
+	var step: float = _look_around_speed * _look_around_ease() * delta
+	if step >= _look_around_remaining:
+		step = _look_around_remaining
+	bot.rotation = Vector3(
+		bot.rotation.x,
+		bot.rotation.y + _look_around_dir * step,
+		bot.rotation.z)
+	_look_around_remaining -= step
+
+	# Vaivén vertical de la cabeza mientras escanea (más natural).
+	if _head:
+		var pitch: float = _look_around_start_pitch \
+			+ sin(_look_around_elapsed * LOOK_AROUND_HEAD_PITCH_FREQ) \
+			* LOOK_AROUND_HEAD_PITCH_AMP
+		_head.rotation = Vector3(pitch, 0.0, 0.0)
+
+	if _look_around_remaining <= 0.0:
+		_finish_look_around(false)
+
+
+## Factor de suavizado [0,1]: acelera al inicio y frena al final del giro.
+func _look_around_ease() -> float:
+	var total: float = TAU
+	var progress: float = 1.0 - clampf(_look_around_remaining / total, 0.0, 1.0)
+	var frac: float = LOOK_AROUND_EASE_FRACTION
+	if progress < frac:
+		return progress / frac
+	if progress > 1.0 - frac:
+		return (1.0 - progress) / frac
+	return 1.0
+
+
+## Finaliza el barrido: restaura la cabeza y reprograma el próximo.
+func _finish_look_around(_abort: bool = false) -> void:
+	_look_around_active = false
+	if _head:
+		_head.rotation = Vector3(_look_around_start_pitch, 0.0, 0.0)
+	# Reprogramar el próximo barrido (5–7 s).
+	_next_look_around_time = Time.get_ticks_msec() / 1000.0 \
+		+ randf_range(LOOK_AROUND_MIN_INTERVAL, LOOK_AROUND_MAX_INTERVAL)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -989,13 +1161,28 @@ func _face_movement_direction(delta: float) -> void:
 # ══════════════════════════════════════════════════════════════════
 
 ## Establece el comando de movimiento desde BotBrain/DecisionSystem.
+## Se copia el contenido porque DecisionSystem reutiliza y resetea su comando
+## cada tick de IA. Mantener una referencia compartida hacía que los frames
+## intermedios vieran Mode.NONE, pararan a algunos bots y desincronizaran RVO.
 func set_command(cmd: MovementCommand) -> void:
-	command = cmd
+	command.copy_from(cmd)
 
 
 ## ¿Está atascado? Delega al StuckHandler.
 func is_stuck() -> bool:
 	return stuck_handler and stuck_handler.is_in_recovery()
+
+
+## Invalida el objetivo cacheado tras una recuperación. Sin esta operación,
+## StuckHandler podía poner el agent sobre el bot y el siguiente comando con el
+## mismo waypoint no se reenviaba por parecer igual al target anterior.
+## Era una causa de bots individuales detenidos tras un reroute, especialmente
+## visible al aumentar la congestión a 100 jugadores.
+func invalidate_navigation_target() -> void:
+	_has_last_agent_target = false
+	last_agent_target = Vector3.ZERO
+	if agent != null and bot != null and bot.global_position != Vector3.ZERO:
+		agent.target_position = bot.global_position
 
 
 ## Resetea todo el estado de movimiento (útil en respawn).
@@ -1008,8 +1195,9 @@ func reset() -> void:
 	route_phase = 0
 	route_target_pos = Vector3.ZERO
 	last_agent_target = Vector3.ZERO
+	_has_last_agent_target = false
 	_requested_navigation_target = Vector3.ZERO
 	_tactical_navigation_target = Vector3.ZERO
 	_next_tactical_surface_check_time = 0.0
-	if agent:
-		agent.target_position = bot.global_position if bot else Vector3.ZERO
+	if agent and bot != null and bot.global_position != Vector3.ZERO:
+		agent.target_position = bot.global_position

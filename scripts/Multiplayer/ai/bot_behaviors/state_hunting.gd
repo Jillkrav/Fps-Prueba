@@ -20,12 +20,19 @@ class_name StateHunting
 # PROPIEDADES
 # ══════════════════════════════════════════════════════════════════
 
+## Tiempo máximo persiguiendo la última posición conocida. Si no llega ni
+## encuentra nada en ese tiempo (p.ej. ruta inalcanzable), el watchdog fuerza
+## a ROAMING en lugar de quedarse navegando a un punto sin salida.
+const HUNT_TIMEOUT: float = 8.0
+
 var _hunt_target: Vector3 = Vector3.ZERO
 
 
 func _init() -> void:
 	state_type = StateType.HUNTING
 	state_name = "hunting"
+	max_duration = HUNT_TIMEOUT
+	timeout_fallback = StateType.ROAMING
 
 
 # ══════════════════════════════════════════════════════════════════

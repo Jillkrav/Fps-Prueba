@@ -174,6 +174,16 @@ func process(_delta: float) -> void:
 	_update_dodge_cooldown(_delta)
 
 	# ── 3. Procesar según modo ──
+	# Atención reactiva: gira hacia un enemigo dentro del campo de visión
+	# amplio, pero aún fuera del POV del arma. Nunca dispara en esta fase.
+	if cmd.attention_enabled:
+		if cmd.aim_at_position != Vector3.ZERO and cmd.attention_timeout > 0.0:
+			# CombatSystem se ejecuta cada AI_TICK_INTERVAL frames. Compensamos
+			# solo este giro para preservar las ventanas de 7 s y 2–3 s reales.
+			var attention_delta: float = _delta * BotBase.AI_TICK_INTERVAL
+			_update_aim_limited(cmd.aim_at_position, cmd.attention_turn_speed, attention_delta)
+		return
+
 	if cmd.cease_fire:
 		# Cesación de fuego: solo apuntar pero no disparar
 		if cmd.aim_at_position != Vector3.ZERO:
@@ -333,31 +343,46 @@ func _update_aim(target_pos: Vector3) -> void:
 	if bot.global_position.distance_to(look_pos) > 0.1:
 		bot.look_at(look_pos, Vector3.UP)
 
-	# Rotación vertical de la cabeza (solo pitch).
-	# FIX: Evitamos head.look_at() + rotation.y = 0 porque la conversión
-	# quaternion→euler puede producir ángulos incorrectos y la cabeza
-	# no apunta exactamente al objetivo, causando que _is_aiming_at_target()
-	# falle con ángulos > 15° aunque el bot visualmente esté apuntando.
-	if _head_node:
-		var head_pos: Vector3 = _head_node.global_position
-		var dir_to_target: Vector3 = (target_pos - head_pos).normalized()
-		if dir_to_target.length_squared() > 0.001:
-			# Transformar la dirección al espacio local del cuerpo (el cuerpo
-			# ya rotó para encarar al objetivo horizontalmente)
-			var body_basis: Basis = bot.global_transform.basis
-			var local_dir: Vector3 = body_basis.inverse() * dir_to_target
-			# Calcular pitch: ángulo vertical en el plano Y-Z local
-			# atan2(y, -z) porque -Z es forward en Godot
-			var pitch: float = atan2(local_dir.y, -local_dir.z) if abs(local_dir.z) > 0.001 else 0.0
-			# En Godot 4, rotation.x positiva = mirar hacia arriba (+Y)
-			# (test: Basis.from_euler(Vector3(0.5,0,0)).z da forward.y positivo)
-			_head_node.rotation = Vector3(pitch, 0.0, 0.0)
-			# Limitar rotación vertical para evitar que se vea antinatural
-			_head_node.rotation.x = clamp(
-				_head_node.rotation.x,
-				deg_to_rad(-60),
-				deg_to_rad(60)
-			)
+	# Rotación vertical de la cabeza (solo pitch). Se comparte con la
+	# atención limitada para no duplicar la conversión global→local.
+	_update_head_pitch(target_pos)
+
+
+## Rota hacia `target_pos` con una velocidad angular máxima, sin abrir fuego.
+## Se usa únicamente para atención periférica y respuesta a daño.
+func _update_aim_limited(target_pos: Vector3, turn_speed: float, delta: float) -> void:
+	if bot == null or turn_speed <= 0.0:
+		return
+	var bot_position: Vector3 = bot.global_position if bot.is_inside_tree() else bot.position
+	var horizontal: Vector3 = target_pos - bot_position
+	horizontal.y = 0.0
+	if horizontal.length_squared() < 0.001:
+		return
+	var target_yaw: float = atan2(-horizontal.x, -horizontal.z)
+	var current_yaw: float = bot.rotation.y
+	var max_step: float = turn_speed * maxf(delta, 0.0)
+	var new_yaw: float = current_yaw + clampf(
+		angle_difference(current_yaw, target_yaw), -max_step, max_step)
+	bot.rotation = Vector3(bot.rotation.x, new_yaw, bot.rotation.z)
+	var direction: Vector3 = (target_pos - bot_position).normalized()
+	if direction.length_squared() > 0.001:
+		aim_rotation = Quaternion(Vector3.FORWARD, direction)
+	if bot.is_inside_tree():
+		_update_head_pitch(target_pos)
+
+
+## Actualiza solo la inclinación vertical de la cabeza después de orientar el cuerpo.
+func _update_head_pitch(target_pos: Vector3) -> void:
+	if _head_node == null:
+		return
+	var head_pos: Vector3 = _head_node.global_position
+	var dir_to_target: Vector3 = (target_pos - head_pos).normalized()
+	if dir_to_target.length_squared() <= 0.001:
+		return
+	var body_basis: Basis = bot.global_transform.basis
+	var local_dir: Vector3 = body_basis.inverse() * dir_to_target
+	var pitch: float = atan2(local_dir.y, -local_dir.z) if abs(local_dir.z) > 0.001 else 0.0
+	_head_node.rotation = Vector3(clampf(pitch, deg_to_rad(-60), deg_to_rad(60)), 0.0, 0.0)
 
 
 ## Decide si el bot debería usar ADS (apuntado preciso) según el perfil del arma.

@@ -41,6 +41,15 @@ enum CoverType {
 ## Si un bot ya está usando esta cobertura, no enviar más bots aquí.
 @export var max_occupants: int = 1
 
+## Marca un puesto defensivo authored. Solo DEFENSOR y FRANCOTIRADOR pueden
+## permanecer sin límite de tiempo en estos puntos; las coberturas normales
+## siguen usando los límites temporales de búsqueda/uso de la FSM.
+@export var is_defensive_post: bool = false
+
+## -1 = neutral. Si se asigna Azul/Rojo, únicamente ese equipo podrá ocuparlo
+## como puesto defensivo persistente.
+@export var defensive_team_id: int = -1
+
 ## Radio de debug para visualizar la cobertura en el editor.
 @export var show_debug: bool = false:
 	set(value):

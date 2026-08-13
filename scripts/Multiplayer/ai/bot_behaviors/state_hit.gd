@@ -23,6 +23,10 @@ const STUN_DURATION: float = 0.4
 ## Duración de la invulnerabilidad post-stun (evita cadenas).
 const INVULNERABILITY_DURATION: float = 0.2
 
+## Malla de seguridad para el stun. El stun ya tiene su propio timer (0.4s),
+## pero este tope garantiza que el bot nunca quede bloqueado si algo falla.
+const HIT_STATE_TIMEOUT: float = 2.0
+
 
 # ══════════════════════════════════════════════════════════════════
 # PROPIEDADES
@@ -34,13 +38,13 @@ var _previous_state_type: int = BotState.StateType.ROAMING
 ## Tiempo restante de stun.
 var _stun_timer: float = 0.0
 
-## Tiempo de invulnerabilidad restante tras salir del stun.
-var _invulnerability_timer: float = 0.0
 
 
 func _init() -> void:
 	state_type = StateType.TAKING_HIT
 	state_name = "hit_reaction"
+	max_duration = HIT_STATE_TIMEOUT
+	timeout_fallback = StateType.ROAMING
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -54,7 +58,6 @@ func enter(previous_state: BotState) -> void:
 		_previous_state_type = BotState.StateType.ROAMING
 	
 	_stun_timer = STUN_DURATION
-	_invulnerability_timer = 0.0  # Durante el stun, sin invulnerabilidad
 	
 	# Detener movimiento durante el stun
 	movement_cmd.set_hold()
@@ -73,9 +76,6 @@ func execute(delta: float) -> void:
 	
 	_stun_timer -= delta
 	
-	# Reducir invulnerabilidad residual (también decrece fuera de StateHit)
-	_invulnerability_timer = max(0.0, _invulnerability_timer - delta)
-	
 	# Durante el stun: mantener HOLD y cease_fire
 	movement_cmd.set_hold()
 	combat_cmd.cease_fire = true
@@ -88,8 +88,10 @@ func execute(delta: float) -> void:
 
 func exit(_next_state: BotState) -> void:
 	_stun_timer = 0.0
-	# Al salir del stun, activar breve invulnerabilidad para evitar cadenas
-	_invulnerability_timer = INVULNERABILITY_DURATION
+	# La ventana se guarda en BotBase: así sobrevive a la transición inmediata
+	# desde TAKING_HIT a COMBAT/HUNTING/ROAMING y bloquea el daño de verdad.
+	if bot != null:
+		bot.activate_damage_reaction_immunity(INVULNERABILITY_DURATION)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -125,10 +127,8 @@ func _return_to_previous_state() -> void:
 # ══════════════════════════════════════════════════════════════════
 
 func on_take_damage(_amount: float, _attacker: Node3D) -> void:
-	# Si la invulnerabilidad post-stun sigue activa, ignorar este daño
-	if _invulnerability_timer > 0.0:
-		return
-	# Ya estamos en hit — NO reiniciar el stun (evitar espirales de stun)
+	# Mientras este estado está activo, BotBase no reinicia el stun. La ventana
+	# posterior se aplica al salir mediante activate_damage_reaction_immunity().
 	pass
 
 

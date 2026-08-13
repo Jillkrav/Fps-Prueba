@@ -126,9 +126,12 @@ func process(delta: float) -> void:
 	# Actualizar estado del arma
 	_update_weapon_status()
 
-	# Verificar recarga automática si está vacío y no recargando
+	# Recargar un cargador vacío automáticamente solo cuando no hay presión.
+	# Bajo fuego, DecisionSystem deriva al bot a COVER_RELOAD para que primero
+	# encuentre un punto seguro y solicite la misma recarga mediante request_reload().
 	if current_weapon.ammo_in_mag <= 0 and current_weapon.reserve_ammo > 0 and not _is_reloading:
-		_start_reload()
+		if not _should_defer_automatic_reload_for_cover():
+			_start_reload()
 
 	# Chequeo periódico de cambio de arma (FASE 6: skip si <=1 armas)
 	_switch_check_timer += delta
@@ -277,6 +280,15 @@ func _evaluate_weapon_switch() -> void:
 ## Actualiza la distancia al enemigo para evaluaciones.
 func update_enemy_distance(distance: float) -> void:
 	_last_enemy_distance = distance
+
+
+## Evita iniciar una animación de recarga expuesta cuando el análisis táctico
+## ya detectó combate y ordenó buscar cobertura. Sin TacticalUtilitySystem, o
+## sin presión, se conserva la recarga automática histórica.
+func _should_defer_automatic_reload_for_cover() -> bool:
+	if bot == null or bot.tactical_sys == null:
+		return false
+	return bot.tactical_sys.requires_cover_for_reload()
 
 
 ## Devuelve si el arma actual está recargando.

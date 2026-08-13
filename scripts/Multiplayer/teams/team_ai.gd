@@ -111,36 +111,50 @@ func _delayed_scan() -> void:
 	objectives.clear()
 	_objectives_by_team.clear()
 
-	var cores: Array[Node] = get_tree().get_nodes_in_group("core")
-	if cores.is_empty():
-		print("[TeamAI] No se encontraron cores en el mapa.")
-		return
-
-	for core in cores:
-		if not is_instance_valid(core):
+	# Los BaseAnchor son independientes del modo: sirven para navegación,
+	# defensa y orientación aunque no exista un núcleo atacable.
+	var anchors: Array[Node] = get_tree().get_nodes_in_group(&"base_anchors")
+	for anchor: Node in anchors:
+		if not is_instance_valid(anchor) or not anchor is Node3D:
 			continue
-		if core.get("is_destroyed") == true:
+		if anchor.get("is_active") != true:
 			continue
+		var anchor_team: int = int(anchor.get("team"))
+		if anchor_team < 0:
+			continue
+		_add_base_objectives(anchor as Node3D, anchor_team)
 
-		var core_team: int = core.get("team") if "team" in core else -1
-		var core_pos: Vector3 = core.global_position
-		var core_name: String = core.name
-
-		for team_id in [int(Enums.Equipo.AZUL), int(Enums.Equipo.ROJO)]:
-			if team_id == core_team:
-				var defend_obj := Objective.defend(core_pos, team_id, "defend_%s" % core_name)
-				defend_obj.target_node = core.get_path()
-				defend_obj.completion_radius = 8.0
-				defend_obj.priority = 5.0
-				_add_objective(defend_obj)
-			else:
-				var attack_obj := Objective.attack(core_pos, team_id, "attack_%s" % core_name)
-				attack_obj.target_node = core.get_path()
-				attack_obj.completion_radius = 3.0
-				attack_obj.priority = 10.0
-				_add_objective(attack_obj)
+	# Fallback temporal: los mapas que aún no tengan BaseAnchor conservan
+	# los objetivos del núcleo sin cambiar su comportamiento actual.
+	if anchors.is_empty():
+		var cores: Array[Node] = get_tree().get_nodes_in_group("core")
+		for core: Node in cores:
+			if not is_instance_valid(core) or core.get("is_destroyed") == true:
+				continue
+			var core_team: int = core.get("team") if "team" in core else -1
+			if core is Node3D and core_team >= 0:
+				_add_base_objectives(core as Node3D, core_team)
 
 	print("[TeamAI] Escaneo completado: %d objetivos generados" % objectives.size())
+
+
+## Crea una pareja de objetivos de ataque/defensa usando una base semántica.
+func _add_base_objectives(base_node: Node3D, base_team: int) -> void:
+	for team_id: int in [int(Enums.Equipo.AZUL), int(Enums.Equipo.ROJO)]:
+		if team_id == base_team:
+			var defend_obj: Objective = Objective.defend(
+				base_node.global_position, team_id, "defend_%s" % base_node.name)
+			defend_obj.target_node = base_node.get_path()
+			defend_obj.completion_radius = 8.0
+			defend_obj.priority = 5.0
+			_add_objective(defend_obj)
+		else:
+			var attack_obj: Objective = Objective.attack(
+				base_node.global_position, team_id, "attack_%s" % base_node.name)
+			attack_obj.target_node = base_node.get_path()
+			attack_obj.completion_radius = 3.0
+			attack_obj.priority = 10.0
+			_add_objective(attack_obj)
 
 
 func _add_objective(obj: Objective) -> void:
@@ -381,11 +395,26 @@ func _resolve_node(path: NodePath) -> Node:
 	return tree.root.get_node_or_null(path)
 
 
+## Mantiene el nombre histórico para no romper llamadas existentes.
+## Prioriza BaseAnchor y conserva el núcleo como fallback en mapas antiguos.
 func _get_own_core(team: int) -> Node:
+	var anchor: Node3D = _get_base_anchor(team)
+	if anchor != null:
+		return anchor
 	if team == int(Enums.Equipo.AZUL):
 		return GameStateMP.core_blue if is_instance_valid(GameStateMP.core_blue) else null
 	elif team == int(Enums.Equipo.ROJO):
 		return GameStateMP.core_red if is_instance_valid(GameStateMP.core_red) else null
+	return null
+
+
+func _get_base_anchor(team: int) -> Node3D:
+	var anchors: Array[Node] = get_tree().get_nodes_in_group(&"base_anchors")
+	for anchor: Node in anchors:
+		if not is_instance_valid(anchor) or not anchor is Node3D:
+			continue
+		if anchor.get("is_active") == true and int(anchor.get("team")) == team:
+			return anchor as Node3D
 	return null
 
 

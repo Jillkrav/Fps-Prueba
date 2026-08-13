@@ -46,7 +46,11 @@ func _get_route_role_for_bot(bot_role: int) -> int:
 			return CaminoBot.Role.ASSAULT
 		Roles.Type.FLANQUEADOR:
 			return CaminoBot.Role.FLANKER
-		Roles.Type.DEFENSOR, Roles.Type.PATRULLADOR, Roles.Type.FRANCOTIRADOR, Roles.Type.APOYO:
+		Roles.Type.DEFENSOR, Roles.Type.FRANCOTIRADOR:
 			return CaminoBot.Role.DEFENDER
+		Roles.Type.PATRULLADOR:
+			return CaminoBot.Role.PATROL
+		Roles.Type.APOYO:
+			return CaminoBot.Role.SUPPORT
 		_:
 			return CaminoBot.Role.ASSAULT

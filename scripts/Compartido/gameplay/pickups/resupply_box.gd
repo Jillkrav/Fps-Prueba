@@ -1,6 +1,8 @@
 extends Area3D
 class_name ResupplyBox
 
+const RESUPPLY_GROUP: StringName = &"resupply_boxes"
+
 @export var cooldown_time: float = 3.0 # Segundos de espera para reutilizarla
 var is_active: bool = true
 
@@ -12,6 +14,7 @@ var active_material: StandardMaterial3D
 var inactive_material: StandardMaterial3D
 
 func _ready() -> void:
+	add_to_group(RESUPPLY_GROUP)
 	# Configurar materiales
 	active_material = StandardMaterial3D.new()
 	active_material.albedo_color = Color(0.1, 0.9, 0.4) # Verde brillante
@@ -29,11 +32,11 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 
 func _on_body_entered(body: Node3D) -> void:
-	if not is_active:
+	if not is_active or body == null or not is_instance_valid(body):
 		return
-		
-	if body is Player or body.is_in_group("player"):
-		# Reabastecer al jugador
+	# Player y BotBase comparten la misma API resupply(). No se usa el grupo
+	# player como filtro para que los bots también puedan consumir una caja activa.
+	if body is Player or body is BotBase or body.is_in_group("player") or body.is_in_group("npc"):
 		if body.has_method("resupply"):
 			body.resupply()
 			deactivate()

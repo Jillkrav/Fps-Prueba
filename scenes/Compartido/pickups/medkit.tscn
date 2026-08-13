@@ -8,6 +8,9 @@ size = Vector3(0.7, 0.7, 0.7)
 [sub_resource type="BoxMesh" id="BoxMesh_item"]
 size = Vector3(0.3, 0.3, 0.3)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_7tdcn"]
+size = Vector3(3, 2, 3)
+
 [node name="Medkit" type="RigidBody3D" unique_id=109594212]
 mass = 0.5
 script = ExtResource("1_medkit")
@@ -25,9 +28,10 @@ outline_modulate = Color(0, 0, 0, 0.9)
 outline_size = 4
 
 [node name="PickupArea" type="Area3D" parent="." unique_id=1113476655]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 0, 0, 0)
 
 [node name="PickupCollision" type="CollisionShape3D" parent="PickupArea" unique_id=1757435842]
-shape = SubResource("BoxShape_pickup")
+shape = SubResource("BoxShape3D_7tdcn")
 
 [node name="DespawnTimer" type="Timer" parent="." unique_id=1219599125]
 wait_time = 30.0
