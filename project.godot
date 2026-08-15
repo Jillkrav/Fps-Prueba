@@ -28,6 +28,7 @@ GameStateMP="*res://Scripts/Multiplayer/core/game_state_mp.gd"
 SkinManager="*res://Scripts/Multiplayer/player/skins/skin_manager.gd"
 BotDifficulty="*res://Scripts/Multiplayer/player/bot_difficulty.gd"
 VelocidadesArmas="*res://Scripts/Compartido/gameplay/weapons/velocidades_armas.gd"
+GameModeManager="*res://Scripts/Multiplayer/game_modes/game_mode_manager.gd"
 
 [display]
 
