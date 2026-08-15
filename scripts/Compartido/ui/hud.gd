@@ -50,16 +50,18 @@ var _menu_abierto: bool       = false
 func _ready() -> void:
 	# FIX: registrar en grupo para que spawner.gd pueda encontrarlo con get_nodes_in_group("hud")
 	add_to_group("hud")
+	_apply_story_presentation()
 	# ── Step-up 2 indicator: asegurar que empieza OCULTO ──
 	if step_up_indicator:
 		step_up_indicator.visible = false
 	_conectar_player()
 	_configurar_pausa()
 	_configurar_death_screen()
-	_conectar_core_hud()
-	_conectar_auto_balance()
-	_conectar_match_end()
-	_configurar_match_over_buttons()
+	if not _is_story_mode():
+		_conectar_core_hud()
+		_conectar_auto_balance()
+		_conectar_match_end()
+		_configurar_match_over_buttons()
 	# Botón de toggle cámara (conexión única, _ready solo corre una vez)
 	if camera_toggle_btn and not camera_toggle_btn.pressed.is_connected(_on_camera_toggle_pressed):
 		camera_toggle_btn.pressed.connect(_on_camera_toggle_pressed)
@@ -76,8 +78,8 @@ func _conectar_player() -> void:
 		_player.ammo_changed.connect(update_ammo)
 	if not _player.player_died.is_connected(_on_player_died):
 		_player.player_died.connect(_on_player_died)
-	# Conectar al sistema de respawn unificado del MatchManager
-	if is_instance_valid(MatchManager):
+	# Conectar al sistema de respawn unificado del MatchManager solo en MP.
+	if not _is_story_mode() and is_instance_valid(MatchManager):
 		if not MatchManager.player_respawned.is_connected(_on_player_respawned):
 			MatchManager.player_respawned.connect(_on_player_respawned)
 	# ── Step-up 2 indicator ──
@@ -113,7 +115,11 @@ func _process(_delta: float) -> void:
 	# Actualizar posición del crosshair del arma (Fase 2)
 	_update_weapon_crosshair()
 	
-	# Manejo de Scoreboard (TAB mantenido)
+	# Manejo de Scoreboard (solo multijugador).
+	if _is_story_mode():
+		if scoreboard != null and scoreboard.visible:
+			scoreboard.hide_scoreboard()
+		return
 	if not _menu_abierto and not get_tree().paused:
 		if Input.is_action_pressed("scoreboard"):
 			if scoreboard and not scoreboard.visible:
@@ -191,6 +197,12 @@ func _on_player_died() -> void:
 	if death_screen:
 		death_screen.visible = true
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		var death_label: Label = get_node_or_null("DeathScreen/Label") as Label
+		if death_label != null:
+			death_label.text = "HAS MUERTO\nREAPARECIENDO..." if _is_story_mode() else "HAS MUERTO"
+		var death_menu_button: Button = get_node_or_null("DeathScreen/Buttons/BtnMenu") as Button
+		if death_menu_button != null:
+			death_menu_button.visible = not _is_story_mode()
 	# Ocultar indicador de step-up al morir
 	if step_up_indicator:
 		step_up_indicator.visible = false
@@ -199,6 +211,19 @@ func _on_player_died() -> void:
 		camera_toggle_btn.visible = false
 	# El respawn automatico lo gestiona el MatchManager ahora.
 	# La pantalla de muerte se ocultara cuando llegue la senal player_respawned.
+
+## Restaura el HUD tras un checkpoint de Historia.
+func story_player_respawned() -> void:
+	if death_screen != null:
+		death_screen.visible = false
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if is_instance_valid(camera_toggle_btn):
+		camera_toggle_btn.visible = true
+	var death_menu_button: Button = get_node_or_null("DeathScreen/Buttons/BtnMenu") as Button
+	if death_menu_button != null:
+		death_menu_button.visible = true
+
 
 func _on_player_respawned() -> void:
 	"""El MatchManager respawneara al jugador y emitira esta senal."""
@@ -213,7 +238,12 @@ func _on_player_respawned() -> void:
 		camera_toggle_btn.visible = true
 
 func _cleanup_match_state() -> void:
-	"""Limpia todo el estado de la partida antes de salir al menu principal."""
+	"""Limpia el estado del modo que estaba activo antes de volver al menú."""
+	if _is_story_mode():
+		var story_state: Node = get_node_or_null("/root/GameStateSP")
+		if story_state != null and story_state.has_method("reset_session"):
+			story_state.call("reset_session")
+		return
 	if is_instance_valid(MatchManager):
 		MatchManager.reset_match()
 	if is_instance_valid(GameState):
@@ -297,6 +327,34 @@ func _formatear_categoria_hud(categoria: String, num_perdigones: int = 1) -> Str
 			return "Cuerpo a cuerpo"
 		_:
 			return categoria.capitalize()
+
+## Actualiza el objetivo mostrado en Historia.
+func set_story_objective(text: String) -> void:
+	if spawn_label != null:
+		spawn_label.text = "OBJETIVO: %s" % text
+		spawn_label.visible = not text.is_empty()
+
+
+func _is_story_mode() -> bool:
+	var story_state: Node = get_node_or_null("/root/GameStateSP")
+	if story_state != null and story_state.has_method("is_story_active") and bool(story_state.call("is_story_active")):
+		return true
+	var current_scene: Node = get_tree().current_scene
+	return current_scene != null and current_scene.get_node_or_null("StoryLevelController") != null
+
+
+func _apply_story_presentation() -> void:
+	if not _is_story_mode():
+		return
+	if core_blue_bar != null:
+		core_blue_bar.get_parent().visible = false
+	if auto_balance_label != null:
+		auto_balance_label.visible = false
+	if match_over != null:
+		match_over.visible = false
+	if scoreboard != null:
+		scoreboard.visible = false
+
 
 func update_spawn_timer(time_left: float) -> void:
 	if spawn_label:

@@ -18,7 +18,7 @@
 [ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/asalto/camino_asalto_base.tscn" id="15_xocmb"]
 [ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/patrullador/camino_patrullador_base.tscn" id="17_8cpsh"]
 [ext_resource type="PackedScene" uid="uid://dje8pxda0ucaj" path="res://scenes/Multiplayer/caminos/francotirador/camino_francotirador_base.tscn" id="18_mg285"]
-[ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/flanqueador/camino_flanco_base.tscn" id="19_3ydkq"]
+[ext_resource type="PackedScene" uid="uid://dyi1qhcl11nx5" path="res://scenes/Multiplayer/caminos/flanqueador/camino_flanco_base.tscn" id="19_3ydkq"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_2f"]
 sky_horizon_color = Color(0.45, 0.55, 0.7, 1)

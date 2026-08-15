@@ -26,6 +26,8 @@ var _mostrar_zonas_debug: bool      = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	if _is_story_mode():
+		btn_generar.text = "Spawnear Zombie"
 
 	# --- Equipo para spawn de NPC ---
 	opt_relacion.clear()
@@ -91,15 +93,16 @@ func _agregar_botones_extras() -> void:
 	vbox.add_child(btn_armas)
 	vbox.move_child(btn_armas, insert_idx)
 
-	# Boton cambiar equipo
-	var btn_equipo := Button.new()
-	btn_equipo.name = "BtnCambiarEquipo"
-	btn_equipo.text = "Cambiar Equipo [%s]" % GameState.nombre_equipo(GameState.player_team)
-	btn_equipo.custom_minimum_size = Vector2(0, 36)
-	btn_equipo.add_theme_font_size_override("font_size", 16)
-	btn_equipo.pressed.connect(_on_cambiar_equipo_pressed)
-	vbox.add_child(btn_equipo)
-	vbox.move_child(btn_equipo, insert_idx + 1)
+	# Boton cambiar equipo (solo para multijugador).
+	if not _is_story_mode():
+		var btn_equipo := Button.new()
+		btn_equipo.name = "BtnCambiarEquipo"
+		btn_equipo.text = "Cambiar Equipo [%s]" % GameState.nombre_equipo(GameState.player_team)
+		btn_equipo.custom_minimum_size = Vector2(0, 36)
+		btn_equipo.add_theme_font_size_override("font_size", 16)
+		btn_equipo.pressed.connect(_on_cambiar_equipo_pressed)
+		vbox.add_child(btn_equipo)
+		vbox.move_child(btn_equipo, insert_idx + 1)
 
 	# Boton AI disable
 	var btn_ai := Button.new()
@@ -419,16 +422,21 @@ func _on_ai_disable_pressed() -> void:
 	if not btn:
 		return
 
+	var bots: Array = []
+	if _is_story_mode():
+		bots = get_tree().get_nodes_in_group(&"story_enemy")
+	else:
+		bots = MatchManager.bot_pool
 	if ai_disabled:
-		for bot in MatchManager.bot_pool:
-			if is_instance_valid(bot) and not bot.is_dead:
+		for bot: Node in bots:
+			if is_instance_valid(bot) and bot.get("is_dead") != true:
 				bot.process_mode = Node.PROCESS_MODE_DISABLED
 				if bot is CharacterBody3D:
 					bot.velocity = Vector3.ZERO
 		btn.text = "Ai disable [ON]"
 		lbl_status.text = "[AI DISABLE ACTIVO]"
 	else:
-		for bot in MatchManager.bot_pool:
+		for bot: Node in bots:
 			if is_instance_valid(bot):
 				bot.process_mode = Node.PROCESS_MODE_INHERIT
 		btn.text = "Ai disable [OFF]"
@@ -461,6 +469,9 @@ func _on_cambiar_equipo_pressed() -> void:
 	_panel_equipo.visible = true
 
 func _on_team_ai_pressed() -> void:
+	if _is_story_mode():
+		lbl_status.text = "Historia: %d zombies vivos" % get_tree().get_nodes_in_group(&"story_enemy").size()
+		return
 	# Mostrar resumen del estado de TeamAI en la consola
 	if not is_instance_valid(TeamAI):
 		lbl_status.text = "[TeamAI NO DISPONIBLE]"
@@ -475,6 +486,9 @@ func _on_team_ai_pressed() -> void:
 
 
 func _on_reassign_orders_pressed() -> void:
+	if _is_story_mode():
+		lbl_status.text = "Historia no usa órdenes tácticas de equipos."
+		return
 	if not is_instance_valid(TeamAI):
 		lbl_status.text = "[TeamAI NO DISPONIBLE]"
 		return
@@ -541,39 +555,49 @@ func _on_friendly_fire_pressed() -> void:
 
 
 func _on_spawn_pressed() -> void:
-	var packed: PackedScene = load(BOT_SCENE)
-	if not packed:
-		push_error("DevMenu: no se pudo cargar escena: " + BOT_SCENE)
+	var scene_path: String = "res://scenes/Historia/npc/enemies/story_melee_enemy.tscn" if _is_story_mode() else BOT_SCENE
+	var packed: PackedScene = load(scene_path) as PackedScene
+	if packed == null:
+		push_error("DevMenu: no se pudo cargar escena: " + scene_path)
 		return
-	var npc: BotBase = packed.instantiate() as BotBase
-	if not npc:
-		push_error("DevMenu: la escena no instancio BotBase")
+	var npc: Node3D = packed.instantiate() as Node3D
+	if npc == null:
+		push_error("DevMenu: la escena no instanció un NPC")
 		return
-
-	npc.equipo_id = opt_relacion.get_selected_id()
-	npc.experiencia = opt_experiencia.get_selected_id()
-	npc.rol = opt_rol.get_selected_id()
-	var idx: int = opt_tipo_npc.get_selected()
-	if idx >= 0 and idx < _armas_lista.size():
-		npc.nombre_arma = _armas_lista[idx]
+	if npc is BotBase:
+		var bot: BotBase = npc as BotBase
+		bot.equipo_id = opt_relacion.get_selected_id()
+		bot.experiencia = opt_experiencia.get_selected_id()
+		bot.rol = opt_rol.get_selected_id()
+		var idx: int = opt_tipo_npc.get_selected()
+		if idx >= 0 and idx < _armas_lista.size():
+			bot.nombre_arma = _armas_lista[idx]
 
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
-	if not player:
-		push_error("DevMenu: no se encontro al jugador")
+	if player == null:
+		push_error("DevMenu: no se encontró al jugador")
 		npc.queue_free()
 		return
-	var spawn_pos: Vector3 = player.global_transform.origin \
-		+ player.global_transform.basis.z * -3.0
-	spawn_pos.y = player.global_transform.origin.y
+	var spawn_pos: Vector3 = player.global_position - player.global_transform.basis.z * 3.0
+	spawn_pos.y = player.global_position.y
 	player.get_parent().add_child(npc)
-	npc.global_transform.origin = spawn_pos
+	npc.global_position = spawn_pos
 
-	var arma_txt: String = npc.nombre_arma if npc.nombre_arma != "" else "Melee"
-	lbl_status.text = "NPC spawneado: %s | %s | Rol: %s | Arma: %s" % [
-		GameState.nombre_equipo(npc.equipo_id),
-		opt_experiencia.get_item_text(opt_experiencia.get_selected()),
-		opt_rol.get_item_text(opt_rol.get_selected()),
-		arma_txt
-	]
-	panel_npc.visible       = false
+	if npc is BotBase:
+		var spawned_bot: BotBase = npc as BotBase
+		var arma_txt: String = spawned_bot.nombre_arma if spawned_bot.nombre_arma != "" else "Melee"
+		lbl_status.text = "NPC spawneado: %s | %s | Rol: %s | Arma: %s" % [
+			GameState.nombre_equipo(spawned_bot.equipo_id),
+			opt_experiencia.get_item_text(opt_experiencia.get_selected()),
+			opt_rol.get_item_text(opt_rol.get_selected()),
+			arma_txt
+		]
+	else:
+		lbl_status.text = "Zombie lento spawneado para Historia"
+	panel_npc.visible = false
 	panel_principal.visible = true
+
+
+func _is_story_mode() -> bool:
+	var story_state: Node = get_node_or_null("/root/GameStateSP")
+	return story_state != null and story_state.has_method("is_story_active") and bool(story_state.call("is_story_active"))

@@ -1,0 +1,165 @@
+[gd_scene format=3 uid="uid://dfijetc62amff"]
+
+[ext_resource type="Script" uid="uid://cuvrhp1uqccyg" path="res://Scripts/Historia/Core/story_level_controller.gd" id="1_controller"]
+[ext_resource type="PackedScene" uid="uid://dg0u4rsk2u6o7" path="res://scenes/Compartido/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/Compartido/hud.tscn" id="3_hud"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_checkpoint.tscn" id="4_checkpoint"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_door.tscn" id="5_door"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_warp.tscn" id="6_warp"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_exit.tscn" id="7_exit"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/npc/enemies/story_melee_enemy.tscn" id="8_enemy"]
+[ext_resource type="PackedScene" uid="uid://bnre1cxahhdti" path="res://scenes/Compartido/pickups/dropped_weapon.tscn" id="9_weapon"]
+
+[sub_resource type="NavigationMesh" id="NavMesh"]
+vertices = PackedVector3Array(-2.4, 0.5, -33.16469, -2.4, 0.5, -18.164688, 2.35, 0.5, -18.164688, 2.35, 0.5, -33.16469, -2.4, 0.5, -9.664688, -2.4, 0.5, 9.335312, 2.35, 0.5, 9.335312, 2.35, 0.5, -9.664688, -2.4, 0.5, 10.835312, -2.4, 0.5, 33.08531, 2.35, 0.5, 33.08531, 2.35, 0.5, 10.835312)
+polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1), PackedInt32Array(7, 6, 4), PackedInt32Array(4, 6, 5), PackedInt32Array(11, 10, 8), PackedInt32Array(8, 10, 9)]
+agent_height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="FloorMat"]
+albedo_color = Color(0.13, 0.18, 0.23, 1)
+metallic = 0.25
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="WallMat"]
+albedo_color = Color(0.2, 0.27, 0.32, 1)
+metallic = 0.2
+roughness = 0.65
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+sky_top_color = Color(0.03, 0.08, 0.16, 1)
+sky_horizon_color = Color(0.14, 0.25, 0.35, 1)
+ground_bottom_color = Color(0.02, 0.02, 0.03, 1)
+ground_horizon_color = Color(0.12, 0.14, 0.17, 1)
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMat")
+
+[sub_resource type="Environment" id="Environment"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.45, 0.55, 0.7, 1)
+ambient_light_energy = 0.65
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="StoryTestMap01" type="Node3D" unique_id=1442377504]
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=943388208]
+navigation_mesh = SubResource("NavMesh")
+
+[node name="Geometria" type="Node3D" parent="NavigationRegion3D" unique_id=1934798132]
+
+[node name="Doors" type="Node3D" parent="NavigationRegion3D/Geometria" unique_id=1679798577]
+
+[node name="ManualDoor" parent="NavigationRegion3D/Geometria/Doors" unique_id=2038038819 instance=ExtResource("5_door")]
+transform = Transform3D(2.55, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 0, 10)
+display_name = "PUERTA DE PRUEBA"
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria" unique_id=1946449150]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 12.426514)
+use_collision = true
+size = Vector3(6, 1, 45.146973)
+material = SubResource("FloorMat")
+
+[node name="WallLeft" type="CSGBox3D" parent="NavigationRegion3D/Geometria" unique_id=551215424]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 2, 0)
+use_collision = true
+size = Vector3(0.4, 4, 70)
+material = SubResource("WallMat")
+
+[node name="WallRight" type="CSGBox3D" parent="NavigationRegion3D/Geometria" unique_id=1646155482]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 2, 0)
+use_collision = true
+size = Vector3(0.4, 4, 70)
+material = SubResource("WallMat")
+
+[node name="WallStart" type="CSGBox3D" parent="NavigationRegion3D/Geometria" unique_id=183292765]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 34)
+use_collision = true
+size = Vector3(6.8, 4, 0.4)
+material = SubResource("WallMat")
+
+[node name="WallEnd" type="CSGBox3D" parent="NavigationRegion3D/Geometria" unique_id=380287891]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -34)
+use_collision = true
+size = Vector3(6.8, 4, 0.4)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria" unique_id=1427312469]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -26.42378)
+use_collision = true
+size = Vector3(6, 1, 17.481812)
+material = SubResource("FloorMat")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=810706425]
+environment = SubResource("Environment")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=536825160]
+transform = Transform3D(0.90630776, 0.34618863, -0.24240388, 0, 0.57357645, 0.81915206, 0.42261827, -0.74240386, 0.5198368, 0, 0, 0)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="Player" parent="." unique_id=42828037 instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 28)
+
+[node name="HUDLayer" parent="." unique_id=1559959340 instance=ExtResource("3_hud")]
+
+[node name="StoryLevelController" type="Node" parent="." unique_id=1532649090]
+script = ExtResource("1_controller")
+level_id = "mapa_pruebas_1"
+objective_text = "Abre la puerta, elimina los zombies y llega a la salida."
+next_level_path = "res://scenes/Historia/mapas/mapa_pruebas_2.tscn"
+
+[node name="Checkpoints" type="Node3D" parent="." unique_id=993655872]
+
+[node name="StartCheckpoint" parent="Checkpoints" unique_id=1664063311 instance=ExtResource("4_checkpoint")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 27)
+display_name = "INICIO"
+
+[node name="WarpCheckpoint" parent="Checkpoints" unique_id=1039414226 instance=ExtResource("4_checkpoint")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9199176, 0, 5.2275987)
+display_name = "DESPUÉS DEL WARP"
+
+[node name="Warps" type="Node3D" parent="." unique_id=1210064255]
+
+[node name="WarpEntrance" parent="Warps" unique_id=565485165 instance=ExtResource("6_warp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+target_warp_path = NodePath("../WarpExit")
+display_name = "WARP A LA SALIDA"
+show_debug_visual = true
+
+[node name="WarpExit" parent="Warps" unique_id=12817289 instance=ExtResource("6_warp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -21.432251)
+target_warp_path = NodePath("../WarpEntrance")
+display_name = "WARP AL INICIO"
+show_debug_visual = true
+
+[node name="Pickups" type="Node3D" parent="." unique_id=46205908]
+
+[node name="GlockPersistent" parent="Pickups" unique_id=421688892 instance=ExtResource("9_weapon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, 1, 24)
+starting_reserve_ammo = 80
+persistent_on_floor = true
+
+[node name="M3Persistent" parent="Pickups" unique_id=393406947 instance=ExtResource("9_weapon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 1, 4)
+weapon_name = "M3"
+starting_mag_ammo = 8
+starting_reserve_ammo = 32
+persistent_on_floor = true
+
+[node name="Enemies" type="Node3D" parent="." unique_id=2052644703]
+
+[node name="ZombieDoor01" parent="Enemies" unique_id=1296945312 instance=ExtResource("8_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 14.855583)
+
+[node name="ZombieDoor02" parent="Enemies" unique_id=481194564 instance=ExtResource("8_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0.05, 2.3550491)
+
+[node name="ZombieExit" parent="Enemies" unique_id=173887526 instance=ExtResource("8_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.05, -7.682066)
+
+[node name="Exit" parent="." unique_id=55327308 instance=ExtResource("7_exit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -30)
+display_name = "SALIDA AL MAPA 2"

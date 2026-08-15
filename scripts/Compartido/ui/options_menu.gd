@@ -194,7 +194,7 @@ func _setup_teclas() -> void:
 
 	var actions_to_bind: Array[String] = [
 		"move_forward", "move_back", "move_left", "move_right",
-		"jump", "shoot", "reload", "crouch",
+		"jump", "shoot", "reload", "crouch", "interact",
 		"pause_menu", "dev_menu"
 	]
 
@@ -300,7 +300,7 @@ func _refresh_teclas() -> void:
 	# Actualizar textos de todos los botones de teclas
 	var actions_to_bind: Array[String] = [
 		"move_forward", "move_back", "move_left", "move_right",
-		"jump", "shoot", "reload", "crouch",
+		"jump", "shoot", "reload", "crouch", "interact",
 		"pause_menu", "dev_menu"
 	]
 	for action in actions_to_bind:

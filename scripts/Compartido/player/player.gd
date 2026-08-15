@@ -922,10 +922,26 @@ func die(killer_id: int = -1) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	player_died.emit()
 	_update_body_visibility()
-	# Reportar la muerte al MatchManager para estadisticas + respawn unificado
-	if is_instance_valid(MatchManager):
+	# Reportar la muerte al MatchManager solo durante una partida multijugador.
+	# Historia controla checkpoints y reintentos desde StoryLevelController.
+	if not _is_story_mode() and is_instance_valid(MatchManager):
 		MatchManager.reportar_muerte(self, killer_id)
 		MatchManager.reportar_muerte_player()
+
+
+## Reaparece en una posición concreta, usado por checkpoints de Historia.
+func respawn_at(respawn_position: Vector3) -> void:
+	is_dead = false
+	current_health = max_health
+	velocity = Vector3.ZERO
+	global_position = respawn_position
+	if active_weapon != null and is_instance_valid(active_weapon):
+		active_weapon.resupply()
+		ammo_changed.emit(active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	health_changed.emit(current_health, max_health)
+	_update_body_visibility()
+
 
 func respawn() -> void:
 	is_dead = false
@@ -959,6 +975,25 @@ func change_team(new_team: int) -> bool:
 	var result: bool = MatchManager.cambiar_equipo_jugador(new_team)
 	_update_body_visibility()
 	return result
+
+## Cura vida y emite la señal que actualiza el HUD.
+func curar(amount: float) -> void:
+	current_health = clampf(current_health + amount, 0.0, max_health)
+	health_changed.emit(current_health, max_health)
+
+
+## Añade munición de reserva al arma activa y actualiza el HUD.
+func refill_ammo(amount: int) -> void:
+	if active_weapon == null or not is_instance_valid(active_weapon):
+		return
+	active_weapon.reserve_ammo = mini(active_weapon.reserve_ammo + amount, active_weapon.max_ammo)
+	active_weapon.weapon_ammo_changed.emit(active_weapon.ammo_in_mag, active_weapon.reserve_ammo)
+
+
+func _is_story_mode() -> bool:
+	var story_state: Node = get_node_or_null("/root/GameStateSP")
+	return story_state != null and story_state.has_method("is_story_active") and bool(story_state.call("is_story_active"))
+
 
 func resupply() -> void:
 	current_health = max_health

@@ -19,6 +19,7 @@ var _red_bot_skin_id: String = "teddy"
 
 ## Ruta al archivo JSON que contiene la lista de mapas.
 const MAP_LIST_PATH: String = "res://config/Multiplayer/maps/MPMapList.json"
+const STORY_MAP_LIST_PATH: String = "res://config/Historia/story_map_list.json"
 
 ## Cache de la lista de mapas cargada desde el JSON.
 var _map_list: Array[Dictionary] = []
@@ -35,6 +36,9 @@ var _max_players: int = 10
 
 func _ready() -> void:
 	# Limpiar estado de partida previa por si la transicion no lo hizo.
+	var story_state: Node = get_node_or_null("/root/GameStateSP")
+	if story_state != null and story_state.has_method("reset_session"):
+		story_state.call("reset_session")
 	if is_instance_valid(MatchManager):
 		MatchManager.reset_match()
 
@@ -279,14 +283,73 @@ func _update_play_button() -> void:
 # ══════════════════════════════════════════════════════════════════
 
 func _on_campana_pressed() -> void:
-	"""Muestra un dialogo de 'Proximamente' para Campana."""
-	var dialog := AcceptDialog.new()
-	dialog.title = "CAMPAÑA"
-	dialog.dialog_text = "La Campaña Individual estará disponible próximamente."
+	_show_story_map_selector()
+
+
+## Construye la selección de Historia desde su JSON independiente del modo MP.
+func _show_story_map_selector() -> void:
+	var levels: Array[Dictionary] = _load_story_map_list()
+	var dialog: AcceptDialog = AcceptDialog.new()
+	dialog.title = "CAMPAÑA — SELECCIONAR MISIÓN"
+	dialog.min_size = Vector2i(560, 340)
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 12)
+	var intro: Label = Label.new()
+	intro.text = "Elige un mapa de pruebas. Completa el Mapa 1 para avanzar al Mapa 2 jugando."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(intro)
+	for level: Dictionary in levels:
+		var button: Button = Button.new()
+		button.text = "%s\n%s" % [str(level.get("display_name", "Misión")), str(level.get("description", ""))]
+		button.custom_minimum_size = Vector2(500, 68)
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.pressed.connect(_start_story_level.bind(str(level.get("id", "")), str(level.get("scene_path", "")), dialog))
+		content.add_child(button)
+	if levels.is_empty():
+		var empty_label: Label = Label.new()
+		empty_label.text = "No hay misiones de Historia disponibles."
+		content.add_child(empty_label)
+	dialog.add_child(content)
 	dialog.canceled.connect(dialog.queue_free)
-	dialog.confirmed.connect(dialog.queue_free)
 	add_child(dialog)
-	dialog.popup_centered(Vector2i(400, 150))
+	dialog.popup_centered()
+
+
+func _load_story_map_list() -> Array[Dictionary]:
+	var levels: Array[Dictionary] = []
+	var file: FileAccess = FileAccess.open(STORY_MAP_LIST_PATH, FileAccess.READ)
+	if file == null:
+		push_error("[MainMenu] No se pudo abrir: %s" % STORY_MAP_LIST_PATH)
+		return levels
+	var json: JSON = JSON.new()
+	var parse_result: Error = json.parse(file.get_as_text())
+	file.close()
+	if parse_result != OK or not (json.data is Array):
+		push_error("[MainMenu] JSON de Historia inválido: %s" % STORY_MAP_LIST_PATH)
+		return levels
+	for raw_entry: Variant in json.data:
+		if not (raw_entry is Dictionary):
+			continue
+		var entry: Dictionary = raw_entry as Dictionary
+		var scene_path: String = str(entry.get("scene_path", ""))
+		if entry.get("enabled", true) and not scene_path.is_empty() and ResourceLoader.exists(scene_path):
+			levels.append(entry)
+	return levels
+
+
+func _start_story_level(level_id: String, scene_path: String, dialog: AcceptDialog) -> void:
+	if level_id.is_empty() or scene_path.is_empty():
+		return
+	var story_state: Node = get_node_or_null("/root/GameStateSP")
+	if story_state == null or not story_state.has_method("begin_story"):
+		push_error("[MainMenu] GameStateSP no está disponible.")
+		return
+	story_state.call("begin_story", level_id, scene_path)
+	GameStateMP.reset_match()
+	if is_instance_valid(MatchManager):
+		MatchManager.reset_match()
+	dialog.queue_free()
+	get_tree().change_scene_to_file(scene_path)
 
 func _on_multijugador_pressed() -> void:
 	# Reiniciar seleccion al abrir el panel de mapas.
@@ -358,6 +421,11 @@ func _on_play_pressed() -> void:
 
 	# NUEVO: guardar la dificultad global antes de cargar el mapa.
 	_save_selected_difficulty()
+	var story_state: Node = get_node_or_null("/root/GameStateSP")
+	if story_state != null and story_state.has_method("reset_session"):
+		story_state.call("reset_session")
+	if is_instance_valid(MapManager) and MapManager.has_method("prepare_multiplayer_map_setup"):
+		MapManager.prepare_multiplayer_map_setup()
 
 	get_tree().change_scene_to_file(_selected_map_path)
 

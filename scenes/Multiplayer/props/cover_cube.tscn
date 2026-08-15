@@ -1,9 +1,9 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://Scripts/Multiplayer/props/cover_cube_prop.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://c2dd4d4jlnlm8" path="res://Scripts/Multiplayer/props/cover_cube_prop.gd" id="1_script"]
 [ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
-[ext_resource type="Material" path="res://Assets/Multiplayer/props/materials/prop_hazard_red.tres" id="3_material"]
-[ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/cover_point.tscn" id="4_cover"]
+[ext_resource type="Material" path="res://assets/Multiplayer/props/materials/prop_hazard_red.tres" id="3_material"]
+[ext_resource type="PackedScene" uid="uid://d2o4f6y5masjo" path="res://scenes/Multiplayer/props/cover_point.tscn" id="4_cover"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_cube"]
 size = Vector3(2, 2.2, 2)

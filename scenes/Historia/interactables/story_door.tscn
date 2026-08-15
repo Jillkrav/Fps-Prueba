@@ -1,0 +1,62 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Interactables/story_door.gd" id="1_door"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_door"]
+size = Vector3(2.2, 3.0, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape_door"]
+size = Vector3(2.2, 3.0, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape_interaction"]
+size = Vector3(3.8, 3.2, 3.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape_enemy"]
+size = Vector3(10.0, 5.0, 10.0)
+
+[sub_resource type="StandardMaterial3D" id="Mat_door"]
+albedo_color = Color(0.16, 0.32, 0.42, 1)
+metallic = 0.4
+roughness = 0.4
+
+[node name="StoryDoor" type="Node3D"]
+script = ExtResource("1_door")
+
+[node name="DoorPivot" type="Node3D" parent="."]
+
+[node name="DoorBody" type="StaticBody3D" parent="DoorPivot"]
+position = Vector3(1.1, 1.5, 0)
+
+[node name="DoorMesh" type="MeshInstance3D" parent="DoorPivot/DoorBody"]
+mesh = SubResource("BoxMesh_door")
+material_override = SubResource("Mat_door")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPivot/DoorBody"]
+shape = SubResource("BoxShape_door")
+
+[node name="InteractionArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea"]
+position = Vector3(1.1, 1.5, 0)
+shape = SubResource("BoxShape_interaction")
+
+[node name="EnemyWatchArea" type="Area3D" parent="."]
+monitoring = false
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EnemyWatchArea"]
+position = Vector3(1.1, 1.5, 0)
+shape = SubResource("BoxShape_enemy")
+
+[node name="PromptLabel" type="Label3D" parent="."]
+position = Vector3(1.1, 3.5, 0)
+outline_size = 5
+modulate = Color(0.8, 0.95, 1, 1)
+pixel_size = 0.006
+billboard = 1
+
+[node name="AutoCloseTimer" type="Timer" parent="."]
+one_shot = true

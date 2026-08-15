@@ -8,10 +8,25 @@
 extends Pickup
 class_name WeaponPickup
 
+@export_category("Arma colocada")
+## Datos editables desde el Inspector para armas que el diseñador deja en un mapa.
+@export var weapon_name: String = "Glock"
+@export var starting_mag_ammo: int = 20
+@export var starting_reserve_ammo: int = 60
+@export var persistent_on_floor: bool = false
+
 # ─── Inicialización ───────────────────────────────────────────────────
 func _ready() -> void:
 	pickup_type = Type.WEAPON
 	respawn_on_pickup = false
+	persistent_on_pickup = persistent_on_floor
+	if pickup_data.is_empty() and not weapon_name.is_empty():
+		pickup_data = {
+			"tipo_arma": weapon_name,
+			"balas_cargador": starting_mag_ammo,
+			"balas_reserva": starting_reserve_ammo,
+			"capacidad_cargador": starting_mag_ammo,
+		}
 	# La scene tree se inicializa, luego llamamos a super._ready()
 	# que ejecuta _update_visual()
 	super()
@@ -20,12 +35,15 @@ func _ready() -> void:
 ## Espera: {"tipo_arma", "balas_cargador", "balas_reserva", "capacidad_cargador"}
 func set_weapon_data(data: Dictionary) -> void:
 	pickup_data = data.duplicate()
+	weapon_name = str(pickup_data.get("tipo_arma", weapon_name))
+	starting_mag_ammo = int(pickup_data.get("balas_cargador", starting_mag_ammo))
+	starting_reserve_ammo = int(pickup_data.get("balas_reserva", starting_reserve_ammo))
 	_update_visual()
 
 # ─── Lógica de recogida ───────────────────────────────────────────────
 func _on_picked_up(picker: Node) -> void:
-	var weapon_name: String = pickup_data.get("tipo_arma", "")
-	if weapon_name == "":
+	var picked_weapon_name: String = pickup_data.get("tipo_arma", "")
+	if picked_weapon_name == "":
 		return
 
 	var balas_cargador: int = pickup_data.get("balas_cargador", 0)
@@ -34,20 +52,20 @@ func _on_picked_up(picker: Node) -> void:
 
 	# ── Caso: Jugador humano ───────────────────────────────────────
 	if picker is Player:
-		_recoger_por_jugador(picker, weapon_name, balas_cargador, balas_reserva, capacidad_cargador)
+		_recoger_por_jugador(picker, picked_weapon_name, balas_cargador, balas_reserva, capacidad_cargador)
 		return
 
 	# ── Caso: NPC / Bot ────────────────────────────────────────────
 	if picker is BotBase:
-		_recoger_por_npc(picker, weapon_name, balas_cargador, balas_reserva, capacidad_cargador)
+		_recoger_por_npc(picker, picked_weapon_name, balas_cargador, balas_reserva, capacidad_cargador)
 		return
 
 # ─── Recogida por jugador ─────────────────────────────────────────────
-func _recoger_por_jugador(player: Player, weapon_name: String, balas_cargador: int, balas_reserva: int, _capacidad_cargador: int) -> void:
+func _recoger_por_jugador(player: Player, picked_weapon_name: String, balas_cargador: int, balas_reserva: int, _capacidad_cargador: int) -> void:
 	# Verificar si el jugador ya tiene esta arma equipada
 	var tiene_misma_arma: bool = false
 	if player.active_weapon and is_instance_valid(player.active_weapon):
-		tiene_misma_arma = player.active_weapon.weapon_name.to_lower() == weapon_name.to_lower()
+		tiene_misma_arma = player.active_weapon.weapon_name.to_lower() == picked_weapon_name.to_lower()
 
 	if tiene_misma_arma:
 		# Caso 1: Ya tiene el arma → sumar balas
@@ -58,14 +76,14 @@ func _recoger_por_jugador(player: Player, weapon_name: String, balas_cargador: i
 		weapon.reserve_ammo = min(weapon.reserve_ammo, weapon.max_ammo)
 		weapon.weapon_ammo_changed.emit(weapon.ammo_in_mag, weapon.reserve_ammo)
 		print("WeaponPickup: %s recogió balas de %s (cargador=%d reserva=%d)" % [
-			player.name, weapon_name, balas_cargador, balas_reserva
+			player.name, picked_weapon_name, balas_cargador, balas_reserva
 		])
 	else:
 		# Caso 2: No tiene el arma → equiparla
 		if not player.active_weapon or not is_instance_valid(player.active_weapon):
-			player.setup_weapon(weapon_name)
+			player.setup_weapon(picked_weapon_name)
 		else:
-			player.cambiar_arma(weapon_name)
+			player.cambiar_arma(picked_weapon_name)
 
 		if player.active_weapon and is_instance_valid(player.active_weapon):
 			player.active_weapon.ammo_in_mag = balas_cargador
@@ -74,18 +92,18 @@ func _recoger_por_jugador(player: Player, weapon_name: String, balas_cargador: i
 				player.active_weapon.ammo_in_mag, player.active_weapon.reserve_ammo
 			)
 			print("WeaponPickup: %s equipó %s (cargador=%d reserva=%d)" % [
-				player.name, weapon_name, balas_cargador, balas_reserva
+				player.name, picked_weapon_name, balas_cargador, balas_reserva
 			])
 
 # ─── Recogida por NPC ─────────────────────────────────────────────────
-func _recoger_por_npc(npc: BotBase, weapon_name: String, balas_cargador: int, balas_reserva: int, _capacidad_cargador: int) -> void:
+func _recoger_por_npc(npc: BotBase, picked_weapon_name: String, balas_cargador: int, balas_reserva: int, _capacidad_cargador: int) -> void:
 	npc.pickup_weapon({
-		"tipo_arma": weapon_name,
+		"tipo_arma": picked_weapon_name,
 		"balas_cargador": balas_cargador,
 		"balas_reserva": balas_reserva,
 		"capacidad_cargador": _capacidad_cargador
 	})
-	print("WeaponPickup: NPC %s recogió %s" % [npc.name, weapon_name])
+	print("WeaponPickup: NPC %s recogió %s" % [npc.name, picked_weapon_name])
 
 # ─── Visual ───────────────────────────────────────────────────────────
 func _update_visual() -> void:

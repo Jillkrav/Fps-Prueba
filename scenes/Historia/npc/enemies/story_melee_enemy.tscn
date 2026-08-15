@@ -1,0 +1,49 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Npc/story_melee_enemy.gd" id="1_enemy"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_enemy"]
+radius = 0.5
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_enemy"]
+radius = 0.5
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_enemy"]
+albedo_color = Color(0.28, 0.6, 0.28, 1)
+roughness = 0.9
+
+[sub_resource type="SphereShape3D" id="SphereShape_head"]
+radius = 0.35
+
+[node name="StoryMeleeEnemy" type="CharacterBody3D" groups=["story_enemy", "npc"]]
+collision_layer = 2
+collision_mask = 13
+script = ExtResource("1_enemy")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.9, 0)
+shape = SubResource("CapsuleShape_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_enemy")
+material_override = SubResource("Mat_enemy")
+
+[node name="HeadHitbox" type="Area3D" parent="." groups=["headshot"]]
+position = Vector3(0, 1.55, 0)
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HeadHitbox"]
+shape = SubResource("SphereShape_head")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.5
+target_desired_distance = 1.15
+path_max_distance = 3.0
+radius = 0.5
+height = 1.8
+max_speed = 2.0
+avoidance_enabled = true

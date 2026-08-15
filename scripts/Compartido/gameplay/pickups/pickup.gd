@@ -29,6 +29,9 @@ enum Type { WEAPON, HEALTH, AMMO, ARMOR, SPECIAL }
 @export var respawn_on_pickup: bool = true
 ## Tiempo de reaparición para los recursos persistentes del mapa.
 @export_range(1.0, 120.0, 0.5) var respawn_delay: float = 10.0
+## Si está activo, aplicar el efecto no elimina ni oculta el pickup.
+## Útil para armas decorativas o de pruebas que deben permanecer en el suelo.
+@export var persistent_on_pickup: bool = false
 
 # ─── Datos específicos del contenido ──────────────────────────────────
 ## Diccionario genérico con los datos del pickup.
@@ -130,11 +133,13 @@ func pick_up(picker: Node) -> void:
 	_on_picked_up(picker)
 	picked_up.emit(self, picker)
 
+	if persistent_on_pickup:
+		return
 	if respawn_on_pickup:
 		_begin_respawn()
 		return
 
-	# Limpieza para pickups desechables (por ejemplo armas del suelo).
+	# Limpieza para pickups desechables (por ejemplo armas soltadas por NPCs).
 	if _pickup_manager:
 		_pickup_manager.unregister(self)
 	queue_free()

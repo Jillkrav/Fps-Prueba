@@ -25,6 +25,8 @@ const BOT_NAVMESH_CELL_SIZE: float = 0.3
 const BOT_NAVMESH_CELL_HEIGHT: float = 0.25
 
 func _ready() -> void:
+	if _is_story_mode():
+		return
 	if auto_start_match:
 		if get_parent() == get_tree().root and auto_find_map:
 			# Usado como autoload o singleton: buscar el mapa en el arbol
@@ -34,7 +36,16 @@ func _ready() -> void:
 			_map_root = get_parent()
 			call_deferred("_setup_match")
 
+## Reactiva la detección tras volver de Historia antes de cargar un mapa MP.
+func prepare_multiplayer_map_setup() -> void:
+	if _is_story_mode():
+		return
+	call_deferred("_find_and_setup")
+
+
 func _find_and_setup() -> void:
+	if _is_story_mode():
+		return
 	# Buscar el mapa en la escena raiz (somos autoload, somos hijo de root)
 	var map_node: Node = null
 	for child in get_tree().root.get_children():
@@ -224,6 +235,8 @@ func _configure_route_link(routes: Dictionary, source_id: StringName, destinatio
 
 
 func _setup_match() -> void:
+	if _is_story_mode():
+		return
 	# 0. Sincronizar maximo de jugadores desde GameState (configurado desde el menu)
 	if is_instance_valid(GameState) and GameStateMP.max_players_total > 0:
 		MatchManager.max_players_total = GameStateMP.max_players_total
@@ -474,6 +487,11 @@ func _ensure_ui_nodes() -> void:
 		_map_root.add_child(selector)
 		selector.owner = _map_root
 		print("[MapManager] TeamWeaponSelector instanciado automaticamente")
+
+func _is_story_mode() -> bool:
+	var story_state: Node = get_node_or_null("/root/GameStateSP")
+	return story_state != null and story_state.has_method("is_story_active") and bool(story_state.call("is_story_active"))
+
 
 func _on_match_ended(winning_team: int) -> void:
 	print("[MapManager] Partida terminada! Ganador: %s" % GameState.nombre_equipo(winning_team))

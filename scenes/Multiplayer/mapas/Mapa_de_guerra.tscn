@@ -10,11 +10,11 @@
 [ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/origen_base_azul.tscn" id="5_jaadu"]
 [ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/origen_base_roja.tscn" id="5_w43v2"]
 [ext_resource type="PackedScene" uid="uid://ced8xwtkpplj3" path="res://scenes/Multiplayer/caminos/generico/camino_generico_base.tscn" id="10_0dk0q"]
-[ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/francotirador/camino_francotirador_base.tscn" id="11_5gtq8"]
+[ext_resource type="PackedScene" uid="uid://dje8pxda0ucaj" path="res://scenes/Multiplayer/caminos/francotirador/camino_francotirador_base.tscn" id="11_5gtq8"]
 [ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/patrullador/camino_patrullador_base.tscn" id="12_pvwu0"]
 [ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/defensor/camino_defensa_base.tscn" id="13_bp0y0"]
 [ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/asalto/camino_asalto_base.tscn" id="14_jaadu"]
-[ext_resource type="PackedScene" path="res://scenes/Multiplayer/caminos/flanqueador/camino_flanco_base.tscn" id="14_w43v2"]
+[ext_resource type="PackedScene" uid="uid://dyi1qhcl11nx5" path="res://scenes/Multiplayer/caminos/flanqueador/camino_flanco_base.tscn" id="14_w43v2"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_2f"]
 sky_horizon_color = Color(0.45, 0.55, 0.7, 1)

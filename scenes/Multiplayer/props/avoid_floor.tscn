@@ -1,8 +1,8 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://Scripts/Multiplayer/props/avoid_floor_prop.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cauu3gunoy5a0" path="res://Scripts/Multiplayer/props/avoid_floor_prop.gd" id="1_script"]
 [ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
-[ext_resource type="Material" path="res://Assets/Multiplayer/props/materials/prop_avoidance_warning.tres" id="3_material"]
+[ext_resource type="Material" path="res://assets/Multiplayer/props/materials/prop_avoidance_warning.tres" id="3_material"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_floor"]
 size = Vector3(6, 0.2, 6)

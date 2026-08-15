@@ -1,0 +1,16 @@
+[
+  {
+    "id": "mapa_pruebas_1",
+    "display_name": "Mapa de Pruebas 1",
+    "description": "Puerta manual, warp, zombies y armas persistentes.",
+    "scene_path": "res://scenes/Historia/mapas/mapa_pruebas_1.tscn",
+    "enabled": true
+  },
+  {
+    "id": "mapa_pruebas_2",
+    "display_name": "Mapa de Pruebas 2",
+    "description": "Botón externo, puerta por área limpia y final de campaña.",
+    "scene_path": "res://scenes/Historia/mapas/mapa_pruebas_2.tscn",
+    "enabled": true
+  }
+]

@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3 uid="uid://bwy09mvy72q6p"]
+
+[ext_resource type="PackedScene" path="res://scenes/Historia/npc/enemies/story_melee_enemy.tscn" id="1_story_enemy"]
+
+[node name="EnemyMelee" instance=ExtResource("1_story_enemy")]
