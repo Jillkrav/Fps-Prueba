@@ -1,14 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://dswm8b4bfe3i8"]
 
-[ext_resource type="Script" path="res://Scripts/Historia/Interactables/story_action_button.gd" id="1_button"]
+[ext_resource type="Script" uid="uid://be3cyak0opyvt" path="res://Scripts/Historia/Interactables/story_action_button.gd" id="1_button"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_area"]
 size = Vector3(2.2, 2.2, 2.2)
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_button"]
-top_radius = 0.45
-bottom_radius = 0.45
-height = 0.25
 
 [sub_resource type="StandardMaterial3D" id="Mat_button"]
 albedo_color = Color(1, 0.35, 0.12, 1)
@@ -16,22 +11,27 @@ emission_enabled = true
 emission = Color(1, 0.15, 0.05, 1)
 emission_energy_multiplier = 1.5
 
-[node name="StoryActionButton" type="Area3D"]
+[sub_resource type="CylinderMesh" id="CylinderMesh_button"]
+top_radius = 0.45
+bottom_radius = 0.45
+height = 0.25
+
+[node name="StoryActionButton" type="Area3D" unique_id=591348179]
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("1_button")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(0, 1.0, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1478804644]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape_area")
 
-[node name="ButtonMesh" type="MeshInstance3D" parent="."]
-position = Vector3(0, 1.0, 0)
-mesh = SubResource("CylinderMesh_button")
+[node name="ButtonMesh" type="MeshInstance3D" parent="." unique_id=1562394659]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 material_override = SubResource("Mat_button")
+mesh = SubResource("CylinderMesh_button")
 
-[node name="PromptLabel" type="Label3D" parent="."]
-position = Vector3(0, 2.1, 0)
-outline_size = 5
+[node name="PromptLabel" type="Label3D" parent="." unique_id=983716377]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1, 0)
 pixel_size = 0.006
 billboard = 1
+outline_size = 5

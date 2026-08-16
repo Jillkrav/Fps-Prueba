@@ -1,39 +1,39 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://ck8e6slmdglsf"]
 
-[ext_resource type="Script" path="res://Scripts/Historia/Interactables/story_warp.gd" id="1_warp"]
+[ext_resource type="Script" uid="uid://ixlxrnf7a0sw" path="res://Scripts/Historia/Interactables/story_warp.gd" id="1_warp"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_warp"]
-size = Vector3(2.4, 3.0, 0.35)
-
-[sub_resource type="BoxMesh" id="BoxMesh_warp"]
-size = Vector3(2.4, 3.0, 0.08)
+size = Vector3(2.4, 3, 0.35)
 
 [sub_resource type="StandardMaterial3D" id="Mat_warp"]
-albedo_color = Color(0.15, 0.65, 1, 0.35)
 transparency = 1
+albedo_color = Color(0.15, 0.65, 1, 0.35)
 emission_enabled = true
 emission = Color(0.1, 0.55, 1, 1)
 emission_energy_multiplier = 2.0
 
-[node name="StoryWarp" type="Area3D"]
+[sub_resource type="BoxMesh" id="BoxMesh_warp"]
+size = Vector3(2.4, 3, 0.08)
+
+[node name="StoryWarp" type="Area3D" unique_id=204907924]
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("1_warp")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(0, 1.5, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1424309838]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 shape = SubResource("BoxShape_warp")
 
-[node name="DebugMesh" type="MeshInstance3D" parent="."]
-position = Vector3(0, 1.5, 0)
-mesh = SubResource("BoxMesh_warp")
+[node name="DebugMesh" type="MeshInstance3D" parent="." unique_id=1824393664]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 material_override = SubResource("Mat_warp")
+mesh = SubResource("BoxMesh_warp")
 
-[node name="PromptLabel" type="Label3D" parent="."]
-position = Vector3(0, 3.4, 0)
-outline_size = 5
+[node name="PromptLabel" type="Label3D" parent="." unique_id=845113252]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.4, 0)
 pixel_size = 0.006
 billboard = 1
+outline_size = 5
 
-[node name="Destination" type="Marker3D" parent="."]
-position = Vector3(0, 0.1, 2.0)
+[node name="Destination" type="Marker3D" parent="." unique_id=2087371183]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 2)

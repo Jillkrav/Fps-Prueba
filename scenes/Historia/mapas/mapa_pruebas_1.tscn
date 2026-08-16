@@ -4,11 +4,12 @@
 [ext_resource type="PackedScene" uid="uid://dg0u4rsk2u6o7" path="res://scenes/Compartido/player.tscn" id="2_player"]
 [ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/Compartido/hud.tscn" id="3_hud"]
 [ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_checkpoint.tscn" id="4_checkpoint"]
-[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_door.tscn" id="5_door"]
-[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_warp.tscn" id="6_warp"]
+[ext_resource type="PackedScene" uid="uid://d1gy8sd66dg8i" path="res://scenes/Historia/npc/spawners/story_npc_spawner.tscn" id="5_6erei"]
+[ext_resource type="PackedScene" uid="uid://dn2belw6y4t8q" path="res://scenes/Historia/interactables/story_door.tscn" id="5_door"]
+[ext_resource type="PackedScene" uid="uid://ck8e6slmdglsf" path="res://scenes/Historia/interactables/story_warp.tscn" id="6_warp"]
 [ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_exit.tscn" id="7_exit"]
-[ext_resource type="PackedScene" path="res://scenes/Historia/npc/enemies/story_melee_enemy.tscn" id="8_enemy"]
 [ext_resource type="PackedScene" uid="uid://bnre1cxahhdti" path="res://scenes/Compartido/pickups/dropped_weapon.tscn" id="9_weapon"]
+[ext_resource type="PackedScene" uid="uid://ht5bomeb2u5w" path="res://scenes/Historia/interactables/story_invisible_wall.tscn" id="10_6erei"]
 
 [sub_resource type="NavigationMesh" id="NavMesh"]
 vertices = PackedVector3Array(-2.4, 0.5, -33.16469, -2.4, 0.5, -18.164688, 2.35, 0.5, -18.164688, 2.35, 0.5, -33.16469, -2.4, 0.5, -9.664688, -2.4, 0.5, 9.335312, 2.35, 0.5, 9.335312, 2.35, 0.5, -9.664688, -2.4, 0.5, 10.835312, -2.4, 0.5, 33.08531, 2.35, 0.5, 33.08531, 2.35, 0.5, 10.835312)
@@ -110,56 +111,62 @@ script = ExtResource("1_controller")
 level_id = "mapa_pruebas_1"
 objective_text = "Abre la puerta, elimina los zombies y llega a la salida."
 next_level_path = "res://scenes/Historia/mapas/mapa_pruebas_2.tscn"
+initial_checkpoint_path = NodePath("../Interactuables/Checkpoints/StartCheckpoint/SpawnMarker")
 
-[node name="Checkpoints" type="Node3D" parent="." unique_id=993655872]
+[node name="Enemies" type="Node3D" parent="." unique_id=2052644703]
 
-[node name="StartCheckpoint" parent="Checkpoints" unique_id=1664063311 instance=ExtResource("4_checkpoint")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 27)
-display_name = "INICIO"
+[node name="StoryNPCSpawner" parent="Enemies" unique_id=1307028194 instance=ExtResource("5_6erei")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7.2567587)
+trigger_mode = 3
 
-[node name="WarpCheckpoint" parent="Checkpoints" unique_id=1039414226 instance=ExtResource("4_checkpoint")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9199176, 0, 5.2275987)
-display_name = "DESPUÉS DEL WARP"
+[node name="Interactuables" type="Node3D" parent="." unique_id=1249824168]
 
-[node name="Warps" type="Node3D" parent="." unique_id=1210064255]
+[node name="Pickups" type="Node3D" parent="Interactuables" unique_id=46205908]
 
-[node name="WarpEntrance" parent="Warps" unique_id=565485165 instance=ExtResource("6_warp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
-target_warp_path = NodePath("../WarpExit")
-display_name = "WARP A LA SALIDA"
-show_debug_visual = true
-
-[node name="WarpExit" parent="Warps" unique_id=12817289 instance=ExtResource("6_warp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -21.432251)
-target_warp_path = NodePath("../WarpEntrance")
-display_name = "WARP AL INICIO"
-show_debug_visual = true
-
-[node name="Pickups" type="Node3D" parent="." unique_id=46205908]
-
-[node name="GlockPersistent" parent="Pickups" unique_id=421688892 instance=ExtResource("9_weapon")]
+[node name="GlockPersistent" parent="Interactuables/Pickups" unique_id=421688892 instance=ExtResource("9_weapon")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, 1, 24)
 starting_reserve_ammo = 80
 persistent_on_floor = true
 
-[node name="M3Persistent" parent="Pickups" unique_id=393406947 instance=ExtResource("9_weapon")]
+[node name="M3Persistent" parent="Interactuables/Pickups" unique_id=393406947 instance=ExtResource("9_weapon")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 1, 4)
 weapon_name = "M3"
 starting_mag_ammo = 8
 starting_reserve_ammo = 32
 persistent_on_floor = true
 
-[node name="Enemies" type="Node3D" parent="." unique_id=2052644703]
+[node name="Checkpoints" type="Node3D" parent="Interactuables" unique_id=993655872]
 
-[node name="ZombieDoor01" parent="Enemies" unique_id=1296945312 instance=ExtResource("8_enemy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 14.855583)
+[node name="StartCheckpoint" parent="Interactuables/Checkpoints" unique_id=1664063311 instance=ExtResource("4_checkpoint")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 13.760145)
+display_name = "INICIO"
 
-[node name="ZombieDoor02" parent="Enemies" unique_id=481194564 instance=ExtResource("8_enemy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0.05, 2.3550491)
+[node name="WarpCheckpoint" parent="Interactuables/Checkpoints" unique_id=1039414226 instance=ExtResource("4_checkpoint")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.013944864, 0, -2.5216365)
+display_name = "DESPUÉS DEL WARP"
 
-[node name="ZombieExit" parent="Enemies" unique_id=173887526 instance=ExtResource("8_enemy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.05, -7.682066)
+[node name="Warps" type="Node3D" parent="Interactuables" unique_id=1210064255]
 
-[node name="Exit" parent="." unique_id=55327308 instance=ExtResource("7_exit")]
+[node name="WarpEntrance" parent="Interactuables/Warps" unique_id=565485165 instance=ExtResource("6_warp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.323905)
+target_warp_path = NodePath("../WarpExit")
+active = false
+display_name = "WARP A LA SALIDA"
+show_debug_visual = true
+
+[node name="WarpExit" parent="Interactuables/Warps" unique_id=12817289 instance=ExtResource("6_warp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -21.432251)
+target_warp_path = NodePath("../WarpEntrance")
+display_name = "WARP AL INICIO"
+show_debug_visual = true
+
+[node name="Exit" parent="Interactuables" unique_id=55327308 instance=ExtResource("7_exit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -30)
+require_all_enemies_defeated = false
 display_name = "SALIDA AL MAPA 2"
+
+[node name="Pared invisible" type="Node3D" parent="Interactuables" unique_id=1205369173]
+
+[node name="StoryInvisibleWall" parent="Interactuables/Pared invisible" unique_id=1222057284 instance=ExtResource("10_6erei")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.18969035, 0, -2.472736)
+target_nodes = Array[NodePath]([NodePath("../../Warps/WarpEntrance"), NodePath("../../../Enemies/StoryNPCSpawner")])

@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://ht5bomeb2u5w"]
+
+[ext_resource type="Script" uid="uid://bkpa3wxn1d466" path="res://Scripts/Historia/Interactables/story_invisible_wall.gd" id="1_wall"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_wall"]
+size = Vector3(0.4, 3.2, 6)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+transparency = 1
+albedo_color = Color(0.9, 1, 0.55, 0.2)
+emission_enabled = true
+emission = Color(0.8, 1, 0.45, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(0.3, 3, 6)
+
+[node name="StoryInvisibleWall" type="Area3D" unique_id=1222057284]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=213166771]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("BoxShape_wall")
+
+[node name="DebugMesh" type="MeshInstance3D" parent="." unique_id=1668522084]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+material_override = SubResource("Mat_wall")
+mesh = SubResource("BoxMesh_wall")
+
+[node name="PromptLabel" type="Label3D" parent="." unique_id=139551261]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 0)
+pixel_size = 0.006
+billboard = 1
+outline_size = 5
