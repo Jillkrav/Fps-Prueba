@@ -1,8 +1,8 @@
-[gd_scene format=3 uid="uid://bdas8wuf0ydm7"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://bdbbn1ltbab53" path="res://Scripts/Multiplayer/ai/bot_behaviors/bot_base.gd" id="1_base"]
-[ext_resource type="Script" uid="uid://chpku3ysjho2v" path="res://Scripts/Compartido/gameplay/weapons/weapon_equip_state.gd" id="2_weaponequip"]
-[ext_resource type="PackedScene" uid="uid://dy8wdb63b2qci" path="res://scenes/Multiplayer/objetos/bots/teddy_model.tscn" id="3_visual"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/ai/bot_behaviors/bot_base.gd" id="1_base"]
+[ext_resource type="Script" path="res://Scripts/Compartido/gameplay/weapons/weapon_equip_state.gd" id="2_weaponequip"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/objetos/bots/teddy_model.tscn" id="3_visual"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_base"]
 radius = 0.65

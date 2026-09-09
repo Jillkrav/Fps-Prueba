@@ -1,9 +1,9 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://bsdse2e3e5owj" path="res://Scripts/Multiplayer/props/low_wall_prop.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/low_wall_prop.gd" id="1_script"]
 [ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
 [ext_resource type="Material" path="res://assets/Multiplayer/props/materials/prop_concrete_gray.tres" id="3_material"]
-[ext_resource type="PackedScene" uid="uid://d2o4f6y5masjo" path="res://scenes/Multiplayer/props/cover_point.tscn" id="4_cover"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/cover_point.tscn" id="4_cover"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_low_wall"]
 size = Vector3(5, 1.2, 0.45)

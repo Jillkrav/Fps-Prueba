@@ -493,9 +493,9 @@ func _check_fire_weapon(cmd: CombatCommand) -> void:
 
 			if target and target.has_method("take_damage"):
 				if target is Player:
-					target.take_damage(hit["damage_vs_player"], "Torso", killer_id)
+					target.take_damage(hit["damage_vs_player"], "Torso", killer_id, bot.global_position)
 				else:
-					target.take_damage(hit["damage_vs_npc"], "Torso", killer_id)
+					target.take_damage(hit["damage_vs_npc"], "Torso", killer_id, bot.global_position)
 
 		if hits.size() > 0:
 			emit_signal("weapon_fired", hits)

@@ -27,7 +27,14 @@ var _mostrar_zonas_debug: bool      = false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	if _is_story_mode():
-		btn_generar.text = "Spawnear Zombie"
+		btn_generar.text = "Spawnear NPC"
+		# En Historia no existen "experiencia" ni "rol" (conceptos de
+		# multijugador): se deshabilitan para no mostrar opciones que no
+		# hacen nada. Bando (Relación) y Arma sí aplican al spawn de Historia.
+		opt_experiencia.disabled = true
+		opt_rol.disabled = true
+		opt_experiencia.modulate = Color(0.55, 0.55, 0.55)
+		opt_rol.modulate = Color(0.55, 0.55, 0.55)
 
 	# --- Equipo para spawn de NPC ---
 	opt_relacion.clear()
@@ -124,16 +131,6 @@ func _agregar_botones_extras() -> void:
 	vbox.add_child(btn_debug_overlay)
 	vbox.move_child(btn_debug_overlay, insert_idx + 3)
 	
-	# Boton propiedades de unidad (Cargador, Total balas, Vida)
-	var btn_unit_props := Button.new()
-	btn_unit_props.name = "BtnUnitProps"
-	btn_unit_props.text = "Propiedades de unidad [OFF]"
-	btn_unit_props.custom_minimum_size = Vector2(0, 36)
-	btn_unit_props.add_theme_font_size_override("font_size", 16)
-	btn_unit_props.pressed.connect(_on_unit_props_pressed)
-	vbox.add_child(btn_unit_props)
-	vbox.move_child(btn_unit_props, insert_idx + 4)
-
 	# ── Botones de TeamAI (FASE 6) ──
 	# Boton mostrar resumen de TeamAI
 	var btn_team_ai := Button.new()
@@ -143,7 +140,7 @@ func _agregar_botones_extras() -> void:
 	btn_team_ai.add_theme_font_size_override("font_size", 16)
 	btn_team_ai.pressed.connect(_on_team_ai_pressed)
 	vbox.add_child(btn_team_ai)
-	vbox.move_child(btn_team_ai, insert_idx + 5)
+	vbox.move_child(btn_team_ai, insert_idx + 4)
 
 	# Boton re-asignar ordenes a todos los bots
 	var btn_reassign := Button.new()
@@ -153,7 +150,7 @@ func _agregar_botones_extras() -> void:
 	btn_reassign.add_theme_font_size_override("font_size", 16)
 	btn_reassign.pressed.connect(_on_reassign_orders_pressed)
 	vbox.add_child(btn_reassign)
-	vbox.move_child(btn_reassign, insert_idx + 6)
+	vbox.move_child(btn_reassign, insert_idx + 5)
 
 	# Botón mostrar/ocultar todos los caminos (rutas CaminoBot)
 	var btn_caminos := Button.new()
@@ -163,7 +160,7 @@ func _agregar_botones_extras() -> void:
 	btn_caminos.add_theme_font_size_override("font_size", 16)
 	btn_caminos.pressed.connect(_on_mostrar_caminos_pressed)
 	vbox.add_child(btn_caminos)
-	vbox.move_child(btn_caminos, insert_idx + 7)
+	vbox.move_child(btn_caminos, insert_idx + 6)
 
 	# Botón mostrar/ocultar las áreas semánticas de depuración del mapa.
 	var btn_zonas_debug: Button = Button.new()
@@ -173,7 +170,7 @@ func _agregar_botones_extras() -> void:
 	btn_zonas_debug.add_theme_font_size_override("font_size", 16)
 	btn_zonas_debug.pressed.connect(_on_mostrar_zonas_debug_pressed)
 	vbox.add_child(btn_zonas_debug)
-	vbox.move_child(btn_zonas_debug, insert_idx + 8)
+	vbox.move_child(btn_zonas_debug, insert_idx + 7)
 
 	# Boton Modo Dios
 	var btn_dios := Button.new()
@@ -183,7 +180,7 @@ func _agregar_botones_extras() -> void:
 	btn_dios.add_theme_font_size_override("font_size", 16)
 	btn_dios.pressed.connect(_on_god_mode_pressed)
 	vbox.add_child(btn_dios)
-	vbox.move_child(btn_dios, insert_idx + 9)
+	vbox.move_child(btn_dios, insert_idx + 8)
 
 	# Boton Fuego Amigo
 	var btn_amigo := Button.new()
@@ -193,7 +190,7 @@ func _agregar_botones_extras() -> void:
 	btn_amigo.add_theme_font_size_override("font_size", 16)
 	btn_amigo.pressed.connect(_on_friendly_fire_pressed)
 	vbox.add_child(btn_amigo)
-	vbox.move_child(btn_amigo, insert_idx + 10)
+	vbox.move_child(btn_amigo, insert_idx + 9)
 
 	# Botón de puntos semánticos eliminado (migrados por el usuario)
 
@@ -424,7 +421,7 @@ func _on_ai_disable_pressed() -> void:
 
 	var bots: Array = []
 	if _is_story_mode():
-		bots = get_tree().get_nodes_in_group(&"story_enemy")
+		bots = get_tree().get_nodes_in_group(&"enemigo")
 	else:
 		bots = MatchManager.bot_pool
 	if ai_disabled:
@@ -451,18 +448,14 @@ func _on_volver_pressed() -> void:
 	panel_principal.visible = true
 
 func _on_bot_debug_pressed() -> void:
-	BotBase.toggle_debug_overlay_all()
+	# Toggle unificado: cubre bots de multijugador (BotBase), al jugador y a
+	# los NPCs de Historia (Tirador / CuerpoACuerpo). Antes llamaba al toggle
+	# de BotBase, que dejaba fuera a los NPCs de campaña (T10).
+	BotDebugOverlay.toggle_unit_properties_all()
 	var btn: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnBotDebug")
 	if btn:
 		btn.text = "Bot Debug Info [ON]" if BotDebugOverlay.enabled else "Bot Debug Info [OFF]"
 	lbl_status.text = "Bot Debug %s" % ("ACTIVADO" if BotDebugOverlay.enabled else "DESACTIVADO")
-
-func _on_unit_props_pressed() -> void:
-	BotDebugOverlay.toggle_unit_properties_all()
-	var btn: Button = get_node_or_null("PanelPrincipal/ScrollContainer/VBox/BtnUnitProps")
-	if btn:
-		btn.text = "Propiedades de unidad [ON]" if BotDebugOverlay.enabled else "Propiedades de unidad [OFF]"
-	lbl_status.text = "Propiedades de unidad %s" % ("ACTIVADO" if BotDebugOverlay.enabled else "DESACTIVADO")
 
 func _on_cambiar_equipo_pressed() -> void:
 	visible = false
@@ -470,7 +463,7 @@ func _on_cambiar_equipo_pressed() -> void:
 
 func _on_team_ai_pressed() -> void:
 	if _is_story_mode():
-		lbl_status.text = "Historia: %d zombies vivos" % get_tree().get_nodes_in_group(&"story_enemy").size()
+		lbl_status.text = "Historia: %d zombies vivos" % get_tree().get_nodes_in_group(&"enemigo").size()
 		return
 	# Mostrar resumen del estado de TeamAI en la consola
 	if not is_instance_valid(TeamAI):
@@ -555,7 +548,12 @@ func _on_friendly_fire_pressed() -> void:
 
 
 func _on_spawn_pressed() -> void:
-	var scene_path: String = "res://scenes/Historia/npc/enemies/story_melee_enemy.tscn" if _is_story_mode() else BOT_SCENE
+	# Modo Historia: spawn que RESPETA el bando (Relación) y el arma elegidos
+	# en el panel (T11). Antes ignoraba los desplegables y tiraba un zombie fijo.
+	if _is_story_mode():
+		_on_spawn_pressed_story()
+		return
+	var scene_path: String = BOT_SCENE
 	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
 		push_error("DevMenu: no se pudo cargar escena: " + scene_path)
@@ -594,6 +592,63 @@ func _on_spawn_pressed() -> void:
 		]
 	else:
 		lbl_status.text = "Zombie lento spawneado para Historia"
+	panel_npc.visible = false
+	panel_principal.visible = true
+
+
+# ── Spawn de NPC en modo Historia ───────────────────────────────────────────
+# Respeta el bando (Relación) y el arma del panel:
+#   - AZUL          → NPC aliado del jugador (facción 1).
+#   - ROJO          → NPC enemigo: Tirador → soldados (facción 3),
+#                     Zombie → zombies/aliens (facción 2). Ver story_factions.json.
+#   - "Sin arma"    → spawnea un CuerpoACuerpo (zombie melee).
+#   - Cualquier arma → spawnea un Tirador equipado con esa arma.
+#   - Experiencia/Rol se ignoran en Historia (por eso van deshabilitados).
+const STORY_TIRADOR_SCENE: String = "res://scenes/Historia/npc/personajes/tirador.tscn"
+const STORY_MELEE_SCENE: String = "res://scenes/Historia/npc/personajes/cuerpo_a_cuerpo.tscn"
+
+func _on_spawn_pressed_story() -> void:
+	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+	if player == null:
+		push_error("DevMenu: no se encontró al jugador")
+		return
+	# Arma elegida en el desplegable ("" = "Sin arma (Melee)").
+	var weapon_name: String = ""
+	var idx: int = opt_tipo_npc.get_selected()
+	if idx >= 0 and idx < _armas_lista.size():
+		weapon_name = _armas_lista[idx]
+	var is_melee: bool = weapon_name.is_empty()
+	var ally: bool = opt_relacion.get_selected_id() == Enums.Equipo.AZUL
+	# Facción según bando y tipo de NPC (ids alineados con story_factions.json).
+	var faction: int = StoryFactionSystem.PLAYER_FACTION if ally \
+			else (3 if not is_melee else 2)
+	var scene_path: String = STORY_MELEE_SCENE if is_melee else STORY_TIRADOR_SCENE
+	var packed: PackedScene = load(scene_path) as PackedScene
+	if packed == null:
+		push_error("DevMenu: no se pudo cargar escena: " + scene_path)
+		return
+	var npc: Node3D = packed.instantiate() as Node3D
+	if npc == null:
+		push_error("DevMenu: la escena no instanció un NPC")
+		return
+	# Configurar ANTES de añadir al árbol: _ready() de cada NPC equipa el arma
+	# y deriva el equipo desde la facción.
+	npc.set("faction_id", faction)
+	if not is_melee:
+		npc.set("weapon_name", weapon_name)
+	# Aparecer delante del jugador, a su misma altura, MIRÁNDOLO: así el
+	# comportamiento del NPC es predecible para pruebas (un enemigo ataca de
+	# inmediato; un aliado queda de cara al jugador).
+	var spawn_pos: Vector3 = player.global_position - player.global_transform.basis.z * 3.0
+	spawn_pos.y = player.global_position.y
+	player.get_parent().add_child(npc)
+	npc.global_position = spawn_pos
+	npc.look_at(player.global_position, Vector3.UP)
+	var bando_txt: String = "Aliado" if ally else "Enemigo"
+	var tipo_txt: String = "Zombie" if is_melee else "Tirador"
+	var arma_txt: String = "Melee" if is_melee else weapon_name
+	lbl_status.text = "NPC Historia spawneado: %s | %s | Arma: %s" % [tipo_txt, bando_txt, arma_txt]
+	print("[DevMenu] NPC de Historia: %s (%s) arma=%s en %s" % [tipo_txt, bando_txt, arma_txt, spawn_pos])
 	panel_npc.visible = false
 	panel_principal.visible = true
 

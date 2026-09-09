@@ -1,0 +1,8 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Data/story_objective_step.gd" id="1_step"]
+
+[resource]
+script = ExtResource("1_step")
+objective_text = "Pulsa el control para desplegar la oleada."
+completion_text = "Oleada activada. Elimina a los enemigos para recibir la recompensa."

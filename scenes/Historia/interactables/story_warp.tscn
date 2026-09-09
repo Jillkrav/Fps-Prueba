@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://ck8e6slmdglsf"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://ixlxrnf7a0sw" path="res://Scripts/Historia/Interactables/story_warp.gd" id="1_warp"]
+[ext_resource type="Script" path="res://Scripts/Historia/Interactables/story_warp.gd" id="1_warp"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_warp"]
 size = Vector3(2.4, 3, 0.35)

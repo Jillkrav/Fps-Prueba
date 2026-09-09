@@ -20,7 +20,7 @@ enum TriggerMode {
 
 enum DetectFilter {
 	PLAYER_ONLY,       ## Solo el jugador la dispara.
-	STORY_ENEMY_ONLY,  ## Solo enemigos de Historia (grupo "story_enemy").
+	ENEMIGO_ONLY,  ## Solo enemigos de Historia (grupo "enemigo").
 	ANY_BODY,          ## Cualquier cuerpo físico (o grupos creados en el futuro).
 }
 
@@ -44,6 +44,12 @@ enum DetectFilter {
 ## Visual plano semitransparente solo en juego (en editor siempre se ve).
 @export var show_debug_visual: bool = false
 
+@export_category("Persistencia (campaña)")
+## ID único dentro del nivel. Si está vacío, la pared NO se recuerda al volver
+## al mapa (volverá a disparar sus objetivos). Si se rellena, una pared ya
+## disparada (con one_shot) no se vuelve a activar al regresar.
+@export var state_id: String = ""
+
 @onready var debug_mesh: MeshInstance3D = $DebugMesh
 @onready var prompt_label: Label3D = $PromptLabel
 
@@ -59,6 +65,9 @@ func _ready() -> void:
 	prompt_label.visible = false
 	# En EXTERNAL_SIGNAL la pared no detecta cuerpos: funciona solo como relé.
 	monitoring = active and trigger_mode != TriggerMode.EXTERNAL_SIGNAL
+	if not state_id.is_empty():
+		LevelStateManager.register(self)
+		call_deferred("_restore_persistent_state")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -161,8 +170,34 @@ func _is_relevant(body: Node3D) -> bool:
 	match detect_filter:
 		DetectFilter.PLAYER_ONLY:
 			return body is Player or body.is_in_group(&"player")
-		DetectFilter.STORY_ENEMY_ONLY:
-			return body.is_in_group(&"story_enemy")
+		DetectFilter.ENEMIGO_ONLY:
+			return body.is_in_group(&"enemigo")
 		DetectFilter.ANY_BODY:
 			return true
 	return false
+
+
+# ── Persistencia de campaña (data-driven) ────────────────────────────────────
+# Contrato: register + _restore_persistent_state + get_persistent_state +
+# apply_persistent_state (ver LevelStateManager).
+
+func _restore_persistent_state() -> void:
+	var st: Dictionary = LevelStateManager.get_state_for(self, state_id)
+	apply_persistent_state(st)
+
+
+## Marca la pared como ya disparada sin volver a llamar a sus objetivos. Si es
+## one_shot, queda desactivada (no volverá a dispararse al regresar al mapa).
+func _restore_used() -> void:
+	_used = true
+	if one_shot:
+		set_active(false, true)
+
+
+func get_persistent_state() -> Dictionary:
+	return {"used": _used}
+
+
+func apply_persistent_state(state: Dictionary) -> void:
+	if bool(state.get("used", false)):
+		_restore_used()

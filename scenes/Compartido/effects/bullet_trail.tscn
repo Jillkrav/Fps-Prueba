@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://ddykh4i8f7m5"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://imwcag1dit80" path="res://Scripts/Compartido/gameplay/effects/bullet_trail.gd" id="1_trail"]
+[ext_resource type="Script" path="res://Scripts/Compartido/gameplay/effects/bullet_trail.gd" id="1_trail"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_trail"]
 size = Vector3(0.04, 0.04, 1.0)

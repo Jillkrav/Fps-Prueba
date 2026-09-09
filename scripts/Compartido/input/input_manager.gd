@@ -21,7 +21,8 @@ const ACTION_LABELS: Dictionary = {
 	"interact": "Interactuar / Recoger",
 	"toggle_weapon": "Equipar / Guardar Arma",
 	"ads": "Apuntar (ADS)",
-	"toggle_third_person": "Cambiar Camara (1a/3a)"
+	"toggle_third_person": "Cambiar Camara (1a/3a)",
+	"follow_all": "Ordenar Aliados (Seguir)"
 }
 
 # Default key mappings (action_name -> physical_keycode or mouse button)
@@ -32,13 +33,14 @@ const DEFAULT_KEYS: Dictionary = {
 	"move_right": KEY_D,
 	"jump": KEY_SPACE,
 	"reload": KEY_R,
-	"crouch": KEY_C,
+	"crouch": KEY_CTRL,
 	"pause_menu": KEY_ESCAPE,
 	"dev_menu": KEY_Q,
 	"scoreboard": KEY_TAB,
 	"interact": KEY_E,
 	"toggle_weapon": KEY_H,
-	"toggle_third_person": KEY_V
+	"toggle_third_person": KEY_V,
+	"follow_all": KEY_C
 }
 
 # Default mouse button mappings (action_name -> button_index)

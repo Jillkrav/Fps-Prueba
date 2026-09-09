@@ -1,10 +1,10 @@
-[gd_scene format=3 uid="uid://clqwyw6lt6ikv"]
+[gd_scene format=3]
 
-[ext_resource type="PackedScene" uid="uid://c5b3j7nqv6dnc" path="res://scenes/Multiplayer/objetos/objectives/core.tscn" id="1_k4bar"]
-[ext_resource type="PackedScene" uid="uid://dg0u4rsk2u6o7" path="res://scenes/Compartido/player.tscn" id="2_ihi6f"]
-[ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/Compartido/hud.tscn" id="3_hmd87"]
-[ext_resource type="PackedScene" uid="uid://dyutk26wqfg3y" path="res://scenes/Multiplayer/objetos/team_weapon_selector.tscn" id="4_uos7i"]
-[ext_resource type="Script" uid="uid://bu7be1i0jbcht" path="res://Scripts/Multiplayer/match/spawner.gd" id="5_i307v"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/objetos/objectives/core.tscn" id="1_k4bar"]
+[ext_resource type="PackedScene" path="res://scenes/Compartido/player.tscn" id="2_ihi6f"]
+[ext_resource type="PackedScene" path="res://scenes/Compartido/hud.tscn" id="3_hmd87"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/objetos/team_weapon_selector.tscn" id="4_uos7i"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/match/spawner.gd" id="5_i307v"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_tp6hc"]
 sky_horizon_color = Color(0.5294118, 0.80784315, 0.92156863, 1)

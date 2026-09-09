@@ -28,6 +28,9 @@ static var enabled: bool = false
 # ─── Referencias al padre ─────────────────────────────────────────────
 var _npc: BotBase = null
 var _player: Player = null
+## Unidad genérica: NPC de Historia (Tirador / CuerpoACuerpo) que no es
+## BotBase ni Player. Muestra vida, arma y schedule de IA del cerebro táctico.
+var _unit: Node3D = null
 var _unit_name: String = ""
 
 func _ready() -> void:
@@ -36,8 +39,22 @@ func _ready() -> void:
 	if not _npc:
 		_player = get_parent() as Player
 	
+	# NPC de Historia (Tirador / CuerpoACuerpo): unidad genérica con vida.
+	# Se detecta por duck-typing (tiene current_health / max_health), así
+	# cualquier NPC nuevo de campaña queda cubierto sin tocar este script.
 	if not _npc and not _player:
-		push_warning("BotDebugOverlay: debe ser hijo de un BotBase o Player")
+		var parent_unit: Node = get_parent()
+		if parent_unit != null and "current_health" in parent_unit and "max_health" in parent_unit:
+			_unit = parent_unit as Node3D
+			if _unit.is_in_group(&"tirador"):
+				_unit_name = "Tirador"
+			elif _unit.is_in_group(&"enemigo"):
+				_unit_name = "Zombie"
+			else:
+				_unit_name = "NPC Historia"
+	
+	if not _npc and not _player and not _unit:
+		push_warning("BotDebugOverlay: debe ser hijo de un BotBase, Player o NPC de Historia")
 		queue_free()
 		return
 	
@@ -45,7 +62,7 @@ func _ready() -> void:
 	if _npc:
 		var npc_id_val = _npc.get("_npc_id")
 		_unit_name = "Bot #%d" % (npc_id_val if npc_id_val != null else randi() % 9999)
-	else:
+	elif _player:
 		_unit_name = "Jugador"
 	
 	# Conectar el Viewport al Sprite3D
@@ -81,6 +98,11 @@ func _process(_delta: float) -> void:
 		hp_max = _player.max_health
 		hp_cur = _player.current_health
 		weapon = _player.active_weapon
+	elif _unit and is_instance_valid(_unit):
+		# NPC de Historia: vida por duck-typing y arma interna (_weapon).
+		hp_max = float(_unit.get("max_health"))
+		hp_cur = float(_unit.get("current_health"))
+		weapon = _unit.get("_weapon") if "_weapon" in _unit else null
 	
 	# Actualizar vida
 	var hp_pct: float = (hp_cur / hp_max) * 100.0 if hp_max > 0 else 0.0
@@ -128,6 +150,15 @@ func _process(_delta: float) -> void:
 			role_label.text = "Rol: --"
 	elif _player and is_instance_valid(_player):
 		role_label.text = "Rol: Jugador"
+	elif _unit and is_instance_valid(_unit):
+		# NPC de Historia: en lugar de rol de multijugador mostramos su arma.
+		var unit_weapon_name: String = ""
+		if weapon != null and is_instance_valid(weapon) and "weapon_name" in weapon:
+			unit_weapon_name = str(weapon.get("weapon_name"))
+		if unit_weapon_name.is_empty():
+			role_label.text = "Arma: Melee"
+		else:
+			role_label.text = "Arma: %s" % unit_weapon_name
 	
 	# ── Mostrar estado FSM (FASE 3) ─────────────────────────────
 	if _npc and is_instance_valid(_npc):
@@ -138,6 +169,13 @@ func _process(_delta: float) -> void:
 			state_label.text = "State: --"
 	elif _player and is_instance_valid(_player):
 		state_label.text = "State: --"
+	elif _unit and is_instance_valid(_unit):
+		# NPC de Historia: schedule del cerebro táctico (IA de campaña).
+		var brain: Variant = _unit.get("_tactical_brain") if "_tactical_brain" in _unit else null
+		if brain != null and is_instance_valid(brain) and brain.has_method("get_schedule_name"):
+			state_label.text = "IA: %s" % str(brain.call("get_schedule_name"))
+		else:
+			state_label.text = "State: --"
 
 	# ── Mostrar orden actual de TeamAI (FASE 6) ──────────────
 	if _npc and is_instance_valid(_npc):
@@ -147,6 +185,8 @@ func _process(_delta: float) -> void:
 		else:
 			order_label.text = "Orden: --"
 	elif _player and is_instance_valid(_player):
+		order_label.text = "Orden: --"
+	elif _unit and is_instance_valid(_unit):
 		order_label.text = "Orden: --"
 
 	# ── MOVIMIENTO (FASE 7) ────────────────────────────────────
@@ -188,6 +228,10 @@ func _process(_delta: float) -> void:
 		move_label.text = "Mov: --"
 		stuck_label.text = "Stuck: --"
 		cooldown_label.text = "Cubo: --"
+	elif _unit and is_instance_valid(_unit):
+		move_label.text = "Mov: --"
+		stuck_label.text = "Stuck: --"
+		cooldown_label.text = "Camino: --"
 
 # ─── Toggle global para Propiedades de unidad ─────────────────────────
 ## Alterna el estado global y actualiza TODAS las unidades (NPCs + Jugador).
@@ -197,11 +241,13 @@ static func toggle_unit_properties_all() -> void:
 	if not tree:
 		return
 	
-	# Actualizar NPCs (bots)
+	# Actualizar NPCs (bots de multijugador Y NPCs de Historia: cualquiera
+	# del grupo "npc" que implemente _setup_debug_overlay, p. ej. Tirador y
+	# CuerpoACuerpo).
 	var npcs: Array[Node] = tree.get_nodes_in_group("npc")
 	for npc in npcs:
-		if npc is BotBase:
-			npc._setup_debug_overlay()
+		if npc.has_method("_setup_debug_overlay"):
+			npc.call("_setup_debug_overlay")
 	
 	# Actualizar Jugador
 	var players: Array[Node] = tree.get_nodes_in_group("player")

@@ -53,8 +53,7 @@ class_name SkinData
 @export var metallic: float = 0.0
 
 ## Set de animaciones que usa esta skin.
-## Si es null, se usa el animation_set_default (definido en
-## res://Assets/Animaciones/Player/animation_set_default.tres).
+## Si es null, el modelo no carga animaciones desde un AnimationSet.
 ##
 ## Cada playermodel puede tener su PROPIO AnimationSet, sobreescribiendo
 ## el default. Esto permite que modelos distintos tengan animaciones

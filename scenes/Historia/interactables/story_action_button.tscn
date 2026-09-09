@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://dswm8b4bfe3i8"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://be3cyak0opyvt" path="res://Scripts/Historia/Interactables/story_action_button.gd" id="1_button"]
+[ext_resource type="Script" path="res://Scripts/Historia/Interactables/story_action_button.gd" id="1_button"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_area"]
 size = Vector3(2.2, 2.2, 2.2)

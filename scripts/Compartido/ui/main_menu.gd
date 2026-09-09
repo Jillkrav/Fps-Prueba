@@ -21,6 +21,9 @@ var _red_bot_skin_id: String = "teddy"
 const MAP_LIST_PATH: String = "res://config/Multiplayer/maps/MPMapList.json"
 const STORY_MAP_LIST_PATH: String = "res://config/Historia/story_map_list.json"
 
+## Escena del menú «cargar partida» de la campaña (CAMPAÑA -> CONTINUAR).
+const STORY_LOAD_MENU_SCENE := preload("res://scenes/Historia/ui/story_load_menu.tscn")
+
 ## Cache de la lista de mapas cargada desde el JSON.
 var _map_list: Array[Dictionary] = []
 
@@ -291,11 +294,24 @@ func _show_story_map_selector() -> void:
 	var levels: Array[Dictionary] = _load_story_map_list()
 	var dialog: AcceptDialog = AcceptDialog.new()
 	dialog.title = "CAMPAÑA — SELECCIONAR MISIÓN"
-	dialog.min_size = Vector2i(560, 340)
+	dialog.min_size = Vector2i(620, 460)
 	var content: VBoxContainer = VBoxContainer.new()
 	content.add_theme_constant_override("separation", 12)
+	# ── Continuar partida (solo si hay guardados) ──────────────────────────────
+	var save_manager: Node = get_node_or_null("/root/SaveManager")
+	var has_saves: bool = save_manager != null \
+		and save_manager.has_method("get_save_slots") \
+		and not (save_manager.get_save_slots() as Array).is_empty()
+	if has_saves:
+		var continue_btn: Button = Button.new()
+		continue_btn.text = "CONTINUAR PARTIDA"
+		continue_btn.custom_minimum_size = Vector2(540, 60)
+		continue_btn.add_theme_font_size_override("font_size", 22)
+		continue_btn.pressed.connect(_on_continue_pressed.bind(dialog))
+		content.add_child(continue_btn)
+	# ── Nueva partida ──────────────────────────────────────────────────────────
 	var intro: Label = Label.new()
-	intro.text = "Elige un mapa de pruebas. Completa el Mapa 1 para avanzar al Mapa 2 jugando."
+	intro.text = "NUEVA PARTIDA — elige una misión. Completa cada mapa para avanzar en la campaña."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(intro)
 	for level: Dictionary in levels:
@@ -344,12 +360,44 @@ func _start_story_level(level_id: String, scene_path: String, dialog: AcceptDial
 	if story_state == null or not story_state.has_method("begin_story"):
 		push_error("[MainMenu] GameStateSP no está disponible.")
 		return
+	# Nueva partida: limpiar el estado de memoria de sesiones previas y el
+	# snapshot del jugador para que el nivel arranque tal y como está diseñado.
+	var level_state_manager: Node = get_node_or_null("/root/LevelStateManager")
+	if level_state_manager != null and level_state_manager.has_method("clear_all_level_states"):
+		level_state_manager.clear_all_level_states()
+	var save_manager: Node = get_node_or_null("/root/SaveManager")
+	if save_manager != null and save_manager.has_method("reset_campaign_session"):
+		save_manager.reset_campaign_session()
 	story_state.call("begin_story", level_id, scene_path)
 	GameStateMP.reset_match()
 	if is_instance_valid(MatchManager):
 		MatchManager.reset_match()
 	dialog.queue_free()
+	_show_loading_before_transition(level_id)
 	get_tree().change_scene_to_file(scene_path)
+
+
+## Abre el menú «cargar partida» sobre el menú principal.
+func _open_load_menu() -> void:
+	var menu: Control = STORY_LOAD_MENU_SCENE.instantiate()
+	menu.z_index = 20
+	menu.closed.connect(menu.queue_free)
+	add_child(menu)
+
+
+## Cierra el selector de misión y abre el menú de cargar partida.
+func _on_continue_pressed(dialog: AcceptDialog) -> void:
+	if is_instance_valid(dialog):
+		dialog.queue_free()
+	_open_load_menu()
+
+
+## Muestra la pantalla de carga con el nombre del nivel antes de entrar.
+func _show_loading_before_transition(level_id: String) -> void:
+	var loading: Node = get_node_or_null("/root/StoryLoadingScreen")
+	if loading == null or not loading.has_method("show_loading"):
+		return
+	loading.show_loading("CARGANDO", StoryDataCatalog.campaign_name_for_id(level_id))
 
 func _on_multijugador_pressed() -> void:
 	# Reiniciar seleccion al abrir el panel de mapas.

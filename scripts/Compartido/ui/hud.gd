@@ -46,10 +46,20 @@ extends CanvasLayer
 
 var _player:       Player     = null
 var _menu_abierto: bool       = false
+## Hasta cuándo (ms) mostrar el toast de campaña ([C] para seguir a aliados).
+var _story_toast_until: float = 0.0
+
+# ── Menú de órdenes de aliado (campaign, [E] sobre un Tirador) ──
+var _npc_menu_ui: Control = null
+var _npc_menu_title: Label = null
+var _npc_menu_buttons: Array[Button] = []
+var _npc_menu_options: Array[String] = ["libre", "guard", "follow"]
+var _npc_menu_target: Node = null
 
 func _ready() -> void:
 	# FIX: registrar en grupo para que spawner.gd pueda encontrarlo con get_nodes_in_group("hud")
 	add_to_group("hud")
+	_build_npc_command_menu()
 	_apply_story_presentation()
 	# ── Step-up 2 indicator: asegurar que empieza OCULTO ──
 	if step_up_indicator:
@@ -114,11 +124,16 @@ func _configurar_pausa() -> void:
 func _process(_delta: float) -> void:
 	# Actualizar posición del crosshair del arma (Fase 2)
 	_update_weapon_crosshair()
-	
+	_hide_story_toast_if_due()
+
 	# Manejo de Scoreboard (solo multijugador).
 	if _is_story_mode():
 		if scoreboard != null and scoreboard.visible:
 			scoreboard.hide_scoreboard()
+		# En modo Historia el scoreboard no aplica: [C] ordena a todos los
+		# aliados seguir al jugador (toggle). [Tab] es intercambio de armas.
+		if Input.is_action_just_pressed("follow_all"):
+			_toggle_ally_follow()
 		return
 	if not _menu_abierto and not get_tree().paused:
 		if Input.is_action_pressed("scoreboard"):
@@ -134,6 +149,19 @@ func _process(_delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	# ── Menú de órdenes de aliado (teclas rápidas 1/2/3, E/Esc para salir) ──
+	if is_npc_command_menu_open():
+		match event.physical_keycode:
+			KEY_1:
+				_apply_npc_command("libre")
+			KEY_2:
+				_apply_npc_command("guard")
+			KEY_3:
+				_apply_npc_command("follow")
+			KEY_E, KEY_ESCAPE:
+				_close_npc_command_menu()
+		get_viewport().set_input_as_handled()
 		return
 	if event.is_action("dev_menu"):
 		if dev_menu:
@@ -333,6 +361,122 @@ func set_story_objective(text: String) -> void:
 	if spawn_label != null:
 		spawn_label.text = "OBJETIVO: %s" % text
 		spawn_label.visible = not text.is_empty()
+
+
+## Mensaje temporal en pantalla para campaña (ej. aviso de "seguir a aliados").
+## Reutiliza el label superior central que en Historia se oculta por defecto.
+func show_story_toast(text: String) -> void:
+	if auto_balance_label == null:
+		return
+	auto_balance_label.text = text
+	auto_balance_label.visible = true
+	_story_toast_until = Time.get_ticks_msec() + 3000
+
+
+func _hide_story_toast_if_due() -> void:
+	if _story_toast_until <= 0.0:
+		return
+	if auto_balance_label == null or not auto_balance_label.visible:
+		return
+	if Time.get_ticks_msec() >= _story_toast_until:
+		auto_balance_label.visible = false
+		_story_toast_until = 0.0
+
+
+## [C] en modo Historia: ordena a TODOS los aliados seguir al jugador (toggle).
+func _toggle_ally_follow() -> void:
+	var controller: Node = get_tree().get_first_node_in_group(&"story_level_controller")
+	if controller == null or not controller.has_method("toggle_ally_follow"):
+		return
+	controller.call("toggle_ally_follow")
+
+
+# ═══ Menú de órdenes de aliado (campaña) ══════════════════════════════════
+## Construye el menú radial (3 botones: Libre / Guardia / Sigueme). Se oculta
+## hasta que el jugador pulsa [E] sobre un Tirador aliado.
+func _build_npc_command_menu() -> void:
+	if _npc_menu_ui != null:
+		return
+	_npc_menu_ui = Control.new()
+	_npc_menu_ui.name = "NpcCommandMenu"
+	var full := Control.PRESET_FULL_RECT
+	_npc_menu_ui.set_anchors_preset(full)
+	_npc_menu_ui.mouse_filter = Control.MOUSE_FILTER_STOP
+	_npc_menu_ui.visible = false
+	add_child(_npc_menu_ui)
+	# Fondo oscurecido
+	var dim := ColorRect.new()
+	dim.color = Color(0.0, 0.0, 0.0, 0.35)
+	dim.set_anchors_preset(full)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_npc_menu_ui.add_child(dim)
+	# Título
+	_npc_menu_title = Label.new()
+	_npc_menu_title.name = "Title"
+	_npc_menu_title.text = "ÓRDENES"
+	_npc_menu_title.add_theme_font_size_override("font_size", 24)
+	_npc_menu_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_npc_menu_ui.add_child(_npc_menu_title)
+	# Botones (posiciones circulares se ajustan al abrir).
+	var labels: Array[String] = ["1 · LIBRE", "2 · GUARDIA", "3 · SIGUEME"]
+	for i in _npc_menu_options.size():
+		var b := Button.new()
+		b.text = labels[i]
+		b.custom_minimum_size = Vector2(170, 46)
+		b.size = Vector2(170, 46)
+		b.pivot_offset = b.size * 0.5
+		b.pressed.connect(_apply_npc_command.bind(_npc_menu_options[i]))
+		_npc_menu_ui.add_child(b)
+		_npc_menu_buttons.append(b)
+
+
+## ¿El menú de órdenes de aliado está abierto?
+func is_npc_command_menu_open() -> bool:
+	return _npc_menu_ui != null and _npc_menu_ui.visible
+
+
+## Abre el menú para el NPC indicado (ciclo del jugador).
+func open_npc_command_menu(npc: Node) -> void:
+	_npc_menu_target = npc
+	if _npc_menu_ui == null:
+		_build_npc_command_menu()
+	if _npc_menu_target != null and _npc_menu_target.has_method("is_allied_with_player"):
+		var nombre: String = str(_npc_menu_target.get("name"))
+		_npc_menu_title.text = "ÓRDENES — %s" % nombre
+	# Posicionar los 3 botones en círculo alrededor del centro.
+	var center: Vector2 = get_viewport().get_visible_rect().size * 0.5
+	var radius: float = 150.0
+	for i in _npc_menu_buttons.size():
+		var angle: float = deg_to_rad(-90.0 + float(i) * 120.0)
+		var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius
+		var b: Button = _npc_menu_buttons[i]
+		b.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		b.position = pos - b.size * 0.5
+	_npc_menu_title.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_npc_menu_title.size = Vector2(360, 40)
+	_npc_menu_title.position = center - Vector2(180.0, 130.0)
+	_npc_menu_ui.visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## Cierra el menú y restaura la captura del ratón.
+func _close_npc_command_menu() -> void:
+	if _npc_menu_ui == null:
+		return
+	_npc_menu_ui.visible = false
+	_npc_menu_target = null
+	if not _esta_una_ui_abierta():
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+## Aplica la orden seleccionada al NPC objetivo y cierra el menú.
+func _apply_npc_command(mode: String) -> void:
+	var npc: Node = _npc_menu_target
+	_close_npc_command_menu()
+	if npc == null or not is_instance_valid(npc):
+		return
+	if npc.has_method("apply_command_mode"):
+		npc.call("apply_command_mode", mode)
 
 
 func _is_story_mode() -> bool:

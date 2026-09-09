@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Nuevo Proyecto de Juego"
-run/main_scene="uid://cxofon4e0u7h"
+run/main_scene="res://scenes/Compartido/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -30,6 +30,11 @@ BotDifficulty="*res://Scripts/Multiplayer/player/bot_difficulty.gd"
 VelocidadesArmas="*res://Scripts/Compartido/gameplay/weapons/velocidades_armas.gd"
 GameModeManager="*res://Scripts/Multiplayer/game_modes/game_mode_manager.gd"
 GameStateSP="*res://Scripts/Historia/Core/game_state_sp.gd"
+LevelStateManager="*res://Scripts/Historia/Core/level_state_manager.gd"
+SaveManager="*res://Scripts/Historia/Core/save_manager.gd"
+StoryLoadingScreen="*res://Scripts/Historia/Core/story_loading_screen.gd"
+StoryNpcStimulusBus="*res://Scripts/Historia/Npc/story_npc_stimulus_bus.gd"
+DifficultyManager="*res://Scripts/Historia/Npc/story_difficulty.gd"
 
 [display]
 
@@ -82,7 +87,7 @@ reload={
 }
 crouch={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":67,"key_label":0,"unicode":99,"location":0,"echo":false,"script":null)
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194326,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
 ]
 }
 pause_menu={
@@ -93,6 +98,11 @@ pause_menu={
 jump={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":32,"key_label":0,"unicode":32,"location":0,"echo":false,"script":null)
+]
+}
+follow_all={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":67,"key_label":0,"unicode":99,"location":0,"echo":false,"script":null)
 ]
 }
 

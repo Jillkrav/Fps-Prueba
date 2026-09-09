@@ -1,7 +1,7 @@
 [gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" uid="uid://bqxv5vbskxln8" path="res://Scripts/Multiplayer/player/skins/skin_data.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://bte2lnu5in8mg" path="res://scenes/Multiplayer/objetos/skins/teddy/teddy_skin.tscn" id="2_scene"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/player/skins/skin_data.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/objetos/skins/teddy/teddy_skin.tscn" id="2_scene"]
 
 [resource]
 script = ExtResource("1_script")

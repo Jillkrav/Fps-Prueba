@@ -1,15 +1,18 @@
-[gd_scene format=3 uid="uid://drk40tus734ux"]
+[gd_scene format=3 uid="uid://cepy2mqa3e4be"]
 
 [ext_resource type="Script" uid="uid://cuvrhp1uqccyg" path="res://Scripts/Historia/Core/story_level_controller.gd" id="1_controller"]
-[ext_resource type="PackedScene" uid="uid://dg0u4rsk2u6o7" path="res://scenes/Compartido/player.tscn" id="2_player"]
-[ext_resource type="PackedScene" uid="uid://bix4g2asdxsyg" path="res://scenes/Compartido/hud.tscn" id="3_hud"]
+[ext_resource type="PackedScene" uid="uid://c7p45mb263n2w" path="res://scenes/Compartido/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/Compartido/hud.tscn" id="3_hud"]
 [ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_checkpoint.tscn" id="4_checkpoint"]
-[ext_resource type="PackedScene" uid="uid://dn2belw6y4t8q" path="res://scenes/Historia/interactables/story_door.tscn" id="5_door"]
-[ext_resource type="PackedScene" uid="uid://ck8e6slmdglsf" path="res://scenes/Historia/interactables/story_warp.tscn" id="6_warp"]
-[ext_resource type="PackedScene" uid="uid://dswm8b4bfe3i8" path="res://scenes/Historia/interactables/story_action_button.tscn" id="7_button"]
-[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_exit.tscn" id="8_exit"]
-[ext_resource type="PackedScene" path="res://scenes/Historia/npc/enemies/story_melee_enemy.tscn" id="9_enemy"]
-[ext_resource type="PackedScene" uid="uid://bnre1cxahhdti" path="res://scenes/Compartido/pickups/dropped_weapon.tscn" id="10_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_door.tscn" id="5_door"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_warp.tscn" id="6_warp"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_action_button.tscn" id="7_button"]
+[ext_resource type="PackedScene" uid="uid://baa8pus2nxxiy" path="res://scenes/Historia/interactables/story_exit.tscn" id="8_exit"]
+[ext_resource type="PackedScene" uid="uid://uek76rk8nb2o" path="res://scenes/Historia/npc/personajes/cuerpo_a_cuerpo.tscn" id="9_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/Compartido/pickups/dropped_weapon.tscn" id="10_weapon"]
+[ext_resource type="Resource" path="res://config/Historia/definitions/mapa_pruebas_2.tres" id="11_definition"]
+[ext_resource type="PackedScene" uid="uid://bmimdxb62c3eq" path="res://scenes/Historia/npc/personajes/tirador.tscn" id="12_6jr3w"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/story_spawn_point.tscn" id="12_spawn"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.08, 0.03, 0.12, 1)
@@ -52,8 +55,6 @@ environment = SubResource("Environment")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=421802424]
 transform = Transform3D(0.81915206, -0.43938506, 0.36868784, 0, 0.64278764, 0.76604444, -0.57357645, -0.62750685, 0.5265408, 0, 0, 0)
 light_color = Color(0.72, 0.5, 1, 1)
-light_energy = 1.25
-shadow_enabled = true
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1573405590]
 navigation_mesh = SubResource("NavMesh")
@@ -66,11 +67,12 @@ navigation_mesh = SubResource("NavMesh")
 transform = Transform3D(5, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, 18)
 trigger_mode = 2
 display_name = "COMPUERTA DEL BOTÓN"
+state_id = "puerta_boton"
 
 [node name="ClearAreaDoor" parent="NavigationRegion3D/Geometria/Doors" unique_id=714009232 instance=ExtResource("5_door")]
 transform = Transform3D(5, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, -8)
-trigger_mode = 3
-display_name = "COMPUERTA DE LIMPIEZA"
+display_name = "COMPUERTA"
+state_id = "puerta_zona_limpia"
 
 [node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria" unique_id=1777874848]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -9.088379)
@@ -115,25 +117,40 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 28)
 
 [node name="StoryLevelController" type="Node" parent="." unique_id=285870776]
 script = ExtResource("1_controller")
+level_definition = ExtResource("11_definition")
+objective_text = "Activa el botón y atraviesa el portal."
 level_id = "mapa_pruebas_2"
-objective_text = "Activa el botón, atraviesa el portal y limpia la zona final."
+next_level_path = ""
+starting_weapon = "Glock"
 
 [node name="Checkpoints" type="Node3D" parent="." unique_id=2125072506]
 
 [node name="StartCheckpoint" parent="Checkpoints" unique_id=734072400 instance=ExtResource("4_checkpoint")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 27)
 display_name = "Mapa2_CP1"
+state_id = "checkpoint_inicio"
 
 [node name="PortalCheckpoint" parent="Checkpoints" unique_id=1913978019 instance=ExtResource("4_checkpoint")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
 display_name = "Mapa2_CP2"
+state_id = "checkpoint_portal"
 
 [node name="Interactables" type="Node3D" parent="." unique_id=188865292]
+
+[node name="SpawnPoints" type="Node3D" parent="Interactables" unique_id=2104100002]
+
+[node name="ArrivalFromMap1" parent="Interactables/SpawnPoints" unique_id=1520869891 instance=ExtResource("12_spawn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 28)
+display_name = "ENTRADA DESDE MAPA 1"
+spawn_health = 100.0
+spawn_weapon = "(No cambiar):"
+source_story_exit = "Mapa de Pruebas 1 — SALIDA AL MAPA 2:res://scenes/Historia/mapas/mapa_pruebas_1.tscn|Interactuables/Exit"
 
 [node name="StartButton" parent="Interactables" unique_id=978855317 instance=ExtResource("7_button")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 24)
 target_nodes = Array[NodePath]([NodePath("../../NavigationRegion3D/Geometria/Doors/ButtonDoor"), NodePath("../../Warps/PortalA")])
 display_name = "ACTIVAR PORTAL"
+state_id = "boton_inicio"
 
 [node name="Warps" type="Node3D" parent="." unique_id=8506255]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -23.543852)
@@ -144,12 +161,14 @@ target_warp_path = NodePath("../PortalB")
 active = false
 display_name = "PORTAL DE PRUEBA"
 show_debug_visual = true
+state_id = "warp_a"
 
 [node name="PortalB" parent="Warps" unique_id=254348951 instance=ExtResource("6_warp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.4353676)
 target_warp_path = NodePath("../PortalA")
 display_name = "REGRESO DEL PORTAL"
 show_debug_visual = true
+state_id = "warp_b"
 
 [node name="Pickups" type="Node3D" parent="." unique_id=128150892]
 
@@ -159,6 +178,7 @@ weapon_name = "MP7"
 starting_mag_ammo = 40
 starting_reserve_ammo = 120
 persistent_on_floor = true
+state_id = "pickup_mp7"
 
 [node name="SpasPersistent" parent="Pickups" unique_id=1012100236 instance=ExtResource("10_weapon")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, -5)
@@ -166,18 +186,36 @@ weapon_name = "Spas12"
 starting_mag_ammo = 8
 starting_reserve_ammo = 40
 persistent_on_floor = true
+state_id = "pickup_spas"
 
-[node name="Enemies" type="Node3D" parent="." unique_id=2004022162]
+[node name="Npc" type="Node3D" parent="." unique_id=2004022162]
 
-[node name="ZombiePortal01" parent="Enemies" unique_id=1132966090 instance=ExtResource("9_enemy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.05, -6)
+[node name="Enemigos" type="Node3D" parent="Npc" unique_id=468594569]
 
-[node name="ZombiePortal02" parent="Enemies" unique_id=1026437217 instance=ExtResource("9_enemy")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.05, -0.7682886)
-
-[node name="ZombieFinal" parent="Enemies" unique_id=1335467928 instance=ExtResource("9_enemy")]
+[node name="ZombieFinal" parent="Npc/Enemigos" unique_id=1335467928 instance=ExtResource("9_enemy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.736587, 0.05, -2.2143307)
+state_id = "zombie_final"
+
+[node name="ZombiePortal02" parent="Npc/Enemigos" unique_id=1026437217 instance=ExtResource("9_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.05, -0.7682886)
+state_id = "zombie_portal_02"
+
+[node name="ZombiePortal01" parent="Npc/Enemigos" unique_id=1132966090 instance=ExtResource("9_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.05, -6)
+state_id = "zombie_portal_01"
+
+[node name="Aliados" type="Node3D" parent="Npc" unique_id=931056185]
+
+[node name="Aliado1" parent="Npc/Aliados" unique_id=12147801 instance=ExtResource("12_6jr3w")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10.064689)
 
 [node name="Exit" parent="." unique_id=1558507923 instance=ExtResource("8_exit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -30)
 display_name = "FIN DE LAS PRUEBAS"
+
+[node name="StoryExit" parent="." unique_id=505216798 instance=ExtResource("8_exit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 32.971607)
+display_name = "VOLVER AL MAPA 1"
+completes_level = false
+destination_scene = "Mapa de Pruebas 1:res://scenes/Historia/mapas/mapa_pruebas_1.tscn"
+destination_spawn_point = "REGRESO DESDE MAPA 2:res://scenes/Historia/mapas/mapa_pruebas_1.tscn|Interactuables/SpawnPoints/ReturnFromMap2"

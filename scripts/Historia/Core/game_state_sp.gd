@@ -22,6 +22,10 @@ var current_level_path: String = ""
 var checkpoint_position: Vector3 = Vector3.ZERO
 var has_checkpoint: bool = false
 var completed_levels: Dictionary[String, bool] = {}
+## Clave del StoryExit por el que se salió del nivel anterior
+## ("scene_path|node_path"). La consume StoryLevelController del nivel de destino
+## para colocar al jugador en su StorySpawnPoint correspondiente.
+var entry_exit_key: String = ""
 
 
 func is_story_active() -> bool:
@@ -45,6 +49,15 @@ func set_checkpoint(position: Vector3) -> void:
 	checkpoint_changed.emit(position)
 
 
+## Reanuda una partida guardada (menú «continuar»): activa la sesión de Historia
+## conservando el checkpoint y el nivel que ya cargó SaveManager.load_game().
+## A diferencia de begin_story(), NO borra el checkpoint ni la posición.
+func resume_story() -> void:
+	session_mode = SessionMode.HISTORIA
+	selected_level_id = current_level_id
+	selected_level_path = current_level_path
+
+
 func complete_current_level() -> void:
 	if current_level_id.is_empty():
 		return
@@ -60,4 +73,5 @@ func reset_session() -> void:
 	current_level_path = ""
 	has_checkpoint = false
 	checkpoint_position = Vector3.ZERO
+	entry_exit_key = ""
 	story_session_reset.emit()

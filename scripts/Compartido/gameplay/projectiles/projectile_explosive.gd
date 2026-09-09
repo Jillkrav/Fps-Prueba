@@ -31,7 +31,11 @@ func on_hit(body: Node) -> void:
 		var dmg: float = damage_vs_npc * 0.3  # 30% del daño como daño de impacto
 		if body is Player:
 			dmg = damage_vs_player * 0.3
-		body.take_damage(dmg, "Torso", shooter.get_instance_id() if shooter else -1)
+		body.take_damage(
+			dmg, "Torso",
+			shooter.get_instance_id() if shooter else -1,
+			shooter.global_position if shooter else global_position
+		)
 	
 	# Explotar al impactar
 	if explodes_on_impact:

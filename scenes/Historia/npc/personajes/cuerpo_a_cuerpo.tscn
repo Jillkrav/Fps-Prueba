@@ -1,0 +1,53 @@
+[gd_scene format=3 uid="uid://uek76rk8nb2o"]
+
+[ext_resource type="Script" uid="uid://cfsgp0511ptwu" path="res://Scripts/Historia/Npc/cuerpo_a_cuerpo.gd" id="1_enemy"]
+[ext_resource type="Script" uid="uid://dfk0f1lgmqn0r" path="res://Scripts/Historia/Npc/story_npc_damage_turn.gd" id="2_turn"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_enemy"]
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_enemy"]
+albedo_color = Color(0.28, 0.6, 0.28, 1)
+roughness = 0.9
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_enemy"]
+height = 1.8
+
+[sub_resource type="SphereShape3D" id="SphereShape_head"]
+radius = 0.35
+
+[node name="CuerpoACuerpo" type="CharacterBody3D" unique_id=1244921129 groups=["enemigo", "npc"]]
+collision_layer = 2
+collision_mask = 13
+script = ExtResource("1_enemy")
+movement_speed = 5.0
+attack_range = 2.0
+attack_cooldown = 1.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=827740409]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1797037399]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+material_override = SubResource("Mat_enemy")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="HeadHitbox" type="Area3D" parent="." unique_id=21988249 groups=["headshot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HeadHitbox" unique_id=1085298315]
+shape = SubResource("SphereShape_head")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=2080140249]
+path_desired_distance = 0.5
+target_desired_distance = 1.15
+path_max_distance = 3.0
+avoidance_enabled = true
+height = 1.8
+max_speed = 2.0
+
+[node name="DamageTurn" type="Node" parent="." unique_id=654487358]
+script = ExtResource("2_turn")

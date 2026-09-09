@@ -20,8 +20,8 @@
 extends Resource
 class_name AnimationSet
 
-## Carpeta base donde están los archivos FBX.
-@export var fbx_directory: String = "res://Assets/Animaciones/Player/Con arma/"
+## Carpeta base donde están los archivos FBX (debe definirse en el .tres).
+@export var fbx_directory: String = ""
 
 ## Animaciones disponibles:  nombre_lógico → nombre_del_archivo.fbx
 @export var animations: Dictionary = {}

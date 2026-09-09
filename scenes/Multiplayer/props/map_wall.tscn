@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://dnfw3l1l06vyl" path="res://Scripts/Multiplayer/props/map_wall_prop.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/map_wall_prop.gd" id="1_script"]
 [ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
 [ext_resource type="Material" path="res://assets/Multiplayer/props/materials/prop_concrete_gray.tres" id="3_material"]
 

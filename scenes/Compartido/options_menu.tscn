@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://dgxv5pum0iw37"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://oyksnfu8mq8l" path="res://Scripts/Compartido/ui/options_menu.gd" id="1_f4pl0"]
+[ext_resource type="Script" path="res://Scripts/Compartido/ui/options_menu.gd" id="1_f4pl0"]
 
 [sub_resource type="StyleBoxFlat" id="1"]
 bg_color = Color(0.05, 0.05, 0.1, 0.95)

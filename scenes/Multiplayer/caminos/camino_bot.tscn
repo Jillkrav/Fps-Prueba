@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://c4c0m1fdf8kqx"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://bt7xirnqopeyu" path="res://Scripts/Multiplayer/caminos/camino_bot.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/caminos/camino_bot.gd" id="1_script"]
 
 [sub_resource type="Curve3D" id="Curve3D_default"]
 _data = {

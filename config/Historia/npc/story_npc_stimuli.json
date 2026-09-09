@@ -1,0 +1,14 @@
+{
+  "_comment": "Perfiles editables de estímulos lógicos para la IA de Historia. Los valores se consumen por StoryNpcStimulusBus; no necesitan audio final.",
+  "stimuli": {
+  "explosive_danger": { "radius": 18.0, "duration": 1.5, "priority": 100 },
+  "combat": { "radius": 24.0, "duration": 2.0, "priority": 60 },
+  "gunshot": { "radius": 40.0, "duration": 1.4, "priority": 50 },
+  "near_impact": { "radius": 20.0, "duration": 1.2, "priority": 75 },
+  "surface_impact": { "radius": 14.0, "duration": 1.2, "priority": 55 },
+	"player_movement": { "radius": 8.0, "duration": 0.8, "priority": 25 },
+	"ally_alert": { "radius": 16.0, "duration": 1.6, "priority": 45 },
+	"world": { "radius": 10.0, "duration": 0.8, "priority": 10 },
+	"decoy": { "radius": 14.0, "duration": 1.0, "priority": 20 }
+  }
+}

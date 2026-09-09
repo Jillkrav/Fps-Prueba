@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://d1gy8sd66dg8i"]
+[gd_scene format=3 uid="uid://cjlbr4mu04bej"]
 
-[ext_resource type="Script" uid="uid://cg81dlundm7t4" path="res://Scripts/Historia/Npc/story_npc_spawner.gd" id="1_spawner"]
+[ext_resource type="Script" uid="uid://cpj1kg7jfclpj" path="res://Scripts/Historia/Npc/story_npc_spawner.gd" id="1_spawner"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_spawn"]
 transparency = 1
@@ -25,6 +25,11 @@ size = Vector3(4, 3, 4)
 
 [node name="StoryNPCSpawner" type="Node3D" unique_id=1307028194]
 script = ExtResource("1_spawner")
+spawn_height_offset = 1.0
+spawn_behavior = 0
+vision_range = 25.0
+vision_fov_degrees = 150.0
+wander_radius = 15.0
 
 [node name="SpawnPoint" type="Marker3D" parent="." unique_id=2041845114]
 

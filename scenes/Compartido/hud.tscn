@@ -1,10 +1,10 @@
-[gd_scene format=3 uid="uid://bix4g2asdxsyg"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://cayfyqwp8cmph" path="res://Scripts/Compartido/ui/hud.gd" id="1_hud"]
-[ext_resource type="Texture2D" uid="uid://c1tp7pqe622b5" path="res://icon.svg" id="2_crosshair"]
-[ext_resource type="Script" uid="uid://c4wvmmk1h5um1" path="res://Scripts/Compartido/ui/debug/dev_menu.gd" id="3_devmenu"]
-[ext_resource type="PackedScene" uid="uid://dgxv5pum0iw37" path="res://scenes/Compartido/options_menu.tscn" id="4_options"]
-[ext_resource type="PackedScene" uid="uid://qklku4hs3cht" path="res://scenes/Multiplayer/objetos/scoreboard.tscn" id="5_scoreboard"]
+[ext_resource type="Script" path="res://Scripts/Compartido/ui/hud.gd" id="1_hud"]
+[ext_resource type="Texture2D" path="res://icon.svg" id="2_crosshair"]
+[ext_resource type="Script" path="res://Scripts/Compartido/ui/debug/dev_menu.gd" id="3_devmenu"]
+[ext_resource type="PackedScene" path="res://scenes/Compartido/options_menu.tscn" id="4_options"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/objetos/scoreboard.tscn" id="5_scoreboard"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hud"]
 

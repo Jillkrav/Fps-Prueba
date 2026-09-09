@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://dg0u4rsk2u6o7"]
+[gd_scene format=3 uid="uid://c7p45mb263n2w"]
 
 [ext_resource type="Script" uid="uid://h5e6ijfta6ni" path="res://Scripts/Compartido/player/player.gd" id="1_player"]
 [ext_resource type="Script" uid="uid://chpku3ysjho2v" path="res://Scripts/Compartido/gameplay/weapons/weapon_equip_state.gd" id="2_weaponequip"]
@@ -53,6 +53,7 @@ spring_length = 3.0
 margin = 0.15
 
 [node name="ThirdPersonCamera" type="Camera3D" parent="ThirdPersonPivot" unique_id=814252991]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7528441, 1.135492)
 
 [node name="ThirdPersonWeaponSocket" type="Marker3D" parent="." unique_id=237307267]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.5, -0.3)

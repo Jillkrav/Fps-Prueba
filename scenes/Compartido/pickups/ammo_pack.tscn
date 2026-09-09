@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://c5wvk6rnwgry"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://dt846qo506u2r" path="res://Scripts/Compartido/gameplay/pickups/ammo_pack.gd" id="1_ammo"]
+[ext_resource type="Script" path="res://Scripts/Compartido/gameplay/pickups/ammo_pack.gd" id="1_ammo"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_pickup"]
 size = Vector3(0.7, 0.7, 0.7)

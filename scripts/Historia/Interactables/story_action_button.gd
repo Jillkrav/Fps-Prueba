@@ -22,6 +22,11 @@ enum TriggerMode {
 @export_category("Presentation")
 @export var display_name: String = "BOTÓN"
 
+@export_category("Persistencia (campaña)")
+## ID único dentro del nivel. Si está vacío, el botón NO participa en la
+## persistencia de campaña (se reinicia al volver al mapa).
+@export var state_id: String = ""
+
 @onready var prompt_label: Label3D = $PromptLabel
 @onready var button_mesh: MeshInstance3D = $ButtonMesh
 
@@ -35,6 +40,9 @@ func _ready() -> void:
 	body_exited.connect(_on_body_exited)
 	prompt_label.visible = false
 	_setup_tint_material()
+	if not state_id.is_empty():
+		LevelStateManager.register(self)
+		call_deferred("_restore_persistent_state")
 
 
 ## El botón usa MeshInstance3D (sin 'modulate', propiedad 2D). Para marcarlo como
@@ -86,3 +94,31 @@ func _on_body_exited(body: Node3D) -> void:
 		_player_in_range = null
 		if not _used:
 			prompt_label.visible = false
+
+
+# ── Persistencia de campaña (data-driven) ────────────────────────────────────
+
+## Marca el botón como ya usado (visual) y lo deja sin prompt.
+func _mark_used_visual() -> void:
+	_used = true
+	if _tint_material != null:
+		_tint_material.albedo_color = Color(0.25, 1.0, 0.35)
+	# Defensivo: sin etiqueta en el mapa no se rompe (el estado se conserva).
+	if prompt_label != null:
+		prompt_label.text = "%s ACTIVADO" % display_name
+		prompt_label.visible = true
+
+
+func _restore_persistent_state() -> void:
+	var st: Dictionary = LevelStateManager.get_state_for(self, state_id)
+	if bool(st.get("used", false)):
+		_mark_used_visual()
+
+
+func get_persistent_state() -> Dictionary:
+	return {"used": _used}
+
+
+func apply_persistent_state(state: Dictionary) -> void:
+	if bool(state.get("used", false)):
+		_mark_used_visual()

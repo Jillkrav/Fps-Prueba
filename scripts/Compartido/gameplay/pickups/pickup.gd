@@ -33,6 +33,13 @@ enum Type { WEAPON, HEALTH, AMMO, ARMOR, SPECIAL }
 ## Útil para armas decorativas o de pruebas que deben permanecer en el suelo.
 @export var persistent_on_pickup: bool = false
 
+@export_category("Persistencia de campaña")
+## ID único dentro del nivel (solo modo Historia). Si está vacío, el pickup se
+## comporta como siempre (respawn/despawn normal). Si se rellena, al recogerlo
+## queda eliminado permanentemente para este nivel: al volver al mapa no aparece.
+## En multijugador no tiene efecto (este ID solo se usa en niveles de campaña).
+@export var state_id: String = ""
+
 # ─── Datos específicos del contenido ──────────────────────────────────
 ## Diccionario genérico con los datos del pickup.
 ## Para armas: {"tipo_arma", "balas_cargador", "balas_reserva", "capacidad_cargador"}
@@ -52,7 +59,7 @@ signal respawned(pickup: Node)
 @onready var pickup_area: Area3D = $PickupArea
 @onready var despawn_timer: Timer = $DespawnTimer
 @onready var label_3d: Label3D = $Label3D
-@onready var _pickup_manager = get_node("/root/PickupManager")
+@onready var _pickup_manager = get_node_or_null("/root/PickupManager")
 
 var _spawn_transform: Transform3D = Transform3D.IDENTITY
 var _is_available: bool = true
@@ -71,6 +78,11 @@ func _ready() -> void:
 	# Registrar en el gestor global de pickups
 	if _pickup_manager:
 		_pickup_manager.register(self)
+
+	# Persistencia de campaña: si tiene state_id, restaurar si ya se recogió.
+	if not state_id.is_empty():
+		LevelStateManager.register(self)
+		call_deferred("_restore_persistent_state")
 
 	# ── Configurar físicas ──────────────────────────────────────────
 	# FASE 1: Caída inicial. El pickup está en capa 1 para colisionar
@@ -133,6 +145,13 @@ func pick_up(picker: Node) -> void:
 	_on_picked_up(picker)
 	picked_up.emit(self, picker)
 
+	# Persistencia de campaña: un pickup con state_id queda recogido para
+	# siempre en este nivel (no reaparece al volver al mapa).
+	if not state_id.is_empty():
+		LevelStateManager.persist_state(self, state_id, {"collected": true})
+		_mark_collected_permanent()
+		return
+
 	if persistent_on_pickup:
 		return
 	if respawn_on_pickup:
@@ -170,6 +189,49 @@ func _on_area_body_exited(body: Node) -> void:
 	
 	if body.has_method("_on_pickup_area_exited"):
 		body._on_pickup_area_exited(self)
+
+# ─── Persistencia de campaña (data-driven) ────────────────────────────
+# Contrato: register + _restore_persistent_state + get_persistent_state +
+# apply_persistent_state (ver LevelStateManager).
+
+func _restore_persistent_state() -> void:
+	var st: Dictionary = LevelStateManager.get_state_for(self, state_id)
+	apply_persistent_state(st)
+
+
+## Deja el pickup permanentemente recogido (oculto y sin colisión).
+func _mark_collected_permanent() -> void:
+	if not _is_available:
+		return
+	_is_available = false
+	freeze = true
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	collision_layer = 0
+	collision_mask = 0
+	if _collision_shape != null:
+		_collision_shape.set_deferred("disabled", true)
+	if pickup_area != null:
+		pickup_area.set_deferred("monitoring", false)
+		pickup_area.set_deferred("monitorable", false)
+	if _item_mesh != null:
+		_item_mesh.hide()
+	if label_3d != null:
+		label_3d.visible = false
+	if _pickup_manager:
+		_pickup_manager.unregister(self)
+	if _respawn_timer != null:
+		_respawn_timer.stop()
+
+
+func get_persistent_state() -> Dictionary:
+	return {"collected": not _is_available}
+
+
+func apply_persistent_state(state: Dictionary) -> void:
+	if bool(state.get("collected", false)):
+		_mark_collected_permanent()
+
 
 # ─── Reaparición de recursos del mapa ─────────────────────────────────
 func _setup_respawn_timer() -> void:

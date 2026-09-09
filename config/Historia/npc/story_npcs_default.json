@@ -1,0 +1,79 @@
+{
+  "_comentario": "Configuracion por defecto de TODOS los NPCs de Historia (equivalente a como skill.json centraliza armas/items). Cada tipo de NPC define su escena, faccion y stats base. Para ANADIR un NPC nuevo en el futuro, copia una entrada en 'npc_types' y dale de alta (los scripts no se tocan).",
+  "_convenciones": {
+	"scene_path": "Ruta a la escena del NPC (Node3D/CharacterBody3D).",
+	"category": "'enemy' = enemigo PvE, 'ally' = aliado del jugador (solo informativo por ahora).",
+	"faction_id": "Faccion por defecto. Ver config/Historia/story_factions.json (2 = Zombies y Aliens).",
+	"defaults": "Stats por defecto del NPC. Coinciden con los @export de su script. Leidos por StoryNPCConfig.",
+	"tirador_config": "Solo para soldados armados: perfil especial (precision, granadas, cobertura). Antes vivia en un .tres propio; ahora vive aqui."
+  },
+  "npc_types": {
+	"cuerpo_a_cuerpo": {
+	  "display_name": "Zombie / Cuerpo a cuerpo",
+	  "scene_path": "res://scenes/Historia/npc/personajes/cuerpo_a_cuerpo.tscn",
+	  "category": "enemy",
+	  "faction_id": 2,
+	  "defaults": {
+		"max_health": 55.0,
+		"movement_speed": 1.65,
+		"attack_range": 1.5,
+		"melee_damage": 10.0,
+		"attack_cooldown": 1.1,
+		"spawn_mode": "PATROL",
+		"vision_range": 12.0,
+		"vision_fov_degrees": 120.0,
+		"wander_radius": 6.0,
+		"guard_radius": 10.0,
+		"target_memory_time": 1.5,
+		"stop_distance": 1.15
+	  }
+	},
+	"tirador": {
+	  "display_name": "Soldado armado",
+	  "scene_path": "res://scenes/Historia/npc/personajes/tirador.tscn",
+	  "category": "enemy",
+	  "faction_id": 2,
+	  "defaults": {
+		"max_health": 75.0,
+		"movement_speed": 2.4,
+    "attack_range": 1.5,
+    "melee_damage": 6.0,
+    "attack_cooldown": 1.1,
+    "spawn_mode": "PATROL",
+    "aggressive_enabled": false,
+    "vision_range": 16.0,
+		"vision_fov_degrees": 120.0,
+		"wander_radius": 6.0,
+		"guard_radius": 10.0,
+		"target_memory_time": 1.5,
+		"stop_distance": 1.15,
+		"weapon_name": "Glock",
+		"drop_weapon_on_death": true,
+		"weapon_mag_override": -1,
+		"weapon_reserve_override": -1
+	  },
+	  "tirador_config": {
+		"custom_engage_range_min": -1.0,
+		"custom_engage_range_max": -1.0,
+		"fire_accuracy": 0.82,
+		"reaction_time": 0.12,
+		"can_throw_grenades": true,
+		"grenade_weapon_name": "Granada",
+		"grenade_chance": 0.3,
+		"grenade_cooldown": 9.0,
+		"grenade_min_distance": 6.0,
+		"grenade_max_distance": 28.0,
+  "grenade_safety_radius": 5.0,
+  "can_take_cover": true,
+	"cover_health_threshold": 0.45,
+	"cover_search_radius": 14.0,
+	"cover_max_time_min": 7.0,
+	"cover_max_time_max": 10.0,
+	"cover_heal_per_second": 0.05,
+	"cover_fire_while_covering": true,
+    "cover_invalidation_damage": 18.0,
+    "melee_fallback_enabled": true
+	  }
+	}
+  }
+}

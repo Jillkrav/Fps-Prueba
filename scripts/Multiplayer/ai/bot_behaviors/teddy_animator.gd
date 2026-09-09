@@ -18,10 +18,9 @@ class_name TeddyAnimator
 # EXPORTS
 # ══════════════════════════════════════════════════════════════════
 
-## Set de animaciones que define qué FBX corresponde a cada nombre.
-## Por defecto usa el animation_set_default de los bots.
+## Set de animaciones opcional. Si es null, el animador no carga animaciones.
 ## Usamos Resource como tipo para evitar dependencias del parser con class_name
-@export var animation_set: Resource = load("res://Assets/Animaciones/Player/animation_set_default.tres")
+@export var animation_set: Resource = null
 
 ## Nombre interno de cada animación dentro del AnimationPlayer.
 const ANIM_IDLE: String = "idle"

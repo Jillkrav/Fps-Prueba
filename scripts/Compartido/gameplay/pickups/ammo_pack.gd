@@ -21,6 +21,9 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	# La propiedad del Inspector es la fuente de verdad para instancias de mapa.
+	pickup_type = Type.AMMO
+	pickup_data["cantidad"] = ammo_amount
 	super()
 
 

@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://c6pwbvjjd3nky"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://bvyj50nkiuyt5" path="res://Scripts/Multiplayer/nav/freeze_cube/freeze_cube.gd" id="1"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/nav/freeze_cube/freeze_cube.gd" id="1"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_h6x21"]
 size = Vector3(1.2, 1.2, 1.2)

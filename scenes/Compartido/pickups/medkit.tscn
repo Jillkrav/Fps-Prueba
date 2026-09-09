@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://brrao005ro4vd"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://bh6f4hvudgf3w" path="res://Scripts/Compartido/gameplay/pickups/medkit.gd" id="1_medkit"]
+[ext_resource type="Script" path="res://Scripts/Compartido/gameplay/pickups/medkit.gd" id="1_medkit"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_pickup"]
 size = Vector3(0.7, 0.7, 0.7)

@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://gyjp03n81m34"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://ce61hkgjyb03m" path="res://Scripts/Multiplayer/teams/base_anchor.gd" id="1_base_anchor"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/teams/base_anchor.gd" id="1_base_anchor"]
 
 [node name="BaseAnchor" type="Marker3D" unique_id=1872352096]
 script = ExtResource("1_base_anchor")

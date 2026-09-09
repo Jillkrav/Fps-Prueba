@@ -26,6 +26,11 @@ enum TriggerMode {
 @export var display_name: String = "WARP"
 @export var show_debug_visual: bool = false
 
+@export_category("Persistencia (campaña)")
+## ID único dentro del nivel. Si está vacío, el warp NO se recuerda al volver
+## al mapa (vuelve a su estado activo original).
+@export var state_id: String = ""
+
 @onready var debug_mesh: MeshInstance3D = $DebugMesh
 @onready var prompt_label: Label3D = $PromptLabel
 
@@ -37,6 +42,9 @@ func _ready() -> void:
 	body_exited.connect(_on_body_exited)
 	debug_mesh.visible = show_debug_visual
 	prompt_label.visible = false
+	if not state_id.is_empty():
+		LevelStateManager.register(self)
+		call_deferred("_restore_persistent_state")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -87,7 +95,9 @@ func receive_teleport(body: Node3D, source: StoryWarp) -> void:
 func set_active(enabled: bool) -> void:
 	active = enabled
 	monitoring = enabled
-	prompt_label.visible = false
+	# Defensivo: sin etiqueta en el mapa no se rompe.
+	if prompt_label != null:
+		prompt_label.visible = false
 	if enabled and trigger_mode == TriggerMode.ON_ENTER and _player_in_range != null:
 		activate(_player_in_range)
 
@@ -121,3 +131,19 @@ func _is_on_cooldown(body: Node3D) -> bool:
 func _set_cooldown(body: Node3D) -> void:
 	var expires_at: float = Time.get_ticks_msec() / 1000.0 + cooldown_seconds
 	body.set_meta(&"story_warp_cooldown_until", expires_at)
+
+
+# ── Persistencia de campaña (data-driven) ────────────────────────────────────
+
+func _restore_persistent_state() -> void:
+	var st: Dictionary = LevelStateManager.get_state_for(self, state_id)
+	apply_persistent_state(st)
+
+
+func get_persistent_state() -> Dictionary:
+	return {"active": active}
+
+
+func apply_persistent_state(state: Dictionary) -> void:
+	if state.has("active"):
+		set_active(bool(state["active"]))

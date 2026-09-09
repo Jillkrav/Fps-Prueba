@@ -1,8 +1,8 @@
-[gd_scene format=3 uid="uid://bb8vgwahqus87"]
+[gd_scene format=3 uid="uid://c1ataortsy8ip"]
 
 [ext_resource type="Script" uid="uid://c8fcvadx6dc3v" path="res://Scripts/Multiplayer/props/one_way_low_wall_prop.gd" id="1_script"]
 [ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
-[ext_resource type="PackedScene" uid="uid://d2o4f6y5masjo" path="res://scenes/Multiplayer/props/cover_point.tscn" id="3_cover"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/cover_point.tscn" id="3_cover"]
 
 [sub_resource type="StandardMaterial3D" id="Material_back"]
 albedo_color = Color(0.08, 0.32, 0.88, 1)

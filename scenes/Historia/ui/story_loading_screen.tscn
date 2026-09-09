@@ -1,0 +1,72 @@
+[gd_scene format=3]
+
+[sub_resource type="StyleBoxFlat" id="sb_bg"]
+bg_color = Color(0.1, 0.12, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="sb_fill"]
+bg_color = Color(0.3, 0.65, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="LoadingUI" type="Control" unique_id=1817073874]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="." unique_id=1459225241]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.06, 0.12, 0.98)
+
+[node name="CenterBox" type="VBoxContainer" parent="." unique_id=981309030]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -150.0
+offset_right = 340.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 26
+alignment = 1
+
+[node name="MapLabel" type="Label" parent="CenterBox" unique_id=439052012]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "CARGANDO"
+horizontal_alignment = 1
+
+[node name="DotsLabel" type="Label" parent="CenterBox" unique_id=1130307260]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
+
+[node name="Progress" type="ProgressBar" parent="CenterBox" unique_id=1126694689]
+custom_minimum_size = Vector2(580, 26)
+layout_mode = 2
+theme_override_styles/background = SubResource("sb_bg")
+theme_override_styles/fill = SubResource("sb_fill")
+show_percentage = false
+
+[node name="TipLabel" type="Label" parent="CenterBox" unique_id=1123729266]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+autowrap_mode = 2

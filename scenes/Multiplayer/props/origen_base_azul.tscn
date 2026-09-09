@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://blmfmt8ix0p8c" path="res://Scripts/Multiplayer/props/base_origin_prop.gd" id="1_prop"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/base_origin_prop.gd" id="1_prop"]
 
 [node name="Origen base azul" type="Node3D"]
 script = ExtResource("1_prop")

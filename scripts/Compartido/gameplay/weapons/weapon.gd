@@ -29,6 +29,19 @@ const ADS_SPREAD_BY_CATEGORY: Dictionary = {
 	"Arrojadizas":     0.5,
 	"Plasma":          0.5,
 }
+## Sonoridad del disparo (intensity del estímulo GUNSHOT) por familia de arma.
+## 0.0 = sin estímulo (melee / arrojadizas silenciosas). El radio efectivo del
+## disparo = radio_gunshot (JSON) * loudness. Por ejemplo, un rifle (1.0) se oye
+## a 40 m y una pistola (0.7) a ~28 m. Solo la familia, no el arma concreta.
+const GUNSHOT_LOUDNESS_BY_FAMILY: Dictionary = {
+	"Pistolas":        0.7,
+	"Subfusiles":      0.85,
+	"Rifles":          1.0,
+	"Escopetas":       1.15,
+	"Francotiradores": 1.3,
+	"Explosivas":      1.2,
+	"Plasma":          0.6,
+}
 ## Indica si el jugador está apuntando (ADS). Lo actualiza Player.
 var is_ads: bool = false
 @export var weapon_range:      float  = 50.0
@@ -187,6 +200,10 @@ func fire() -> Array:
 	show_muzzle_flash()
 	# Log visible para debug de bots (desactivado, muy verboso)
 
+	# Estímulo auditivo del disparo (GUNSHOT) en la posición del tirador.
+	# Funciona igual para jugador→NPC y NPC→NPC porque ambas vías pasan por fire().
+	_emit_gunshot_stimulus()
+
 	match categoria_municion:
 		"bala":
 			return _fire_hitscan()
@@ -220,6 +237,9 @@ func _fire_hitscan() -> Array:
 			# Incluso si no impacta, mostrar trail hasta el final del raycast
 			var end_pos: Vector3 = _get_raycast_endpoint()
 			_spawn_bullet_trail(muzzle_pos, end_pos)
+	# Caso B: si alguna bala impactó una superficie (pared/suelo) y no un cuerpo,
+	# emitir estímulo de impacto en ese punto (una bala que "silba" al lado alerta).
+	_emit_surface_impact_for_hits(hits)
 	return hits
 
 func _fire_hitscan_multi_pellet() -> Array:
@@ -230,17 +250,21 @@ func _fire_hitscan_multi_pellet() -> Array:
 		perform_raycast_with_spread()
 		if raycast and raycast.is_colliding():
 			var hit_point: Vector3 = raycast.get_collision_point()
+			# Daño POR PERDIGÓN: cada perdigón aplica el daño completo de
+			# skill.cfg (DanioAlJugador / DanioAlNPC). No se divide entre
+			# el número de perdigones.
 			hits.append({
 				"collider":         raycast.get_collider(),
 				"point":            hit_point,
 				"normal":           raycast.get_collision_normal(),
-				"damage_vs_player": damage_vs_player / float(pellet_count),
-				"damage_vs_npc":    damage_vs_npc / float(pellet_count)
+				"damage_vs_player": damage_vs_player,
+				"damage_vs_npc":    damage_vs_npc
 			})
 			_spawn_bullet_trail(muzzle_pos, hit_point)
 		else:
 			var end_pos: Vector3 = _get_raycast_endpoint()
 			_spawn_bullet_trail(muzzle_pos, end_pos)
+	_emit_surface_impact_for_hits(hits)
 	return hits
 
 ## Retorna el multiplicador de dispersión ADS según la categoría del arma.
@@ -278,6 +302,10 @@ func perform_raycast_with_spread() -> void:
 			var rx: float = randf_range(-effective_spread, effective_spread)
 			var ry: float = randf_range(-effective_spread, effective_spread)
 			raycast.target_position += Vector3(rx * weapon_range, ry * weapon_range, 0)
+	# Fuego amigo OFF global (hitscan): los aliados del shooter no bloquean el
+	# disparo. Se añaden como excepciones del rayo para que las balas/perdigones
+	# los atraviesen y alcancen a un enemigo.
+	_apply_hitscan_friendly_exceptions()
 	raycast.force_raycast_update()
 
 # ─── PROYECTILES FÍSICOS (Arrojadizas, Explosivas, Plasma) ───────────────
@@ -314,6 +342,9 @@ func _fire_projectile() -> Array:
 	projectile.shooter            = _get_shooter_node()
 	projectile.weapon_name        = weapon_name
 	projectile.categoria          = categoria_municion
+	# Fuego amigo OFF global: las balas de plasma (y análogos) atraviesan a los
+	# aliados. Los explosivos/arrojadizas NO (conservan el impacto físico).
+	projectile.passes_through_allies = (categoria_municion == "plasma")
 	projectile.speed              = velocidad_proyectil
 	projectile.set_direction(base_dir)
 	projectile.gravity_factor     = gravedad_proyectil
@@ -350,6 +381,98 @@ func _get_shooter_node() -> Node3D:
 			return parent as Node3D
 		parent = parent.get_parent()
 	return null
+
+
+# ─── Estímulos auditivos lógicos (sonido de disparo / impacto de superficie) ──
+# Se emiten en el bus global StoryNpcStimulusBus. Solo los NPCs de Historia los
+# consumen; en otras escenas el bus existe pero no tiene oyentes (sin costo).
+
+## Emite el estímulo GUNSHOT en la posición del tirador con la sonoridad de su
+## familia de arma (ver GUNSHOT_LOUDNESS_BY_FAMILY). Armas silenciosas → no emiten.
+func _emit_gunshot_stimulus() -> void:
+	var loudness: float = float(GUNSHOT_LOUDNESS_BY_FAMILY.get(categoria_arma, 0.0))
+	if loudness <= 0.0:
+		return
+	var bus: Node = get_node_or_null("/root/StoryNpcStimulusBus")
+	if bus == null or not bus.has_method("emit_stimulus"):
+		return
+	var shooter: Node3D = _get_shooter_node()
+	var origin: Vector3 = shooter.global_position if shooter else global_position
+	bus.emit_stimulus(StoryNpcStimulusBus.StimulusType.GUNSHOT, origin, shooter, loudness)
+
+
+## Emite el estímulo SURFACE_IMPACT en el punto de impacto de superficie, si hay
+## al menos un hit que no sea un cuerpo dañable (pared/suelo/props). Se emite una
+## sola vez por disparo (evita saturar el bus con perdigones).
+func _emit_surface_impact_for_hits(hits: Array) -> void:
+	for hit: Dictionary in hits:
+		var collider: Node = hit.get("collider") as Node
+		if collider != null and not _collider_is_damageable(collider):
+			var point: Vector3 = hit.get("point", Vector3.INF) as Vector3
+			if point.is_finite():
+				_emit_surface_impact(point)
+			return
+
+
+## Emite un SURFACE_IMPACT en un punto del mundo.
+func _emit_surface_impact(hit_point: Vector3) -> void:
+	var bus: Node = get_node_or_null("/root/StoryNpcStimulusBus")
+	if bus == null or not bus.has_method("emit_stimulus"):
+		return
+	var shooter: Node3D = _get_shooter_node()
+	bus.emit_stimulus(StoryNpcStimulusBus.StimulusType.SURFACE_IMPACT, hit_point, shooter)
+
+
+## true si el collider (o su Area3D padre) puede recibir daño (tiene take_damage).
+## Los impactos en cuerpos NO emiten surface_impact: el daño ya emite near_impact.
+func _collider_is_damageable(collider: Node) -> bool:
+	var node: Node = collider
+	if node is Area3D:
+		var parent: Node = node.get_parent()
+		while parent:
+			if parent.has_method("take_damage"):
+				return true
+			parent = parent.get_parent()
+	return node != null and node.has_method("take_damage")
+
+# ─── FUEGO AMIGO OFF (global): hitscan atraviesa aliados ──────────────────
+## Añade como excepciones del rayo a todos los cuerpos NO hostiles al shooter
+## (aliados y el propio shooter). Así las balas/perdigones los atraviesan y
+## solo se detienen en enemigos o en el mundo (paredes/obstáculos).
+func _apply_hitscan_friendly_exceptions() -> void:
+	if raycast == null:
+		return
+	raycast.clear_exceptions()
+	var shooter: Node3D = _get_shooter_node()
+	if shooter == null:
+		return
+	var shooter_faction: int = _get_faction_of(shooter)
+	for group: StringName in [&"player", &"npc"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			var candidate: CollisionObject3D = node as CollisionObject3D
+			if candidate == null:
+				continue
+			if candidate.get("is_dead") == true:
+				continue
+			if not _is_hostile_faction(shooter_faction, candidate):
+				raycast.add_exception(candidate)
+
+
+func _get_faction_of(node: Node) -> int:
+	if node.is_in_group(&"player"):
+		return StoryFactionSystem.PLAYER_FACTION
+	if "faction_id" in node:
+		return int(node.get("faction_id"))
+	return -1
+
+
+## ¿"other" es hostil para el shooter de la facción dada? Facción desconocida
+## (-1) se trata como hostil para conservar el comportamiento clásico.
+func _is_hostile_faction(shooter_faction: int, other: Node) -> bool:
+	var other_faction: int = _get_faction_of(other)
+	if shooter_faction < 0 or other_faction < 0:
+		return true
+	return StoryFactionSystem.are_hostile(shooter_faction, other_faction)
 
 # ─── MELEE (Cuerpo a cuerpo) — FASE 7: Area3D + Animación + Knockback ──
 
@@ -408,7 +531,11 @@ func _fire_melee() -> Array:
 			dmg = damage_vs_player
 
 		# Aplicar daño
-		target.take_damage(dmg, "Torso", shooter_node.get_instance_id() if shooter_node else -1)
+		target.take_damage(
+			dmg, "Torso",
+			shooter_node.get_instance_id() if shooter_node else -1,
+			shooter_node.global_position if shooter_node else Vector3.INF
+		)
 
 		# Aplicar knockback
 		_apply_melee_knockback(target, shooter_node)

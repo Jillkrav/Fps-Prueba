@@ -50,6 +50,9 @@ var _capsule_radius: float = 0.65
 @onready var visor_mesh: MeshInstance3D = $MeshInstance3D/VisorMesh
 @onready var third_person_weapon_socket: Marker3D = $ThirdPersonWeaponSocket
 const BOT_DEBUG_OVERLAY: PackedScene = preload("res://scenes/Multiplayer/objetos/bots/bot_debug_overlay.tscn")
+## Escena de arma tirada en el suelo (WeaponPickup), reutilizada para que la
+## arma actual quede en el piso al recoger un arma diferente.
+const DROPPED_WEAPON: PackedScene = preload("res://scenes/Compartido/pickups/dropped_weapon.tscn")
 
 ## Componente de estado de arma equipada/guardada (Fase 1).
 @onready var weapon_equip_state: WeaponEquipState = $WeaponEquipState
@@ -219,11 +222,9 @@ func _on_skin_applied(skin_data: SkinData, model_instance: Node3D) -> void:
 		push_warning("Player: skin '%s' declara tener esqueleto pero no se encontró Skeleton3D" % skin_data.id)
 		return
 	
-	# Elegir AnimationSet: el de la skin o el default global
+	# Elegir AnimationSet: el de la skin (ya no existe un default global)
 	# Usamos Resource como tipo para evitar dependencias del parser con class_name
-	var anim_set = skin_data.animation_set
-	if not anim_set:
-		anim_set = load("res://Assets/Animaciones/Player/animation_set_default.tres")
+	var anim_set: Resource = skin_data.animation_set
 	if not anim_set:
 		return
 	
@@ -237,9 +238,8 @@ func _on_skin_applied(skin_data: SkinData, model_instance: Node3D) -> void:
 	
 	var anim_lib: AnimationLibrary = AnimationLibrary.new()
 	
-	# La lista de animaciones a cargar viene COMPLETA desde el AnimationSet.
-	# animation_set_default.tres es el ÚNICO lugar que define qué animaciones
-	# existen, su loop mode, fallback y velocidad. No hay duplicación en player.gd.
+	# La lista de animaciones a cargar viene COMPLETA desde el AnimationSet
+	# (definido en la skin). No hay duplicación en player.gd.
 	var anim_names: Array[String] = anim_set_typed.get_animation_list()
 	
 	for anim_name: String in anim_names:
@@ -419,19 +419,27 @@ func _update_weapon_aim(delta: float) -> void:
 	if not active_weapon or not is_instance_valid(active_weapon):
 		return
 	
-	# 1. Dirección objetivo = hacia donde mira la cámara activa
-	var cam: Camera3D = third_person_camera if is_third_person else camera
-	if not cam:
-		return
-	var target_dir: Vector3 = -cam.global_transform.basis.z
+	# 1. Punto objetivo = donde apunta el crosshair (raycast desde la cámara)
+	var aim_point: Vector3 = _get_aim_target()
 	
-	# 2. Clampear dirección respecto al cuerpo del jugador
+	# 2. El arma apunta AL objetivo (ray convergente) en lugar de ir paralela a
+	#    la cámara. Sin esto, la bala sale desplazada del centro del crosshair
+	#    (el arma está a la derecha y más baja que la cámara) y falla objetivos
+	#    MUY cercanos (cuerpo a cuerpo): la bala pasaba por encima/por el lado.
+	var weapon_pos: Vector3 = active_weapon.global_position
+	var offset: Vector3 = aim_point - weapon_pos
+	var target_dir: Vector3 = offset.normalized()
+	if offset.length() < 0.01:
+		var cam: Camera3D = third_person_camera if is_third_person else camera
+		target_dir = (-cam.global_transform.basis.z) if cam else -global_transform.basis.z
+	
+	# 3. Clampear dirección respecto al cuerpo del jugador
 	target_dir = _clamp_weapon_direction(target_dir)
 	
-	# 3. Crear basis objetivo ( -Z apunta a target_dir )
+	# 4. Crear basis objetivo ( -Z apunta a target_dir )
 	var target_basis: Basis = Basis.looking_at(target_dir, Vector3.UP)
 	
-	# 4. Interpolar suavemente hacia el objetivo
+	# 5. Interpolar suavemente hacia el objetivo
 	var rot_speed: float = _get_weapon_rotation_speed()
 	var t: float = 1.0 - exp(-rot_speed * delta)
 	# Ortonormalizar la base actual antes de slerp para evitar
@@ -520,8 +528,8 @@ func _update_body_visibility() -> void:
 		skin_model.visible = true
 
 # ─── Teddy Animation Control ──────────────────────────────────────────
-## Usa la cadena de fallback definida en el AnimationSet (animation_set_default.tres)
-## para garantizar que siempre se reproduzca una animación válida.
+## Usa la cadena de fallback definida en el AnimationSet para garantizar
+## que siempre se reproduzca una animación válida.
 func _resolve_animation(anim_name: String) -> String:
 	if model_anim_player and model_anim_player.has_animation(anim_name):
 		return anim_name
@@ -822,7 +830,7 @@ func _process_hits(hits: Array) -> void:
 			var dmg: float = hit.get("damage_vs_npc", 0.0)
 			if target_node is Player:
 				dmg = hit.get("damage_vs_player", 0.0)
-			target_node.take_damage(dmg, "Torso", killer_id)
+			target_node.take_damage(dmg, "Torso", killer_id, global_position)
 
 
 # _aim_weapon_at() ELIMINADO (Fase 4) — reemplazado por _update_weapon_aim() en _process()
@@ -840,7 +848,7 @@ func _get_aim_target() -> Vector3:
 	var end_pos: Vector3 = cam_pos + cam_dir * alcance
 	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(cam_pos, end_pos)
-	query.collision_mask = collision_mask  # Capas 1, 3, 4 (mundo, NPCs, pickups)
+	query.collision_mask = 1 | 2 | 4  # Mundo (1), cuerpo de NPCs (2) y headshots (4) — mismo alcance que el arma
 	# Excluir Player, arma y todo nodo con colisión física
 	var exclude_rids: Array[RID] = [get_rid()]
 	if active_weapon and is_instance_valid(active_weapon):
@@ -881,7 +889,7 @@ func _get_shoot_position() -> Vector3:
 	return pos
 
 
-func take_damage(amount: float, zona: String = "Torso", killer_id: int = -1) -> void:
+func take_damage(amount: float, zona: String = "Torso", killer_id: int = -1, _from_position: Vector3 = Vector3.INF) -> void:
 	if is_dead:
 		return
 	# ── Modo Dios (debug): el jugador nunca recibe daño ni muere ──
@@ -1102,6 +1110,36 @@ func _confirm_pending_pickup() -> void:
 	
 	# Recoger el arma
 	pickup.pick_up(self)
+
+## Suelta el arma actual al suelo como un WeaponPickup recogible.
+## Se invoca al recoger un arma DIFERENTE: la que llevamos se queda en el
+## piso conservando su munición actual (nombre, cargador y reserva).
+func drop_current_weapon() -> void:
+	if not active_weapon or not is_instance_valid(active_weapon):
+		return
+	if not is_inside_tree():
+		return
+
+	var drop: Node = DROPPED_WEAPON.instantiate()
+	# Permitir que caiga y repose en el suelo (el Pickup base lo congela al reposar)
+	drop.freeze = false
+	# Colgarla del padre del jugador (el mundo) para que repose sobre el terreno
+	get_parent().add_child(drop)
+	# Posicionar delante del jugador y ligeramente por encima para que caiga al piso
+	drop.global_transform.origin = global_position \
+		+ (-global_transform.basis.z * 1.0) \
+		+ Vector3.UP * 1.2
+
+	if drop.has_method("set_weapon_data"):
+		drop.set_weapon_data({
+			"tipo_arma": active_weapon.weapon_name,
+			"balas_cargador": active_weapon.ammo_in_mag,
+			"balas_reserva": active_weapon.reserve_ammo,
+			"capacidad_cargador": active_weapon.clip_size,
+		})
+	print("Player: soltó %s en el suelo (cargador=%d reserva=%d)" % [
+		active_weapon.weapon_name, active_weapon.ammo_in_mag, active_weapon.reserve_ammo
+	])
 
 func _process(delta: float) -> void:
 	if is_dead:

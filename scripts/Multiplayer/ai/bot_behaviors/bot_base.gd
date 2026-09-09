@@ -652,7 +652,7 @@ func _compute_hit_direction(killer_id: int) -> void:
 	last_hit_direction = -global_transform.basis.z
 
 
-func take_damage(amount: float, zone: String = "Torso", killer_id: int = -1) -> void:
+func take_damage(amount: float, zone: String = "Torso", killer_id: int = -1, _from_position: Vector3 = Vector3.INF) -> void:
 	if is_dead:
 		return
 	# ── Fuego amigo desactivado: ignorar daño de aliados del mismo equipo ──

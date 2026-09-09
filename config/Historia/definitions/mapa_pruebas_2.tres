@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StoryLevelDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Data/story_level_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = "mapa_pruebas_2"
+display_name = "Mapa de Pruebas 2"
+description = "Botón externo, portal y final de campaña."
+scene_path = "res://scenes/Historia/mapas/mapa_pruebas_2.tscn"
+objective_text = "Activa el botón y atraviesa el portal."
+next_level_path = ""
+starting_weapon = "Glock"
+respawn_delay = 2.0
+show_in_campaign_menu = true
+sort_order = 20

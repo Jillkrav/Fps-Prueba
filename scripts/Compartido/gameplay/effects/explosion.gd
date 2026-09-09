@@ -60,6 +60,10 @@ func _on_body_entered(body: Node) -> void:
 		return
 	if body == shooter:
 		return
+	# Fuego amigo OFF (global): el efecto de explosión se mantiene intacto,
+	# pero no se daña a los aliados del shooter (se omite el daño, no el VFX).
+	if _is_friendly_to_shooter(body):
+		return
 	
 	_hit_bodies.append(body)
 	
@@ -72,9 +76,9 @@ func _on_body_entered(body: Node) -> void:
 		var final_damage: float = damage * falloff
 		
 		if body is Player:
-			body.take_damage(final_damage, "Torso", shooter.get_instance_id() if shooter else -1)
+			body.take_damage(final_damage, "Torso", shooter.get_instance_id() if shooter else -1, global_position)
 		else:
-			body.take_damage(final_damage, "Torso", shooter.get_instance_id() if shooter else -1)
+			body.take_damage(final_damage, "Torso", shooter.get_instance_id() if shooter else -1, global_position)
 
 func _apply_area_damage() -> void:
 	# Obtener todos los cuerpos en el área
@@ -91,3 +95,27 @@ func _on_light_faded() -> void:
 func _destroy_explosion() -> void:
 	if is_instance_valid(self):
 		queue_free()
+
+
+# ─── Fuego amigo / facciones ────────────────────────────────────────────────
+
+## ¿El cuerpo es NO hostil (aliado) respecto al shooter? Sin shooter o sin
+## facción se trata como hostil para conservar el comportamiento clásico.
+func _is_friendly_to_shooter(body: Node) -> bool:
+	if not is_instance_valid(shooter):
+		return false
+	var shooter_faction: int = _get_faction_of(shooter)
+	if shooter_faction < 0:
+		return false
+	var body_faction: int = _get_faction_of(body)
+	if body_faction < 0:
+		return false
+	return not StoryFactionSystem.are_hostile(shooter_faction, body_faction)
+
+
+func _get_faction_of(node: Node) -> int:
+	if node.is_in_group(&"player"):
+		return StoryFactionSystem.PLAYER_FACTION
+	if "faction_id" in node:
+		return int(node.get("faction_id"))
+	return -1

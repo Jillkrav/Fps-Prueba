@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://df7w6u5x7w0t8"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://cnv8nkpcbokax" path="res://Scripts/Compartido/gameplay/weapons/weapon.gd" id="1_weapon"]
+[ext_resource type="Script" path="res://Scripts/Compartido/gameplay/weapons/weapon.gd" id="1_weapon"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_weapon"]
 size = Vector3(0.05, 0.05, 0.35)

@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://dyi1qhcl11nx5"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://bt7xirnqopeyu" path="res://Scripts/Multiplayer/caminos/camino_bot.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/Multiplayer/caminos/camino_bot.gd" id="1_script"]
 
 [node name="CaminoFlancoBase" type="Path3D" unique_id=405200526]
 script = ExtResource("1_script")

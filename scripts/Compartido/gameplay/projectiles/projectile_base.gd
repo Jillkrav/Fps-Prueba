@@ -33,6 +33,13 @@ var explodes_on_impact: bool = false # Explota al impactar
 var penetration: int = 0            # 0 = no penetra, >0 = penetra N objetivos
 var _hit_bodies: Array[Node] = []   # Cuerpos ya impactados (para penetración)
 
+# ─── Fuego amigo ─────────────────────────────────────────────────────────
+## Si true, la bala ATRAVIESA a los cuerpos NO hostiles al shooter (aliados):
+## no los daña y continúa hasta un enemigo o una pared. Fuego amigo OFF global.
+## false = comportamiento clásico (se detiene en el primer body). Los
+## explosivos/granadas usan false (el efecto de explosión no debe cancelarse).
+var passes_through_allies: bool = false
+
 # ─── Internos ──────────────────────────────────────────────────────────
 var _lifespan_timer: Timer = null
 var _direction: Vector3 = Vector3.FORWARD
@@ -192,21 +199,34 @@ func _check_character_hits() -> void:
 	# Detectar capas 1 (paredes) y 2 (jugadores/bots). Si la primera colisión
 	# es una pared, la bala no debe atravesarla (el RigidBody se encarga de
 	# destruirla al impactar); solo hacemos daño si el primer objeto es un personaje.
+	var exclude: Array[RID] = [get_rid()]
 	var query := PhysicsRayQueryParameters3D.create(
 		from,
 		to,
 		(1 << 0) | (1 << 1)  # Capa 1 (mundo) y capa 2 (jugadores/bots)
 	)
-	query.exclude = [get_rid()]
+	query.exclude = exclude
 	var result := space_state.intersect_ray(query)
 	
-	if not result.is_empty():
+	# Fuego amigo OFF: si la bala atraviesa aliados (passes_through_allies),
+	# se salta cada cuerpo NO hostil y se sigue hasta un enemigo o una pared.
+	var iterations: int = 0
+	while not result.is_empty() and iterations < 16:
+		iterations += 1
 		var body: Object = result.get("collider")
 		# El collider puede ser el CollisionShape3D del personaje; subir al body
 		while body is CollisionShape3D and body.get_parent():
 			body = body.get_parent()
 		if body is Node3D and body.has_method("take_damage"):
+			if passes_through_allies and _is_friendly_to_shooter(body):
+				var body_rid: RID = _body_rid(body)
+				if body_rid.is_valid():
+					exclude.append(body_rid)
+				query.exclude = exclude
+				result = space_state.intersect_ray(query)
+				continue
 			_on_detected_body(body)
+		break
 	
 	_prev_position = global_position
 
@@ -272,13 +292,20 @@ func on_hit(body: Node) -> void:
 func _apply_damage(body: Node) -> void:
 	if not is_instance_valid(body):
 		return
+	# Fuego amigo OFF (global): nunca dañar a un aliado del shooter.
+	if _is_friendly_to_shooter(body):
+		return
 	if body.has_method("take_damage"):
 		var dmg: float = damage_vs_npc
 		if body is ProjectileBase:
 			return  # No dañar otros proyectiles
 		if body is Player:
 			dmg = damage_vs_player
-		body.take_damage(dmg, "Torso", shooter.get_instance_id() if shooter else -1)
+		body.take_damage(
+			dmg, "Torso",
+			shooter.get_instance_id() if shooter else -1,
+			shooter.global_position if shooter else global_position
+		)
 
 # ─── Comportamiento específico ──────────────────────────────────────────
 
@@ -351,3 +378,34 @@ func _destroy_projectile() -> void:
 ## Devuelve true si el proyectil sigue activo
 func is_active() -> bool:
 	return is_instance_valid(self) and not is_queued_for_deletion()
+
+
+# ─── Fuego amigo / facciones ────────────────────────────────────────────────
+
+## RID del body raíz (CollisionObject3D) para poder excluirlo de un raycast.
+func _body_rid(body: Node) -> RID:
+	if body is CollisionObject3D:
+		return (body as CollisionObject3D).get_rid()
+	return RID()
+
+
+## ¿El cuerpo es NO hostil (aliado) respecto al shooter? Sin shooter se trata
+## como hostil para conservar el comportamiento clásico.
+func _is_friendly_to_shooter(body: Node) -> bool:
+	if not is_instance_valid(shooter):
+		return false
+	var shooter_faction: int = _get_faction_of(shooter)
+	if shooter_faction < 0:
+		return false
+	var body_faction: int = _get_faction_of(body)
+	if body_faction < 0:
+		return false
+	return not StoryFactionSystem.are_hostile(shooter_faction, body_faction)
+
+
+func _get_faction_of(node: Node) -> int:
+	if node.is_in_group(&"player"):
+		return StoryFactionSystem.PLAYER_FACTION
+	if "faction_id" in node:
+		return int(node.get("faction_id"))
+	return -1
