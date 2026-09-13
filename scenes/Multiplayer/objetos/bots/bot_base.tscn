@@ -1,0 +1,67 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Multiplayer/ai/bot_behaviors/bot_base.gd" id="1_base"]
+[ext_resource type="Script" path="res://Scripts/Compartido/gameplay/weapons/weapon_equip_state.gd" id="2_weaponequip"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/objetos/bots/teddy_model.tscn" id="3_visual"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_base"]
+radius = 0.65
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_base"]
+radius = 0.65
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_base"]
+albedo_color = Color(0.8, 0.8, 0.8, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.28
+height = 0.56
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_head"]
+albedo_color = Color(0.85, 0.72, 0.55, 1)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_head"]
+radius = 0.28
+
+[node name="NpcBase" type="CharacterBody3D" unique_id=1607883878 groups=["npcs"]]
+collision_layer = 4
+collision_mask = 15
+script = ExtResource("1_base")
+visual_model = ExtResource("3_visual")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2075317658]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_base")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1118673058]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_base")
+
+[node name="Head" type="Node3D" parent="." unique_id=521510536]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.08, 0)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="Head" unique_id=1105341018]
+mesh = SubResource("SphereMesh_head")
+surface_material_override/0 = SubResource("StandardMaterial3D_head")
+
+[node name="HeadHitbox" type="Area3D" parent="Head" unique_id=734817630 groups=["headshot"]]
+collision_layer = 4
+collision_mask = 0
+
+[node name="HeadCollision" type="CollisionShape3D" parent="Head/HeadHitbox" unique_id=136747880]
+shape = SubResource("SphereShape3D_head")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=88213334]
+target_position = Vector3(0, 0, -0.01)
+path_desired_distance = 0.65
+target_desired_distance = 1.5
+path_max_distance = 3.0
+avoidance_enabled = true
+radius = 0.65
+height = 1.8
+
+[node name="WeaponEquipState" type="Node" parent="." unique_id=832288595]
+script = ExtResource("2_weaponequip")

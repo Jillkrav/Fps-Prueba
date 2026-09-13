@@ -1,0 +1,60 @@
+[gd_scene format=3 uid="uid://cjlbr4mu04bej"]
+
+[ext_resource type="Script" uid="uid://cpj1kg7jfclpj" path="res://Scripts/Historia/Npc/story_npc_spawner.gd" id="1_spawner"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_spawn"]
+transparency = 1
+albedo_color = Color(0.3, 1, 0.35, 0.35)
+emission_enabled = true
+emission = Color(0.3, 1, 0.35, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_spawn"]
+size = Vector3(0.9, 0.15, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape_trigger"]
+size = Vector3(4, 3, 4)
+
+[sub_resource type="StandardMaterial3D" id="Mat_zone"]
+transparency = 1
+albedo_color = Color(1, 0.85, 0.3, 0.16)
+emission_enabled = true
+emission = Color(1, 0.85, 0.3, 0.35)
+
+[sub_resource type="BoxMesh" id="BoxMesh_zone"]
+size = Vector3(4, 3, 4)
+
+[node name="StoryNPCSpawner" type="Node3D" unique_id=1307028194]
+script = ExtResource("1_spawner")
+spawn_height_offset = 1.0
+spawn_behavior = 0
+vision_range = 25.0
+vision_fov_degrees = 150.0
+wander_radius = 15.0
+
+[node name="SpawnPoint" type="Marker3D" parent="." unique_id=2041845114]
+
+[node name="DebugMesh" type="MeshInstance3D" parent="." unique_id=148755741]
+material_override = SubResource("Mat_spawn")
+mesh = SubResource("BoxMesh_spawn")
+
+[node name="TriggerArea" type="Area3D" parent="." unique_id=307814733]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TriggerArea" unique_id=1724986409]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("BoxShape_trigger")
+
+[node name="DebugZoneMesh" type="MeshInstance3D" parent="TriggerArea" unique_id=1986029638]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+material_override = SubResource("Mat_zone")
+mesh = SubResource("BoxMesh_zone")
+
+[node name="SpawnTimer" type="Timer" parent="." unique_id=1495203449]
+
+[node name="PromptLabel" type="Label3D" parent="." unique_id=1744868782]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+pixel_size = 0.006
+billboard = 1
+outline_size = 5

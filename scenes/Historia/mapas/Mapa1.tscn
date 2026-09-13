@@ -1,0 +1,1405 @@
+[gd_scene format=3 uid="uid://cnbuae4a0vad6"]
+
+[ext_resource type="PackedScene" uid="uid://c1ataortsy8ip" path="res://scenes/Compartido/props/Coverturas 1 sentido/one_way_low_wall.tscn" id="3_cl07r"]
+[ext_resource type="PackedScene" uid="uid://c7p45mb263n2w" path="res://scenes/Compartido/player.tscn" id="3_dv5df"]
+[ext_resource type="PackedScene" path="res://scenes/Compartido/hud.tscn" id="4_nwt7f"]
+[ext_resource type="PackedScene" uid="uid://bmimdxb62c3eq" path="res://scenes/Historia/npc/personajes/tirador.tscn" id="4_pf0ub"]
+[ext_resource type="PackedScene" path="res://scenes/Historia/interactables/ascensor.tscn" id="5_0fl2p"]
+[ext_resource type="Script" uid="uid://cuvrhp1uqccyg" path="res://Scripts/Historia/Core/story_level_controller.gd" id="5_yak6r"]
+[ext_resource type="PackedScene" uid="uid://cjlbr4mu04bej" path="res://scenes/Historia/npc/spawners/story_npc_spawner.tscn" id="8_c81hn"]
+[ext_resource type="PackedScene" uid="uid://d38w0vaffei1p" path="res://scenes/Historia/interactables/story_invisible_wall.tscn" id="13_m5560"]
+
+[sub_resource type="NavigationMesh" id="NavMesh"]
+agent_height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="WallMat"]
+albedo_color = Color(0.2, 0.27, 0.32, 1)
+metallic = 0.2
+roughness = 0.65
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pf0ub"]
+transparency = 1
+albedo_color = Color(0.2, 0.27, 0.32, 1)
+metallic = 0.2
+roughness = 0.65
+
+[sub_resource type="StandardMaterial3D" id="FloorMat"]
+albedo_color = Color(0.13, 0.18, 0.23, 1)
+metallic = 0.25
+roughness = 0.8
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+sky_top_color = Color(0.03, 0.08, 0.16, 1)
+sky_horizon_color = Color(0.14, 0.25, 0.35, 1)
+ground_bottom_color = Color(0.02, 0.02, 0.03, 1)
+ground_horizon_color = Color(0.12, 0.14, 0.17, 1)
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMat")
+
+[sub_resource type="Environment" id="Environment"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.45, 0.55, 0.7, 1)
+ambient_light_energy = 0.65
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="StoryTestMap01" type="Node3D" unique_id=1442377504]
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=943388208]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -271.3187, 148.86147, 0)
+navigation_mesh = SubResource("NavMesh")
+
+[node name="Geometria1" type="Node3D" parent="NavigationRegion3D" unique_id=1934798132]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 135.87375, -115.600174, -112.97585)
+
+[node name="Acciones" type="Node3D" parent="NavigationRegion3D/Geometria1" unique_id=683644964]
+
+[node name="Node3D" type="Node3D" parent="NavigationRegion3D/Geometria1/Acciones" unique_id=1561064261]
+
+[node name="Spawner" type="Node3D" parent="NavigationRegion3D/Geometria1/Acciones" unique_id=1947502203]
+
+[node name="Base" type="Node3D" parent="NavigationRegion3D/Geometria1/Acciones/Spawner" unique_id=364405235]
+
+[node name="Tiradores entrada enemigos" parent="NavigationRegion3D/Geometria1/Acciones/Spawner/Base" unique_id=140261133 instance=ExtResource("8_c81hn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.46604, -0.32624197, 35.47097)
+npc_type = 1
+spawn_count = 15
+max_alive = 3
+skin_source = 1
+skin_color = 2
+aggressive_enabled = true
+vision_range = 60.0
+vision_fov_degrees = 180.0
+wander_radius = 20.0
+weapon_names = Array[String](["MP5", "MP7", "M3"])
+weapon_assignment_mode = 1
+trigger_mode = 3
+
+[node name="Tiradores entrada enemigos2" parent="NavigationRegion3D/Geometria1/Acciones/Spawner/Base" unique_id=1307028194 instance=ExtResource("8_c81hn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.46604, -0.32624197, 45.50136)
+npc_type = 1
+spawn_count = 15
+max_alive = 3
+skin_source = 1
+skin_color = 2
+aggressive_enabled = true
+vision_range = 60.0
+vision_fov_degrees = 180.0
+wander_radius = 20.0
+weapon_names = Array[String](["MP5", "MP7", "M3"])
+weapon_assignment_mode = 1
+trigger_mode = 3
+
+[node name="Patio" type="Node3D" parent="NavigationRegion3D/Geometria1/Acciones/Spawner" unique_id=690327676]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.709564, 0, 0)
+
+[node name="Tiradores aliados inicio" parent="NavigationRegion3D/Geometria1/Acciones/Spawner/Patio" unique_id=1714231021 instance=ExtResource("8_c81hn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51.56864, -0.32624197, 40.650227)
+npc_type = 1
+spawn_count = 15
+max_alive = 6
+faction_id = 1
+skin_source = 1
+skin_color = 5
+aggressive_enabled = true
+vision_range = 60.0
+vision_fov_degrees = 180.0
+wander_radius = 20.0
+weapon_names = Array[String](["MP5", "MP7", "M3", "M4"])
+
+[node name="Tiradores aliados inicio2" parent="NavigationRegion3D/Geometria1/Acciones/Spawner/Patio" unique_id=32763625 instance=ExtResource("8_c81hn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51.56864, -0.32624197, 62.07677)
+npc_type = 1
+spawn_count = 15
+max_alive = 8
+faction_id = 1
+skin_source = 1
+skin_color = 5
+aggressive_enabled = true
+vision_range = 60.0
+vision_fov_degrees = 180.0
+wander_radius = 20.0
+guard_radius = 15.5
+weapon_names = Array[String](["MP5", "MP7", "M3", "M4"])
+
+[node name="Tiradores aliados inicio3" parent="NavigationRegion3D/Geometria1/Acciones/Spawner/Patio" unique_id=893527301 instance=ExtResource("8_c81hn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51.56864, -0.32624197, 85.19403)
+npc_type = 1
+spawn_count = 15
+max_alive = 6
+faction_id = 1
+skin_source = 1
+skin_color = 5
+aggressive_enabled = true
+vision_range = 60.0
+vision_fov_degrees = 180.0
+wander_radius = 20.0
+weapon_names = Array[String](["MP5", "MP7", "M3", "M4"])
+
+[node name="Tiradores entrada enemigos2" parent="NavigationRegion3D/Geometria1/Acciones/Spawner/Patio" unique_id=1345831572 instance=ExtResource("8_c81hn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2884808, -0.32624197, 24.647503)
+npc_type = 1
+spawn_count = 15
+max_alive = 3
+skin_source = 1
+skin_color = 2
+aggressive_enabled = true
+vision_range = 60.0
+vision_fov_degrees = 180.0
+wander_radius = 20.0
+weapon_names = Array[String](["MP5", "MP7", "M3"])
+weapon_assignment_mode = 1
+
+[node name="paredes invisibles" type="Node3D" parent="NavigationRegion3D/Geometria1/Acciones" unique_id=2116173533]
+
+[node name="StoryInvisibleWall" parent="NavigationRegion3D/Geometria1/Acciones/paredes invisibles" unique_id=1222057284 instance=ExtResource("13_m5560")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 30.566816, -29.456575, 0, 43.957153)
+one_shot = true
+action_on_exit = &""
+target_nodes = Array[NodePath]([NodePath("../../Spawner/Base/Tiradores entrada enemigos2"), NodePath("../../Spawner/Base/Tiradores entrada enemigos"), NodePath("")])
+
+[node name="StoryInvisibleWall3" parent="NavigationRegion3D/Geometria1/Acciones/paredes invisibles" unique_id=612130722 instance=ExtResource("13_m5560")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7222939, 0, 40.54651)
+active = false
+one_shot = true
+action_on_exit = &""
+target_nodes = Array[NodePath]([NodePath(""), NodePath("")])
+
+[node name="StoryInvisibleWall2" parent="NavigationRegion3D/Geometria1/Acciones/paredes invisibles" unique_id=2133909814 instance=ExtResource("13_m5560")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 30.566816, -13.414001, 0, 43.957153)
+one_shot = true
+action_on_exit = &""
+
+[node name="Calle" type="Node3D" parent="NavigationRegion3D/Geometria1" unique_id=33306000]
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Calle" unique_id=1451443280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 62.366997, 9.818451, 128.83258)
+use_collision = true
+size = Vector3(206.02554, 19.636902, 14.51265)
+material = SubResource("WallMat")
+
+[node name="WallLeft6" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Calle" unique_id=2126235359]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -39.888695, 9.818451, 41.6064)
+use_collision = true
+size = Vector3(1.5141659, 19.636902, 162.965)
+material = SubResource("StandardMaterial3D_pf0ub")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Calle" unique_id=1053356374]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63.72953, 8.538345, -39.122192)
+use_collision = true
+size = Vector3(217.32922, 21.917648, 11.964734)
+material = SubResource("WallMat")
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Calle" unique_id=1021357757]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.88967, -0.5, 43.954636)
+use_collision = true
+size = Vector3(12.5, 1, 154.899)
+material = SubResource("FloorMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Calle" unique_id=1427852282]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45.64367, -0.5, 43.954636)
+use_collision = true
+size = Vector3(12.5, 1, 154.899)
+material = SubResource("FloorMat")
+
+[node name="Base" type="Node3D" parent="NavigationRegion3D/Geometria1" unique_id=1132316617]
+
+[node name="Piso 1" type="Node3D" parent="NavigationRegion3D/Geometria1/Base" unique_id=1300613341]
+
+[node name="Patio" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1" unique_id=231837499]
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio" unique_id=266087090]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 68.83271, -0.5, 43.31513)
+use_collision = true
+size = Vector3(192.93651, 1, 178.75708)
+material = SubResource("FloorMat")
+
+[node name="WallLeft3" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio" unique_id=2031465914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76.50174, 5.2240906, -27.612207)
+use_collision = true
+size = Vector3(4.2120376, 10.448181, 5.2552643)
+material = SubResource("WallMat")
+
+[node name="WallLeft4" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio" unique_id=2003411091]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 118.29584, 5.2240906, -28.137503)
+use_collision = true
+size = Vector3(4.2120376, 10.448181, 5.2552643)
+material = SubResource("WallMat")
+
+[node name="WallLeft5" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio" unique_id=826423392]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 118.16537, 5.2240906, -16.78632)
+use_collision = true
+size = Vector3(4.2120376, 10.448181, 5.2552643)
+material = SubResource("WallMat")
+
+[node name="WallLeft6" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio" unique_id=1407180664]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 90.319695, 5.2240906, -14.12253)
+use_collision = true
+size = Vector3(4.2120376, 10.448181, 5.2552643)
+material = SubResource("WallMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio" unique_id=1631841735]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78.327286, 5.2240906, 10.392992)
+use_collision = true
+size = Vector3(8.027481, 10.448181, 16.9665)
+material = SubResource("WallMat")
+
+[node name="Coberturas" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio" unique_id=975111673]
+
+[node name="OneWayLowWall" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=2116448634 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -17.326544, 0, 27.261457)
+
+[node name="OneWayLowWall2" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=595448996 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -28.86985, 0, 12.718401)
+
+[node name="OneWayLowWall3" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=522962311 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -28.86985, 0, 37.848846)
+
+[node name="OneWayLowWall4" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=1413675538 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -22.351006, 0, 78.76287)
+
+[node name="OneWayLowWall5" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=507717776 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -5.4297395, 0, 93.960106)
+
+[node name="OneWayLowWall6" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=1165665422 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -5.4297395, 0, 72.978134)
+
+[node name="OneWayLowWall7" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=810210921 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.052351475, 0, 53.33737)
+
+[node name="OneWayLowWall8" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=1134765369 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.052351475, 0, 14.977158)
+
+[node name="OneWayLowWall9" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=1467746710 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -24.819563, 0, -17.097078)
+
+[node name="OneWayLowWall10" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Coberturas" unique_id=1079612169 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -12.654043, 0, -25.1464)
+
+[node name="Npcs" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio" unique_id=763150398]
+
+[node name="Aliados" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs" unique_id=1660530459]
+
+[node name="Enemigos" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs" unique_id=1601028412]
+
+[node name="Tirador" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=12147801 instance=ExtResource("4_pf0ub")]
+aggressive_enabled = true
+
+[node name="Tirador2" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=259746372 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.839589, 0, 13.235315)
+
+[node name="Tirador3" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=1913857808 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.120852, 0, 13.235315)
+
+[node name="Tirador4" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=591467401 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.120852, 0, 31.935804)
+
+[node name="Tirador5" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=1312746894 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.120852, 0, -0.45710564)
+aggressive_enabled = true
+
+[node name="Tirador6" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=1336038280 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.120852, 0, -17.67495)
+aggressive_enabled = true
+
+[node name="Tirador7" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=1529300578 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.120852, 0, 42.22754)
+
+[node name="Tirador8" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=326807585 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.1943645, 0, 54.08259)
+
+[node name="Tirador9" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=307970111 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.033954, 0, 67.3179)
+
+[node name="Tirador10" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=992344734 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.926488, 0, 67.3179)
+
+[node name="Tirador11" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=848576756 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.926488, 0, 86.018394)
+
+[node name="Tirador12" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=1887112403 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.926488, 0, 53.62548)
+
+[node name="Tirador13" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=2073116291 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.926488, 0, 36.40764)
+
+[node name="Tirador14" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Patio/Npcs/Enemigos" unique_id=2030145260 instance=ExtResource("4_pf0ub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.926488, 0, 96.31013)
+
+[node name="Cuarto1" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1" unique_id=1717127792]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 23.327656)
+
+[node name="WallLeft2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto1" unique_id=1536238397]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.182485, 9.979004, 24.697666)
+use_collision = true
+size = Vector3(26.052746, 19.958008, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto1" unique_id=1274671692]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.734592, -0.5, 17.325382)
+use_collision = true
+size = Vector3(25, 1, 15.351318)
+material = SubResource("FloorMat")
+
+[node name="WallLeft3" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto1" unique_id=1315743654]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.182485, 9.778259, 9.259052)
+use_collision = true
+size = Vector3(26.052746, 19.556519, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="WallLeft4" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto1" unique_id=1038555600]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3741322, 9.814697, 11.590435)
+use_collision = true
+size = Vector3(2.4360409, 19.629395, 5.4740143)
+material = SubResource("WallMat")
+
+[node name="WallLeft5" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto1" unique_id=647522176]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3741322, 10.030273, 22.642818)
+use_collision = true
+size = Vector3(2.4360409, 20.060547, 5.1239166)
+material = SubResource("WallMat")
+
+[node name="WallLeft6" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto1" unique_id=349732260]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3741322, 11.487427, 15.648445)
+use_collision = true
+size = Vector3(2.4360409, 16.283936, 13.5900345)
+material = SubResource("WallMat")
+
+[node name="Cuarto2" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1" unique_id=89843132]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.031242, 0, 23.327656)
+
+[node name="WallLeft2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=1726046528]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.91319275, 9.953674, 32.76809)
+use_collision = true
+size = Vector3(1.5141659, 19.907349, 17.155067)
+material = SubResource("WallMat")
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=1985676209]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.224556, -0.5, 16.468708)
+use_collision = true
+size = Vector3(91.97992, 1, 49.071136)
+material = SubResource("FloorMat")
+
+[node name="WallLeft3" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=662835905]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.91319275, 9.818451, 0.853693)
+use_collision = true
+size = Vector3(1.5141659, 19.636902, 17.980751)
+material = SubResource("WallMat")
+
+[node name="WallLeft4" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=1651484442]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 91.41379, 9.945892, 38.434433)
+use_collision = true
+size = Vector3(1.5141659, 19.891785, 5.127165)
+material = SubResource("WallMat")
+
+[node name="WallLeft5" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=2081093110]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 71.458405, 4.7563477, 24.853588)
+use_collision = true
+size = Vector3(41.110474, 9.512695, 1.3260689)
+material = SubResource("WallMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=822240447]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 56.95024, 5.0180664, 30.753513)
+use_collision = true
+size = Vector3(12.094147, 10.036133, 1.3260689)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=171693455]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 91.41379, 9.712639, 8.753468)
+use_collision = true
+size = Vector3(1.5141659, 19.425278, 33.67198)
+material = SubResource("WallMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=1483831421]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.092957, 9.907089, 40.25999)
+use_collision = true
+size = Vector3(91.84137, 19.814178, 1.3260689)
+material = SubResource("WallMat")
+
+[node name="WallLeft10" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=1548818750]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 77.47322, 9.752945, -7.0889893)
+use_collision = true
+size = Vector3(29.080841, 19.50589, 1.7675266)
+material = SubResource("WallMat")
+
+[node name="WallLeft11" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=1565346851]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 56.95024, 4.7351074, 9.179977)
+use_collision = true
+size = Vector3(32.331154, 9.470215, 1.3260689)
+material = SubResource("WallMat")
+
+[node name="WallLeft12" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=1295128074]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 84.74353, 4.8623657, 2.7635117)
+use_collision = true
+size = Vector3(14.457508, 9.724731, 1.3260689)
+material = SubResource("WallMat")
+
+[node name="WallLeft13" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=842052875]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64.90422, 4.772888, 2.7635117)
+use_collision = true
+size = Vector3(17.378101, 9.545776, 1.3260689)
+material = SubResource("WallMat")
+
+[node name="WallLeft14" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=1873823561]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 62.46025, 4.7886047, 35.575367)
+use_collision = true
+size = Vector3(10.771473, 9.577209, 1.3260689)
+material = SubResource("WallMat")
+
+[node name="WallLeft15" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=600852764]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.87828, 9.752945, -7.0889893)
+use_collision = true
+size = Vector3(49.412018, 19.50589, 1.7675266)
+material = SubResource("WallMat")
+
+[node name="Coberturas" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2" unique_id=1438879954]
+
+[node name="OneWayLowWall" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2/Coberturas" unique_id=1852531395 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 20.73528, 0, 0)
+
+[node name="OneWayLowWall2" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2/Coberturas" unique_id=625878655 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 20.73528, 0, 23.202446)
+
+[node name="OneWayLowWall3" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2/Coberturas" unique_id=1306346167 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 38.938343, 0, 8.782822)
+
+[node name="OneWayLowWall4" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2/Coberturas" unique_id=895406893 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 8.994419, 0, 16.804562)
+
+[node name="OneWayLowWall5" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto2/Coberturas" unique_id=132135049 instance=ExtResource("3_cl07r")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.1279144, 0, 2.4536572)
+
+[node name="Cuarto3" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1" unique_id=134786075]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 115.47977, 0, 34.933064)
+
+[node name="WallLeft5" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto3" unique_id=148181005]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 25.981674, 9.958588, -25.637825)
+use_collision = true
+size = Vector3(70.82776, 19.917175, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="WallLeft4" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto3" unique_id=1633621691]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 41.420288, 11.48288, -25.17181)
+use_collision = true
+size = Vector3(26.818161, 22.96576, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto3" unique_id=410545919]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 34.048004, -0.5, -7.456238)
+use_collision = true
+size = Vector3(64.64111, 1, 15.351318)
+material = SubResource("FloorMat")
+
+[node name="WallLeft2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto3" unique_id=1768739541]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.068115, 9.868652, 24.697666)
+use_collision = true
+size = Vector3(35.824005, 19.737305, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto3" unique_id=448007664]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.698456, -0.5, 17.27164)
+use_collision = true
+size = Vector3(26.927734, 1, 15.243835)
+material = SubResource("FloorMat")
+
+[node name="WallLeft3" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto3" unique_id=695082776]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.18248, 9.90136, 9.259052)
+use_collision = true
+size = Vector3(26.052746, 19.80272, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="WallLeft6" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto3" unique_id=123840707]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 35.68843, 10.167236, 58.80472)
+use_collision = true
+size = Vector3(69.80823, 20.334473, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="WallLeft12" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto3" unique_id=215160255]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.793335, 9.931122, -51.228672)
+use_collision = true
+size = Vector3(7.817621, 19.862244, 27.615465)
+material = SubResource("WallMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto3" unique_id=1985261432]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 41.420288, 11.48288, 45.783504)
+use_collision = true
+size = Vector3(91.83835, 22.96576, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="Cuarto4" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1" unique_id=56496949]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 132.2024, 0, 44.865227)
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 1/Cuarto4" unique_id=1469078641]
+transform = Transform3D(-4.371139e-08, -0.42261827, 0.90630776, 0, 0.90630776, 0.42261827, -1, 1.8473232e-08, -3.961597e-08, 59.97982, 2.401167, 13.5625305)
+use_collision = true
+size = Vector3(7.604309, 6.2700195, 24.852242)
+material = SubResource("FloorMat")
+
+[node name="Piso 2" type="Node3D" parent="NavigationRegion3D/Geometria1/Base" unique_id=1096201967]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 90.118286, 10, 0)
+
+[node name="Floor4" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2" unique_id=1140756941]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 5.5610733, 0, 39.393936)
+use_collision = true
+size = Vector3(47.738678, 1, 43.61919)
+material = SubResource("FloorMat")
+
+[node name="Cuarto1" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2" unique_id=52961267]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.023712, 0, -39.493385)
+
+[node name="WallLeft2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto1" unique_id=345266545]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.18248, 3.4730835, 24.697666)
+use_collision = true
+size = Vector3(26.052746, 12.946167, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="WallLeft3" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto1" unique_id=1882395552]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.172226, 3.442627, 9.259052)
+use_collision = true
+size = Vector3(42.032234, 12.885254, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="WallLeft4" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto1" unique_id=851956044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3741302, 3.4555054, 11.590435)
+use_collision = true
+size = Vector3(2.4360409, 12.911011, 5.4740143)
+material = SubResource("WallMat")
+
+[node name="WallLeft5" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto1" unique_id=1937645426]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3741302, 3.4333496, 22.642818)
+use_collision = true
+size = Vector3(2.4360409, 12.866699, 5.1239166)
+material = SubResource("WallMat")
+
+[node name="WallLeft6" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto1" unique_id=1124019419]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.827225, 3.4540405, 19.827593)
+use_collision = true
+size = Vector3(1.7351103, 12.908081, 10.754368)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto1" unique_id=1625752210]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 13.3316345, 0, 16.544062)
+use_collision = true
+size = Vector3(15.812973, 1, 26.5932)
+material = SubResource("FloorMat")
+
+[node name="Floor3" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto1" unique_id=1859021162]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 33.862045, 0, 11.771492)
+use_collision = true
+size = Vector3(5.3309326, 1, 16.34911)
+material = SubResource("FloorMat")
+
+[node name="Cuarto3" type="Node3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2" unique_id=1007228593]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 25.826874, 0, -5.4765935)
+
+[node name="WallLeft5" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto3" unique_id=1739761745]
+transform = Transform3D(-4.371138e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 27.130089, 4.986328, -20.985798)
+use_collision = true
+size = Vector3(61.523895, 10, 3.310833)
+material = SubResource("WallMat")
+
+[node name="WallLeft4" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto3" unique_id=1276670482]
+transform = Transform3D(-4.371138e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 41.420288, 4.942444, -6.957419)
+use_collision = true
+size = Vector3(63.24695, 9.884888, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="WallLeft2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto3" unique_id=1743825280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.918755, 4.9379883, 24.697666)
+use_collision = true
+size = Vector3(41.525284, 9.875977, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="WallLeft3" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto3" unique_id=1047980151]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.1824875, 4.98584, 9.259053)
+use_collision = true
+size = Vector3(26.052746, 9.97168, 1.0142212)
+material = SubResource("WallMat")
+
+[node name="WallLeft12" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto3" unique_id=523258042]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.63978, 5.0083313, -53.812447)
+use_collision = true
+size = Vector3(1.3717012, 10.016663, 10.470427)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto3" unique_id=1982323877]
+transform = Transform3D(-4.371138e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 20.716476, 0, 16.54406)
+use_collision = true
+size = Vector3(15.812973, 1, 41.362885)
+material = SubResource("FloorMat")
+
+[node name="Floor3" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto3" unique_id=1377143538]
+transform = Transform3D(-4.371138e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 33.42079, 0, 0.76932764)
+use_collision = true
+size = Vector3(47.36242, 1, 15.9542465)
+material = SubResource("FloorMat")
+
+[node name="WallLeft13" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Cuarto3" unique_id=1671636779]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33.885124, 5.0083313, -63.399963)
+use_collision = true
+size = Vector3(16.881012, 10.016663, 11.786343)
+material = SubResource("WallMat")
+
+[node name="Floor5" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2" unique_id=129792074]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -23.887505, 0, 37.978104)
+use_collision = true
+size = Vector3(22.369963, 1, 15.784375)
+material = SubResource("FloorMat")
+
+[node name="OneWayLowWall4" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=1727851254 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-1, 0, -8.742277e-08, 0, 1, 0, 8.742277e-08, 0, -1, 1.3693085, 0, -7.1651573)
+
+[node name="OneWayLowWall5" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=839578348 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-1, 0, -8.742277e-08, 0, 1, 0, 8.742277e-08, 0, -1, -3.2805252, 0, -7.1651573)
+
+[node name="OneWayLowWall6" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=805032911 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-1, 0, -8.742277e-08, 0, 1, 0, 8.742277e-08, 0, -1, -7.954605, 0, -7.165161)
+
+[node name="OneWayLowWall2" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=1486174076 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -10.5765915, 0, -5.0742455)
+
+[node name="OneWayLowWall3" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=1529906954 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -10.5765915, 0, -0.08924866)
+
+[node name="OneWayLowWall7" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=2087983282 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -10.5765915, 0, 4.9060745)
+
+[node name="OneWayLowWall8" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=1211832310 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-1, 0, -8.742277e-08, 0, 1, 0, 8.742277e-08, 0, -1, 6.0700855, 0, -7.1651573)
+
+[node name="OneWayLowWall9" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=2029470496 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-1, 0, -8.742277e-08, 0, 1, 0, 8.742277e-08, 0, -1, 8.169048, 0, -7.1651573)
+
+[node name="OneWayLowWall10" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=1291383681 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 10.744829, 0, -5.01305)
+
+[node name="OneWayLowWall11" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=1236661550 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 10.744829, 0, -0.13426971)
+
+[node name="OneWayLowWall12" parent="NavigationRegion3D/Geometria1/Base/Piso 2/Floor5" unique_id=969215484 instance=ExtResource("3_cl07r")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 10.744829, 0, 4.648819)
+
+[node name="Floor6" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Piso 2" unique_id=100089245]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 11.216667, 0, 60.998913)
+use_collision = true
+size = Vector3(3.7771568, 1, 28.850245)
+material = SubResource("FloorMat")
+
+[node name="Techo" type="Node3D" parent="NavigationRegion3D/Geometria1/Base" unique_id=1922475472]
+
+[node name="Techo" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Techo" unique_id=1155344693]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.18248, 21.298792, 40.955654)
+use_collision = true
+size = Vector3(26.052746, 3.2841492, 17.114883)
+material = SubResource("WallMat")
+
+[node name="Techo2" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Techo" unique_id=1429037945]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 71.41822, 21.298792, 39.915695)
+use_collision = true
+size = Vector3(92.117004, 3.2841492, 49.655106)
+material = SubResource("WallMat")
+
+[node name="Techo3" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Techo" unique_id=1147631693]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 136.92271, 21.298792, 51.852303)
+use_collision = true
+size = Vector3(39.130775, 3.2841492, 17.78055)
+material = SubResource("WallMat")
+
+[node name="Techo4" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Techo" unique_id=1744490473]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 154.06311, 21.298792, 68.67316)
+use_collision = true
+size = Vector3(6.4955645, 3.2841492, 51.42225)
+material = SubResource("WallMat")
+
+[node name="Techo5" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Techo" unique_id=1662937903]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 149.96901, 21.298792, 6.5368576)
+use_collision = true
+size = Vector3(18.325235, 3.2841492, 75.98282)
+material = SubResource("WallMat")
+
+[node name="Techo6" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Techo" unique_id=1470659776]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 113.82772, 21.298792, -22.434381)
+use_collision = true
+size = Vector3(85.320755, 3.2841492, 17.78055)
+material = SubResource("WallMat")
+
+[node name="Techo7" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Techo" unique_id=1663320664]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 82.65622, 21.298792, -5.8950825)
+use_collision = true
+size = Vector3(22.97776, 3.2841492, 50.859146)
+material = SubResource("WallMat")
+
+[node name="Techo8" type="CSGBox3D" parent="NavigationRegion3D/Geometria1/Base/Techo" unique_id=2063286258]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 157.66501, 15.443312, 29.472467)
+use_collision = true
+size = Vector3(2.9332476, 14.99511, 16.77483)
+material = SubResource("WallMat")
+
+[node name="Geometria2" type="Node3D" parent="NavigationRegion3D" unique_id=1800721210]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 194.39136, -148.86147, 12.694237)
+
+[node name="Cuarto" type="Node3D" parent="NavigationRegion3D/Geometria2" unique_id=744270603]
+
+[node name="Floor3" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto" unique_id=980096084]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75.282745, 21.416737, 102.48099)
+use_collision = true
+size = Vector3(70.11517, 3.0117188, 20.413513)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto" unique_id=60598479]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, -40.352135, 6.7675934, 101.65324)
+use_collision = true
+size = Vector3(37.34371, 13.535183, 0.6627617)
+material = SubResource("WallMat")
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto" unique_id=1668463915]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35.19464, -0.5, 102.89856)
+use_collision = true
+size = Vector3(150.79614, 1, 21.248657)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto" unique_id=1624878118]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 79.23714, 11.48288, 90.441124)
+use_collision = true
+size = Vector3(3.640854, 22.96576, 64.232346)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto" unique_id=652551080]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 78.825745, 11.48288, 111.69698)
+use_collision = true
+size = Vector3(3.640854, 22.96576, 63.87899)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto" unique_id=744640409]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.350647, 16.405626, 102.48099)
+use_collision = true
+size = Vector3(105.108154, 6.679199, 20.413513)
+material = SubResource("FloorMat")
+
+[node name="Carcel" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto" unique_id=752840687]
+transform = Transform3D(-2.3379219e-09, 0, 0.012626034, 0, 0.27357724, 0, -0.053485416, 0, -5.5190164e-10, -32.305153, 0, 90.22531)
+
+[node name="Celdas" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel" unique_id=1413451933]
+transform = Transform3D(1, 0, -8.881784e-16, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Celda" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas" unique_id=1437409282]
+transform = Transform3D(1, 0, 8.881784e-16, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda" unique_id=84115656]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda" unique_id=334318048]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda" unique_id=214358577]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda" unique_id=1348534758]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda" unique_id=584871353]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda2" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas" unique_id=1121815331]
+transform = Transform3D(1, 0, 1.7763568e-15, 0, 1, 0, 0, 0, 1, 0, 0, 994.27527)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda2" unique_id=1259222810]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda2" unique_id=599734673]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda2" unique_id=1002064026]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda2" unique_id=261280792]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda2" unique_id=1832827576]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda3" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas" unique_id=2028137434]
+transform = Transform3D(1, 0, 1.7763568e-15, 0, 1, 0, 0, 0, 1, 0, 0, 1968.58)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda3" unique_id=1624373211]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda3" unique_id=445798620]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda3" unique_id=970031420]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda3" unique_id=36140826]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda3" unique_id=828553672]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda4" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas" unique_id=1240854934]
+transform = Transform3D(1, 0, 1.7763568e-15, 0, 1, 0, 0, 0, 1, 0, 0, 2963.496)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda4" unique_id=1284444379]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda4" unique_id=1145041]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda4" unique_id=440198071]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda4" unique_id=1833982611]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda4" unique_id=1366726072]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda5" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas" unique_id=1400212413]
+transform = Transform3D(1, 0, 2.6645353e-15, 0, 1, 0, 0, 0, 1, 0, 0, 3959.498)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda5" unique_id=1507457291]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda5" unique_id=1016661101]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda5" unique_id=573713450]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda5" unique_id=1293597477]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda5" unique_id=1521381336]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda6" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas" unique_id=364481120]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 0, 0, 4951.1255)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda6" unique_id=1992506289]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda6" unique_id=1364256114]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda6" unique_id=591638766]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda6" unique_id=990119923]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda6" unique_id=1441582882]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda7" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas" unique_id=1978967694]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 0, 0, 5928.045)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda7" unique_id=52469771]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda7" unique_id=580804218]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda7" unique_id=1317848515]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda7" unique_id=1144896500]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas/Celda7" unique_id=2023084360]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celdas2" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel" unique_id=1649869402]
+transform = Transform3D(-0.99999994, 0, -8.742279e-08, 0, 1, 0, 8.742278e-08, 0, -0.9999998, -463.13696, 0, 5682.413)
+
+[node name="Celda" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2" unique_id=554198089]
+transform = Transform3D(1, 0, 8.881784e-16, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda" unique_id=1172503666]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda" unique_id=1801442827]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda" unique_id=2113920454]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda" unique_id=1229565092]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda" unique_id=117820443]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda2" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2" unique_id=1890117917]
+transform = Transform3D(1, 0, 1.7763568e-15, 0, 1, 0, 0, 0, 1, 0, 0, 994.27527)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda2" unique_id=718912452]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda2" unique_id=358532305]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda2" unique_id=1542711791]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda2" unique_id=1733109219]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda2" unique_id=268989996]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda3" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2" unique_id=1207062148]
+transform = Transform3D(1, 0, 1.7763568e-15, 0, 1, 0, 0, 0, 1, 0, 0, 1968.58)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda3" unique_id=1061041800]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda3" unique_id=227780797]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda3" unique_id=820958506]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda3" unique_id=508594230]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda3" unique_id=1785655692]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda4" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2" unique_id=1865870149]
+transform = Transform3D(1, 0, 1.7763568e-15, 0, 1, 0, 0, 0, 1, 0, 0, 2963.496)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda4" unique_id=1512565241]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda4" unique_id=1344019390]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda4" unique_id=1773459338]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda4" unique_id=303241145]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda4" unique_id=834198183]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda5" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2" unique_id=130760294]
+transform = Transform3D(1, 0, 2.6645353e-15, 0, 1, 0, 0, 0, 1, 0, 0, 3959.498)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda5" unique_id=95816724]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda5" unique_id=730769038]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda5" unique_id=762821835]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda5" unique_id=1579798111]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda5" unique_id=73710033]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda6" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2" unique_id=1503281880]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 0, 0, 4951.1255)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda6" unique_id=561129953]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda6" unique_id=1706486214]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda6" unique_id=2044224549]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda6" unique_id=878566297]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda6" unique_id=1147414764]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Celda7" type="Node3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2" unique_id=229687446]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 0, 0, 5928.045)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda7" unique_id=1805447847]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, -0.5, -120.9917)
+use_collision = true
+size = Vector3(205.5044, 1, 469.0285)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda7" unique_id=2128990696]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.027025, -491.4463)
+use_collision = true
+size = Vector3(271.7434, 50.054047, 205.63737)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda7" unique_id=1824822729]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 62.592896, 25.18902, 244.85498)
+use_collision = true
+size = Vector3(269.95715, 50.378036, 205.63737)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda7" unique_id=1271535076]
+transform = Transform3D(1, 0, 3.5527137e-15, 0, 1, 0, 0, 0, 1, 62.54883, 36.083065, -123.7229)
+use_collision = true
+size = Vector3(205.5044, 28.221802, 472.81964)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto/Carcel/Celdas2/Celda7" unique_id=2024231014]
+transform = Transform3D(-4.3711395e-08, 0, 1, 0, 1, 0, -1, 0, -4.371138e-08, 164.3363, 11.48288, -124.74756)
+use_collision = true
+size = Vector3(476.52887, 22.96576, 2.1506767)
+material = SubResource("WallMat")
+
+[node name="Cuarto2" type="Node3D" parent="NavigationRegion3D/Geometria2" unique_id=1269865269]
+transform = Transform3D(0.03199464, 0, 0, 0, 1, 0, 0, 0, 1, 111.8438, 0, 42.56218)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto2" unique_id=1871404337]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 370.95422, -0.5, 47.812103)
+use_collision = true
+size = Vector3(879.02515, 1, 47.077545)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto2" unique_id=534643090]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 369.8086, 11.48288, 26.321075)
+use_collision = true
+size = Vector3(3.640854, 22.96576, 877.20654)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto2" unique_id=1995524521]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 367.51563, 11.48288, 69.52496)
+use_collision = true
+size = Vector3(3.640854, 22.96576, 888.60815)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto2" unique_id=2076574698]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 363.39978, 21.719778, 47.557304)
+use_collision = true
+size = Vector3(887.75055, 6.679199, 45.916855)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto2" unique_id=84458460]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 797.8563, 11.48288, 47.218193)
+use_collision = true
+size = Vector3(45.435116, 22.96576, 21.111206)
+material = SubResource("WallMat")
+
+[node name="Cuarto3" type="Node3D" parent="NavigationRegion3D/Geometria2" unique_id=1192923001]
+transform = Transform3D(0.03199464, 0, 0, 0, 1, 0, 0, 0, 1, 84.03622, 0, 22.213833)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto3" unique_id=687037099]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 370.95422, -0.5, 47.812103)
+use_collision = true
+size = Vector3(879.02515, 1, 47.077545)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto3" unique_id=1605838461]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 369.8086, 11.48288, 26.321075)
+use_collision = true
+size = Vector3(3.640854, 22.96576, 877.20654)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto3" unique_id=266013067]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 367.51563, 11.48288, 69.52496)
+use_collision = true
+size = Vector3(3.640854, 22.96576, 888.60815)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto3" unique_id=951894583]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 363.39978, 21.719778, 47.557304)
+use_collision = true
+size = Vector3(887.75055, 6.679199, 45.916855)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto3" unique_id=334328429]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 797.85614, 11.48288, 36.275433)
+use_collision = true
+size = Vector3(23.54959, 22.96576, 21.111206)
+material = SubResource("WallMat")
+
+[node name="Cuarto4" type="Node3D" parent="NavigationRegion3D/Geometria2" unique_id=1041364060]
+transform = Transform3D(0.03199464, 0, 0, 0, 1, 0, 0, 0, 1, 56.155796, 0, 20.069942)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto4" unique_id=1071820103]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 370.95416, -0.5, 45.322453)
+use_collision = true
+size = Vector3(879.02515, 1, 52.05684)
+material = SubResource("FloorMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto4" unique_id=438059384]
+transform = Transform3D(0.020730361, 0, 0.9997852, 0, 1, 0, -0.9997851, 0, 0.020730361, 357.06104, 11.48288, 60.832737)
+use_collision = true
+size = Vector3(3.640854, 22.96576, 888.60815)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto4" unique_id=429919241]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 363.39978, 21.719778, 47.557304)
+use_collision = true
+size = Vector3(887.75055, 6.679199, 45.916855)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto4" unique_id=1638223744]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 714.74347, 11.48288, 33.59756)
+use_collision = true
+size = Vector3(28.905342, 22.96576, 187.33588)
+material = SubResource("WallMat")
+
+[node name="WallLeft10" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Cuarto4" unique_id=1600748340]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 24.663574, 11.48288, 37.06074)
+use_collision = true
+size = Vector3(38.437202, 22.96576, 187.33588)
+material = SubResource("WallMat")
+
+[node name="Acensor" type="Node3D" parent="NavigationRegion3D/Geometria2" unique_id=787993498]
+transform = Transform3D(0.03199464, 0, 0, 0, 1, 0, 0, 0, 1, 53.613564, 0, -176.11331)
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Acensor" unique_id=1053551964]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 370.95428, -0.5, 55.562202)
+use_collision = true
+size = Vector3(879.02515, 1, 31.577347)
+material = SubResource("FloorMat")
+
+[node name="WallLeft7" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Acensor" unique_id=691499519]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 369.8086, 11.48288, 41.863422)
+use_collision = true
+size = Vector3(3.640854, 22.96576, 877.20654)
+material = SubResource("WallMat")
+
+[node name="WallLeft8" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Acensor" unique_id=426902637]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 25.009338, 11.48288, 56.944897)
+use_collision = true
+size = Vector3(28.801018, 22.96576, 203.5951)
+material = SubResource("WallMat")
+
+[node name="Floor2" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Acensor" unique_id=1318737091]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 363.39984, 21.719778, 54.99941)
+use_collision = true
+size = Vector3(887.75055, 6.679199, 31.032646)
+material = SubResource("FloorMat")
+
+[node name="WallLeft9" type="CSGBox3D" parent="NavigationRegion3D/Geometria2/Acensor" unique_id=28687175]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 964.0226, 11.48288, 54.203674)
+use_collision = true
+size = Vector3(31.46414, 22.96576, 353.4438)
+material = SubResource("WallMat")
+
+[node name="Ascensor" parent="NavigationRegion3D/Geometria2" unique_id=782324341 instance=ExtResource("5_0fl2p")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 65.80616, 0, 41.712444)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=810706425]
+environment = SubResource("Environment")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=536825160]
+transform = Transform3D(0.6781287, -0.60203004, 0.421546, -0.238371, 0.3624019, 0.90102404, -0.69521254, -0.7114946, 0.10224876, 0, 12.985168, 0)
+light_color = Color(0.99999994, 0.950244, 0.75073516, 1)
+
+[node name="Player" parent="." unique_id=42828037 instance=ExtResource("3_dv5df")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.702923, 0.1, 100.76443)
+
+[node name="HUDLayer" parent="." unique_id=1559959340 instance=ExtResource("4_nwt7f")]
+
+[node name="StoryLevelController" type="Node" parent="." unique_id=1532649090]
+script = ExtResource("5_yak6r")
+initial_checkpoint_path = NodePath("")
+level_id = "mapa1"
+next_level_path = "res://scenes/Historia/mapas/mapa_pruebas_1.tscn"
+starting_weapon = "M4"

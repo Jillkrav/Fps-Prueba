@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Compartido/props/prop_base.gd" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+albedo_color = Color(0.55, 0.48, 0.35, 1)
+metallic = 0.0
+roughness = 0.9
+
+[node name="PisoProp" type="StaticBody3D" groups=["props"]]
+script = ExtResource("1_base")
+prop_name = "Piso 4x4"
+
+[node name="FloorMesh" type="CSGBox3D" parent="."]
+use_collision = true
+size = Vector3(4, 0.2, 4)
+material = SubResource("Mat_floor")

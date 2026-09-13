@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StoryNPCVariant" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Npc/story_npc_variant.gd" id="1_variant"]
+
+[resource]
+script = ExtResource("1_variant")
+display_name = "Soldado MP7"
+npc_type_id = "tirador"
+faction_id = 3
+skin_color = Color(0.847, 0.31, 0.247, 1)
+override_max_health = true
+max_health = 90.0
+spawn_mode = 1
+vision_range = 22.0
+vision_fov_degrees = 180.0
+wander_radius = 0.0
+guard_radius = 12.0
+weapon_name = "MP7"
+drop_weapon_on_death = true

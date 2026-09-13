@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StoryLootEntry" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Data/story_loot_entry.gd" id="1_loot"]
+
+[resource]
+script = ExtResource("1_loot")
+loot_type = 0
+chance = 1.0
+amount = 1
+spread_radius = 0.7
+weapon_name = "MP7"
+magazine_ammo = -1
+reserve_ammo = -1
+persistent_on_floor = false

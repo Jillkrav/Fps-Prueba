@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Multiplayer/ai/bot_behaviors/teddy_animator.gd" id="1_animator"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/objetos/skins/teddy/teddy_skin.tscn" id="2_model"]
+
+[node name="TeddyModel" type="Node3D" unique_id=32968098]
+script = ExtResource("1_animator")
+
+[node name="Character" parent="." unique_id=1826746335 instance=ExtResource("2_model")]

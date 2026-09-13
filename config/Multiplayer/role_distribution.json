@@ -1,0 +1,5 @@
+{
+	"base_roles": ["VERSATIL", "ASALTO", "FLANQUEADOR", "DEFENSOR", "PATRULLADOR"],
+	"specialist_roles": ["FRANCOTIRADOR", "APOYO"],
+	"specialist_frequency": 0.15
+}

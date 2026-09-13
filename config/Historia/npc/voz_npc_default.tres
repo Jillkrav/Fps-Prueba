@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="StoryNpcVoice" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Npc/story_npc_voice.gd" id="1_voice"]
+
+[resource]
+script = ExtResource("1_voice")
+enabled = true
+line_chance = 0.8
+global_cooldown = 8.0
+line_display_time = 2.5
+lines = {
+"deteccion_confirmado": ["¡Enemigo a la vista!", "¡Ahí está!", "¡Contacto!"],
+"deteccion_pidiendo_ayuda": ["¡Ayuda aquí!", "¡Necesito refuerzos!", "¡Que alguien venga!"],
+"en_combate_disparando": ["¡Fuego!", "¡Recibe!", "¡Toma esto!"],
+"en_combate_en_cobertura": ["¡Cubriéndome!", "¡Aquí no me alcanzas!"],
+"en_combate_recargando": ["¡Recargando!", "¡Cubran un momento!"],
+"gano_combate_vigilando": ["¡Zona despejada!", "¡Listo!", "¡Se acabó!"],
+"muerto": ["¡Agh!", "..."],
+"corriendo_apurarse": ["¡Ahi voy!", "¡Voy corriendo!", "¡Ya voy!"],
+"corriendo_huida": ["¡Me largo!", "¡Retirada!", "¡Cúbranme!"],
+"corriendo_persiguiendo": ["¡No se me escapa!", "¡Te tengo!", "¡Ven aquí!"]
+}

@@ -1,0 +1,40 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Interactables/story_checkpoint.gd" id="1_checkpoint"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_checkpoint"]
+size = Vector3(2.0, 3.0, 2.0)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_checkpoint"]
+top_radius = 0.12
+bottom_radius = 0.35
+height = 2.2
+
+[sub_resource type="StandardMaterial3D" id="Mat_checkpoint"]
+albedo_color = Color(0.25, 0.65, 1, 1)
+emission_enabled = true
+emission = Color(0.15, 0.45, 1, 1)
+emission_energy_multiplier = 1.5
+
+[node name="StoryCheckpoint" type="Area3D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_checkpoint")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1.5, 0)
+shape = SubResource("BoxShape_checkpoint")
+
+[node name="CheckpointMesh" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.1, 0)
+mesh = SubResource("CylinderMesh_checkpoint")
+material_override = SubResource("Mat_checkpoint")
+
+[node name="Label3D" type="Label3D" parent="."]
+position = Vector3(0, 2.6, 0)
+outline_size = 5
+pixel_size = 0.006
+billboard = 1
+
+[node name="SpawnMarker" type="Marker3D" parent="."]
+position = Vector3(0, 0.15, 1.5)

@@ -1,0 +1,113 @@
+[gd_scene format=3]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_map3"]
+sky_horizon_color = Color(0.75, 0.6, 0.45, 1)
+ground_horizon_color = Color(0.6, 0.5, 0.35, 1)
+
+[sub_resource type="Sky" id="Sky_map3"]
+sky_material = SubResource("ProceduralSkyMaterial_map3")
+
+[sub_resource type="Environment" id="Environment_map3"]
+background_mode = 2
+sky = SubResource("Sky_map3")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_map3"]
+vertices = PackedVector3Array(-41.07202, 1.2705755, 6.5, -27.822021, 1.2705755, 6.5, -27.822021, 0.5205755, 4.75, -26.822021, 0.27057552, 4.75, -27.072021, 0.27057552, 19.5, -26.822021, 0.27057552, 23.5, 5.1779785, 0.27057552, 23.75, 18.677979, 0.27057552, -15.25, 19.177979, 0.5205755, -15.25, 19.177979, 0.27057552, -39.5, -41.32202, 0.27057552, -23, -27.322021, 0.27057552, -23.25, -41.097023, 0.27057552, 3.5499992, -27.322021, 0.27057552, -39.5, 18.677979, 0.27057552, 6, 19.677979, 0.5205755, -15.25, 19.677979, 2.0205755, -13.25, 27.177979, 2.0205755, -13.25, 27.177979, 0.5205755, -15.25, 28.177979, 0.27057552, -15.25, 39.42798, 0.27057552, -14, 39.42798, 0.27057552, -39.5, 28.177979, 0.27057552, -13.75, 19.677979, -2.7294245, -19.75, 19.677979, -2.2294245, -19, 27.177979, -2.2294245, -19, 27.177979, -2.7294245, -19.75, 28.177979, 0.27057552, 4.75, 39.42798, 0.27057552, 5, 27.677979, 13.020576, 6.5, 27.677979, 13.020576, 3, 27.177979, 13.020576, 2.75, 20.177979, 11.270576, 0.25, 20.177979, 13.020576, 6.5, 20.177979, 13.020576, 2.75, 19.677979, 11.270576, 0, 19.677979, 4.7705755, -8.833332, 19.927979, 0.27057552, -11.75, 19.927979, 0.27057552, 2.75, 26.927979, 0.27057552, 2.75, 26.927979, 0.27057552, -11.75, -17.322021, 13.270576, 22.25, -11.8220215, 13.270576, 22.25, -11.8220215, 13.270576, -0.25, -17.322021, 13.270576, -0.25, -10.8220215, 13.770576, -0.25, -10.8220215, 13.770576, 8.25, 19.177979, 13.770576, 8.25, 19.177979, 13.770576, -0.25, 27.927979, 0.27057552, 6.5, 5.4279785, 0.5205755, 24.75, 3.4279785, 2.2705755, 24.75, 3.4279785, 2.2705755, 39.25, 5.4279785, 0.5205755, 39.25, 5.4279785, 0.5205755, 39.75, 39.42798, 0.27057552, 39.75, 18.927979, 0.27057552, 6.5, -41.07202, 13.020576, 39.25, -39.82202, 13.020576, 39.25, -39.57202, 13.020576, 38.75, -27.822021, 13.020576, 38.75, -40.82202, 0.27057552, 10.5, -40.82202, 0.5205755, 13.75, -28.072021, 0.5205755, 13.75, -28.072021, 0.27057552, 10.5, -27.322021, 0.27057552, 23.75, -41.32202, 0.27057552, 19.5, -41.32202, 0.27057552, 39.25, -27.322021, 0.27057552, 39.25, -11.5720215, 13.270576, 24.5, -17.322021, 13.270576, 38.75, -9.911306, 13.270576, 38.928574, -8.844749, 12.520576, 24.545456, -10.208385, 13.270576, 24.522728, -10.346901, 13.270576, 27.48487, -38.82202, 13.770576, 39.75, -38.82202, 13.770576, 48.5, -1.3220215, 13.770576, 48.5, -1.3220215, 13.770576, 39.75)
+polygons = [PackedInt32Array(2, 1, 0), PackedInt32Array(4, 3, 5), PackedInt32Array(5, 3, 6), PackedInt32Array(9, 8, 7), PackedInt32Array(0, 12, 2), PackedInt32Array(2, 12, 10), PackedInt32Array(2, 10, 11), PackedInt32Array(11, 13, 3), PackedInt32Array(3, 13, 6), PackedInt32Array(6, 13, 7), PackedInt32Array(7, 13, 9), PackedInt32Array(3, 2, 11), PackedInt32Array(7, 14, 6), PackedInt32Array(18, 17, 15), PackedInt32Array(15, 17, 16), PackedInt32Array(20, 19, 21), PackedInt32Array(21, 19, 9), PackedInt32Array(20, 22, 19), PackedInt32Array(15, 8, 9), PackedInt32Array(18, 15, 9), PackedInt32Array(19, 18, 9), PackedInt32Array(26, 25, 23), PackedInt32Array(23, 25, 24), PackedInt32Array(22, 20, 27), PackedInt32Array(27, 20, 28), PackedInt32Array(30, 29, 31), PackedInt32Array(31, 29, 33), PackedInt32Array(31, 33, 34), PackedInt32Array(31, 34, 32), PackedInt32Array(32, 35, 31), PackedInt32Array(31, 35, 36), PackedInt32Array(31, 36, 16), PackedInt32Array(31, 16, 17), PackedInt32Array(40, 39, 37), PackedInt32Array(37, 39, 38), PackedInt32Array(44, 43, 41), PackedInt32Array(41, 43, 42), PackedInt32Array(48, 47, 45), PackedInt32Array(45, 47, 46), PackedInt32Array(28, 49, 27), PackedInt32Array(53, 52, 50), PackedInt32Array(50, 52, 51), PackedInt32Array(55, 54, 53), PackedInt32Array(56, 6, 14), PackedInt32Array(6, 56, 50), PackedInt32Array(50, 56, 49), PackedInt32Array(49, 28, 50), PackedInt32Array(50, 28, 53), PackedInt32Array(53, 28, 55), PackedInt32Array(58, 57, 59), PackedInt32Array(59, 57, 0), PackedInt32Array(60, 59, 1), PackedInt32Array(1, 59, 0), PackedInt32Array(64, 63, 61), PackedInt32Array(61, 63, 62), PackedInt32Array(5, 65, 4), PackedInt32Array(4, 65, 66), PackedInt32Array(68, 67, 65), PackedInt32Array(65, 67, 66), PackedInt32Array(42, 69, 41), PackedInt32Array(41, 69, 70), PackedInt32Array(69, 74, 70), PackedInt32Array(70, 74, 71), PackedInt32Array(71, 74, 52), PackedInt32Array(52, 74, 51), PackedInt32Array(51, 74, 72), PackedInt32Array(72, 74, 73), PackedInt32Array(73, 74, 69), PackedInt32Array(78, 77, 75), PackedInt32Array(75, 77, 76)]
+agent_height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.22, 0.2, 0.18, 1)
+
+[node name="Map3" type="Node3D" unique_id=1988263036]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=981507467]
+environment = SubResource("Environment_map3")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1256199829]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 12, 0)
+shadow_enabled = true
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=72137557]
+navigation_mesh = SubResource("NavigationMesh_map3")
+
+[node name="Piso" type="Node3D" parent="NavigationRegion3D" unique_id=1883094146]
+
+[node name="FloorFull" type="CSGBox3D" parent="NavigationRegion3D/Piso" unique_id=531981491]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.1796875, -1.515625, -8.104561)
+use_collision = true
+size = Vector3(67.640625, 3.03125, 63.79088)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="FloorFull2" type="CSGBox3D" parent="NavigationRegion3D/Piso" unique_id=1919034152]
+transform = Transform3D(1, 0, 0, 0, 0.9396926, 0.34202012, 0, -0.34202012, 0.9396926, -34.486732, 4.86394, 22.22421)
+use_collision = true
+size = Vector3(14.011719, 3.03125, 38.282036)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="FloorFull3" type="CSGBox3D" parent="NavigationRegion3D/Piso" unique_id=1718993263]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.403748, -1.515625, 8.032696)
+use_collision = true
+size = Vector3(14.836548, 3.03125, 63.063286)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="Escalera" type="Node3D" parent="NavigationRegion3D/Piso" unique_id=1285585567]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1365948, 0, 0)
+
+[node name="FloorFull31" type="CSGBox3D" parent="NavigationRegion3D/Piso/Escalera" unique_id=758906913]
+transform = Transform3D(0.7660443, 0.6427875, 0, -0.6427875, 0.7660443, 0, 0, 0, 0.99999994, -0.061623096, 6.314246, 32.03035)
+use_collision = true
+size = Vector3(19.74554, 0.12207031, 15.116645)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="pisos techos" type="Node3D" parent="NavigationRegion3D/Piso" unique_id=1525809898]
+
+[node name="FloorFull10" type="CSGBox3D" parent="NavigationRegion3D/Piso/pisos techos" unique_id=1017385001]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -20.118475, 13.255135, 44.247875)
+use_collision = true
+size = Vector3(38.319363, 0.08190918, 9.618281)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="FloorFull11" type="CSGBox3D" parent="NavigationRegion3D/Piso/pisos techos" unique_id=1671399227]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 4.200224, 13.2718725, 3.8946981)
+use_collision = true
+size = Vector3(30.596977, 0.08190918, 9.212818)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="FloorFull12" type="CSGBox3D" parent="NavigationRegion3D/Piso/pisos techos" unique_id=1037275851]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 23.62948, 12.600126, 4.787629)
+use_collision = true
+size = Vector3(9.0672035, 0.08190918, 4.152579)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="FloorFull13" type="CSGBox3D" parent="NavigationRegion3D/Piso/pisos techos" unique_id=1156382275]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -14.594917, 12.739212, 19.246223)
+use_collision = true
+size = Vector3(6.16156, 0.08190918, 39.91587)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="FloorFull14" type="CSGBox3D" parent="NavigationRegion3D/Piso/pisos techos" unique_id=923015567]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -10.798571, 12.497726, 31.653028)
+use_collision = true
+size = Vector3(2.0404282, 0.5648804, 15.102259)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="Pasarela" type="Node3D" parent="NavigationRegion3D/Piso" unique_id=1314323158]
+
+[node name="FloorFull4" type="CSGBox3D" parent="NavigationRegion3D/Piso/Pasarela" unique_id=415401714]
+transform = Transform3D(1, 0, 0, 0, 0.819152, 0.5735764, 0, -0.5735764, 0.819152, 23.495695, -0.1436156, -6.282933)
+use_collision = true
+size = Vector3(8.27887, 10.467834, 28.935764)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="FloorFull4" type="CSGBox3D" parent="NavigationRegion3D/Piso" unique_id=1430075516]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.884277, -1.515625, 31.317467)
+use_collision = true
+size = Vector3(38.231445, 3.03125, 17.692427)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="Navegacion" type="Node3D" parent="." unique_id=1407014108]
+
+[node name="Asalto" type="Node3D" parent="Navegacion" unique_id=64552685]

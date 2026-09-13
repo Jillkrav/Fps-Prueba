@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="StoryDifficultySettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Npc/story_difficulty_settings.gd" id="1_diff"]
+
+[resource]
+script = ExtResource("1_diff")
+level = 1
+damage_dealt = Array[float]([0.6, 1.0, 1.4])
+fire_interval = Array[float]([1.5, 1.0, 1.0])
+fire_extra_interval_base = 0.35
+accuracy_delta = Array[float]([-0.15, 0.0, 0.1])
+cover_threshold = Array[float]([0.6, 1.0, 1.4])
+reaction = Array[float]([1.5, 1.0, 0.75])

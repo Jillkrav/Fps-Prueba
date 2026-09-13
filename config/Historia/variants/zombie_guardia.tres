@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="StoryNPCVariant" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Npc/story_npc_variant.gd" id="1_variant"]
+
+[resource]
+script = ExtResource("1_variant")
+display_name = "Zombie guardia"
+npc_type_id = "cuerpo_a_cuerpo"
+faction_id = 2
+skin_color = Color(0.373, 0.749, 0.31, 1)
+spawn_mode = 1
+vision_range = 14.0
+vision_fov_degrees = 160.0
+wander_radius = 0.0
+guard_radius = 8.0

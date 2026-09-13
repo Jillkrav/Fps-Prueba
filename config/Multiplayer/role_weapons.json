@@ -1,0 +1,94 @@
+{
+	"VERSATIL": {
+		"preferred_categories": [
+			"Rifles",
+            "Explosivas"
+		],
+		"preferred_weapons": [
+			"AUG",
+			"G36",
+			"M4",
+            "Bazooka"
+		],
+		"category_bonus": 1.3
+	},
+	"ASALTO": {
+		"preferred_categories": [
+			"Rifles",
+			"Subfusiles",
+            "Escopetas"
+		],
+		"preferred_weapons": [
+			"M4",
+			"AUG",
+			"G36",
+			"MP5",
+            "Spas12"
+		],
+		"category_bonus": 1.25
+	},
+	"FLANQUEADOR": {
+		"preferred_categories": [
+			"Subfusiles",
+			"Pistolas",
+            "Arrojadizas"
+		],
+		"preferred_weapons": [
+			"MP5",
+			"MP7",
+			"USP",
+			"Deagle",
+            "Cuchillo"
+		],
+		"category_bonus": 1.35
+	},
+	"DEFENSOR": {
+		"preferred_categories": [
+			"Rifles",
+            "Escopetas"
+		],
+		"preferred_weapons": [
+			"M4",
+			"G36",
+            "Spas12"
+		],
+		"category_bonus": 1.2
+	},
+	"PATRULLADOR": {
+		"preferred_categories": [
+			"Subfusiles",
+            "Rifles"
+		],
+		"preferred_weapons": [
+			"MP5",
+			"G36",
+            "AUG"
+		],
+		"category_bonus": 1.2
+	},
+	"FRANCOTIRADOR": {
+		"preferred_categories": [
+            "Francotiradores"
+		],
+		"preferred_weapons": [
+			"AWP",
+            "Scout"
+		],
+		"category_bonus": 1.4
+	},
+	"APOYO": {
+		"preferred_categories": [
+			"Rifles",
+			"Explosivas",
+            "Escopetas"
+		],
+		"preferred_weapons": [
+			"M4",
+			"G36",
+			"Bazooka",
+			"LanzaGranadas",
+            "Spas12"
+		],
+		"category_bonus": 1.3
+	}
+}

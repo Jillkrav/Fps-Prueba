@@ -1,0 +1,220 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Compartido/ui/main_menu.gd" id="1_main_menu"]
+[ext_resource type="PackedScene" path="res://scenes/Compartido/options_menu.tscn" id="2_options_menu"]
+
+[node name="MainMenu" type="Control" unique_id=307483974]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main_menu")
+
+[node name="Background" type="ColorRect" parent="." unique_id=407610657]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.14, 0.18, 1)
+
+[node name="MenuPanel" type="Panel" parent="." unique_id=7106524]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="MenuPanel" unique_id=222656730]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 100.0
+offset_right = 200.0
+offset_bottom = 180.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 48
+text = "FPS SURVIVAL PROTO"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Buttons" type="VBoxContainer" parent="MenuPanel" unique_id=1773085129]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -50.0
+offset_right = 150.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="BtnCampaña" type="Button" parent="MenuPanel/Buttons" unique_id=927241284]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "CAMPAÑA"
+
+[node name="BtnMultijugador" type="Button" parent="MenuPanel/Buttons" unique_id=937241284]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "MULTIJUGADOR"
+
+[node name="BtnCharacter" type="Button" parent="MenuPanel/Buttons" unique_id=654139594]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "PERSONAJE"
+
+[node name="BtnOptions" type="Button" parent="MenuPanel/Buttons" unique_id=1111111111]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "OPCIONES"
+
+[node name="BtnSalir" type="Button" parent="MenuPanel/Buttons" unique_id=1028488337]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "SALIR"
+
+[node name="OptionsMenu" parent="." unique_id=-2072745074 instance=ExtResource("2_options_menu")]
+visible = false
+layout_mode = 1
+
+[node name="MapPanel" type="Panel" parent="." unique_id=2060649838]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="MapPanel" unique_id=221653655]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 80.0
+offset_right = 250.0
+offset_bottom = 150.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 36
+text = "SELECCIONAR MAPA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContentArea" type="HBoxContainer" parent="MapPanel" unique_id=95677205]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -420.0
+offset_top = -180.0
+offset_right = 420.0
+offset_bottom = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 40
+
+[node name="MapScroll" type="ScrollContainer" parent="MapPanel/ContentArea" unique_id=1058980850]
+custom_minimum_size = Vector2(450, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MapList" type="VBoxContainer" parent="MapPanel/ContentArea/MapScroll" unique_id=1766848213]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="RightPanel" type="VBoxContainer" parent="MapPanel/ContentArea" unique_id=565230054]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="MaxPlayersLabel" type="Label" parent="MapPanel/ContentArea/RightPanel" unique_id=1706585868]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "MAXIMO DE JUGADORES"
+horizontal_alignment = 1
+
+[node name="MaxPlayersSpin" type="SpinBox" parent="MapPanel/ContentArea/RightPanel" unique_id=848028898]
+custom_minimum_size = Vector2(180, 50)
+layout_mode = 2
+min_value = 1.0
+value = 10.0
+alignment = 1
+
+[node name="DifficultyLabel" type="Label" parent="MapPanel/ContentArea/RightPanel" unique_id=1920940804]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "DIFICULTAD DE BOTS"
+horizontal_alignment = 1
+
+[node name="DifficultyOption" type="OptionButton" parent="MapPanel/ContentArea/RightPanel" unique_id=186592945]
+custom_minimum_size = Vector2(180, 50)
+layout_mode = 2
+
+[node name="CharacterLabel" type="Label" parent="MapPanel/ContentArea/RightPanel" unique_id=1462039445]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "SKIN DEL JUGADOR"
+horizontal_alignment = 1
+
+[node name="CharacterOption" type="OptionButton" parent="MapPanel/ContentArea/RightPanel" unique_id=2140016484]
+custom_minimum_size = Vector2(180, 50)
+layout_mode = 2
+
+[node name="BotSkinsButton" type="Button" parent="MapPanel/ContentArea/RightPanel" unique_id=1159110727]
+custom_minimum_size = Vector2(180, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "SKINS DE BOTS"
+
+[node name="BottomBar" type="HBoxContainer" parent="MapPanel" unique_id=1123466412]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -420.0
+offset_top = -100.0
+offset_right = 420.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 40
+
+[node name="BtnMapBack" type="Button" parent="MapPanel/BottomBar" unique_id=2112402719]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "VOLVER"
+
+[node name="BtnPlay" type="Button" parent="MapPanel/BottomBar" unique_id=626788116]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+disabled = true
+text = "JUGAR"
+
+[connection signal="pressed" from="MenuPanel/Buttons/BtnCampaña" to="." method="_on_campana_pressed"]
+[connection signal="pressed" from="MenuPanel/Buttons/BtnMultijugador" to="." method="_on_multijugador_pressed"]
+[connection signal="pressed" from="MenuPanel/Buttons/BtnCharacter" to="." method="_on_character_pressed"]
+[connection signal="pressed" from="MenuPanel/Buttons/BtnOptions" to="." method="_on_options_pressed"]
+[connection signal="pressed" from="MenuPanel/Buttons/BtnSalir" to="." method="_on_salir_pressed"]
+[connection signal="value_changed" from="MapPanel/ContentArea/RightPanel/MaxPlayersSpin" to="." method="_on_max_players_changed"]
+[connection signal="pressed" from="MapPanel/BottomBar/BtnMapBack" to="." method="_on_map_back_pressed"]
+[connection signal="pressed" from="MapPanel/BottomBar/BtnPlay" to="." method="_on_play_pressed"]

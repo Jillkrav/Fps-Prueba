@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="PropLibraryConfig" format=3]
+
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/prop_library_config.gd" id="1_config"]
+
+[resource]
+script = ExtResource("1_config")
+default_collision_layer = 1
+default_collision_mask = 0
+bot_clearance_height = 1.8
+bot_clearance_radius = 0.65
+cover_standoff_distance = 0.9
+default_avoidance_weight = 5.0

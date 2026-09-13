@@ -1,0 +1,53 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Historia/Interactables/story_door.gd" id="1_door"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_door"]
+albedo_color = Color(0.16, 0.32, 0.42, 1)
+metallic = 0.4
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_door"]
+size = Vector3(2.2, 3, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape_door"]
+size = Vector3(2.2, 3, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape_interaction"]
+size = Vector3(3.8, 3.2, 3)
+
+[node name="StoryDoor" type="Node3D" unique_id=1389727901]
+script = ExtResource("1_door")
+
+[node name="DoorPivot" type="Node3D" parent="." unique_id=2009539540]
+
+[node name="DoorBody" type="StaticBody3D" parent="DoorPivot" unique_id=166078685]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1, 1.5, 0)
+
+[node name="DoorMesh" type="MeshInstance3D" parent="DoorPivot/DoorBody" unique_id=1649904364]
+material_override = SubResource("Mat_door")
+mesh = SubResource("BoxMesh_door")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPivot/DoorBody" unique_id=1533116173]
+shape = SubResource("BoxShape_door")
+
+[node name="InteractionArea" type="Area3D" parent="." unique_id=2130137564]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=330832256]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1, 1.5, 0)
+shape = SubResource("BoxShape_interaction")
+
+[node name="PromptLabel" type="Label3D" parent="." unique_id=1731235752]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1, 3.5, 0)
+pixel_size = 0.006
+billboard = 1
+modulate = Color(0.8, 0.95, 1, 1)
+outline_size = 5
+
+[node name="AutoCloseTimer" type="Timer" parent="." unique_id=1562937900]
+one_shot = true
+
+[node name="NpcCloseTimer" type="Timer" parent="." unique_id=4117753000]
+one_shot = true

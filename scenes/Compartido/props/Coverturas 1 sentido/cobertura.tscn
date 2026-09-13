@@ -1,0 +1,61 @@
+[gd_scene format=3 uid="uid://hxcsf5mf7qwk"]
+
+[ext_resource type="Script" uid="uid://c8fcvadx6dc3v" path="res://Scripts/Multiplayer/props/one_way_low_wall_prop.gd" id="1_rgdc1"]
+[ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_cq8ei"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/cover_point.tscn" id="3_pq22k"]
+
+[sub_resource type="StandardMaterial3D" id="Material_back"]
+albedo_color = Color(0.08, 0.32, 0.88, 1)
+metallic = 0.2
+roughness = 0.52
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(5, 1.2, 0.45)
+
+[sub_resource type="StandardMaterial3D" id="Material_front"]
+albedo_color = Color(0.9, 0.16, 0.12, 1)
+metallic = 0.2
+roughness = 0.58
+
+[sub_resource type="BoxMesh" id="BoxMesh_front_marker"]
+size = Vector3(4.7, 0.92, 0.035)
+
+[sub_resource type="BoxMesh" id="BoxMesh_back_marker"]
+size = Vector3(4.7, 0.92, 0.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape_wall"]
+size = Vector3(5, 1.2, 0.45)
+
+[node name="OneWayLowWall" type="StaticBody3D" unique_id=2116448634]
+collision_mask = 0
+script = ExtResource("1_rgdc1")
+prop_id = &"cover_one_way_low_wall"
+tactical_use = 4
+library_config = ExtResource("2_cq8ei")
+prop_name = "Muro bajo de un sentido"
+
+[node name="Visual" type="MeshInstance3D" parent="." unique_id=337222508]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+material_override = SubResource("Material_back")
+mesh = SubResource("BoxMesh_wall")
+
+[node name="FrontRed" type="MeshInstance3D" parent="." unique_id=657471863]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0.243)
+material_override = SubResource("Material_front")
+mesh = SubResource("BoxMesh_front_marker")
+
+[node name="BackBlue" type="MeshInstance3D" parent="." unique_id=2049863389]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -0.243)
+material_override = SubResource("Material_back")
+mesh = SubResource("BoxMesh_back_marker")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=335836364]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("BoxShape_wall")
+
+[node name="CoverBack" parent="." unique_id=1647843770 instance=ExtResource("3_pq22k")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.05)
+cover_type = 3
+coverage_radius = 2.4
+priority = 1.85
+max_occupants = 2

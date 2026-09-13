@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/map_wall_prop.gd" id="1_script"]
+[ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
+[ext_resource type="Material" path="res://assets/Multiplayer/props/materials/prop_concrete_gray.tres" id="3_material"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(6, 3, 0.35)
+
+[sub_resource type="BoxShape3D" id="BoxShape_wall"]
+size = Vector3(6, 3, 0.35)
+
+[node name="MapWall" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+prop_name = "Pared de mapa"
+prop_id = &"wall_map"
+library_config = ExtResource("2_config")
+wall_category = &"building"
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.5, 0)
+mesh = SubResource("BoxMesh_wall")
+material_override = ExtResource("3_material")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1.5, 0)
+shape = SubResource("BoxShape_wall")

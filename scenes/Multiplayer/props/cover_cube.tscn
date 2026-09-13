@@ -1,0 +1,52 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Multiplayer/props/cover_cube_prop.gd" id="1_script"]
+[ext_resource type="Resource" path="res://config/Multiplayer/props/prop_library_defaults.tres" id="2_config"]
+[ext_resource type="Material" path="res://assets/Multiplayer/props/materials/prop_hazard_red.tres" id="3_material"]
+[ext_resource type="PackedScene" path="res://scenes/Multiplayer/props/cover_point.tscn" id="4_cover"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_cube"]
+size = Vector3(2, 2.2, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape_cube"]
+size = Vector3(2, 2.2, 2)
+
+[node name="CoverCube" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+prop_name = "Cubo de cobertura"
+prop_id = &"cover_cube"
+tactical_use = 3
+library_config = ExtResource("2_config")
+cover_priority = 1.0
+max_occupants = 4
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.1, 0)
+mesh = SubResource("BoxMesh_cube")
+material_override = ExtResource("3_material")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1.1, 0)
+shape = SubResource("BoxShape_cube")
+
+[node name="CoverNorth" parent="." instance=ExtResource("4_cover")]
+position = Vector3(0, 0, 1.55)
+coverage_radius = 1.1
+facing_direction = Vector3(0, 0, 1)
+
+[node name="CoverSouth" parent="." instance=ExtResource("4_cover")]
+position = Vector3(0, 0, -1.55)
+coverage_radius = 1.1
+facing_direction = Vector3(0, 0, -1)
+
+[node name="CoverEast" parent="." instance=ExtResource("4_cover")]
+position = Vector3(1.55, 0, 0)
+coverage_radius = 1.1
+facing_direction = Vector3(1, 0, 0)
+
+[node name="CoverWest" parent="." instance=ExtResource("4_cover")]
+position = Vector3(-1.55, 0, 0)
+coverage_radius = 1.1
+facing_direction = Vector3(-1, 0, 0)

@@ -1,0 +1,24 @@
+[
+  {
+	"id": "mapa1",
+	"display_name": "Mision 1",
+	"description": "Detener el grupo terrorista",
+  "scene_path": "res://scenes/Historia/mapas/Mapa1.tscn",
+  "objective_text": "Detener el grupo terrorista",
+  "next_level_path": "res://scenes/Historia/mapas/mapa_pruebas_1.tscn",
+  "starting_weapon": "Glock",
+  "respawn_delay": 2.0,
+  "enabled": true
+  },
+  {
+	"id": "mapa_pruebas_1",
+	"display_name": "Mapa de Pruebas 1",
+	"description": "Historia de prueba",
+  "scene_path": "res://scenes/Historia/mapas/mapa_pruebas_1.tscn",
+  "objective_text": "Llega a la salida.",
+  "next_level_path": "",
+  "starting_weapon": "Glock",
+  "respawn_delay": 2.0,
+  "enabled": true
+  }
+]

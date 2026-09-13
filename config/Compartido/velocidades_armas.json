@@ -1,0 +1,100 @@
+{
+	"velocidades": {
+		"USP": {
+			"VA": 5.5,
+			"VD": 5.0
+		},
+		"Glock": {
+			"VA": 5.8,
+			"VD": 6.0
+		},
+		"Deagle": {
+			"VA": 5.0,
+			"VD": 4.5
+		},
+		"M3": {
+			"VA": 4.0,
+			"VD": 3.5
+		},
+		"Spas12": {
+			"VA": 3.7,
+			"VD": 3.3
+		},
+		"Recortada": {
+			"VA": 5.0,
+			"VD": 4.5
+		},
+		"EscopetaAutomatica": {
+			"VA": 4.0,
+			"VD": 3.5
+		},
+		"MP7": {
+			"VA": 5.0,
+			"VD": 4.8
+		},
+		"MP5": {
+			"VA": 5.0,
+			"VD": 4.6
+		},
+		"AUG": {
+			"VA": 3.3,
+			"VD": 2.6
+		},
+		"M4": {
+			"VA": 3.4,
+			"VD": 2.4
+		},
+		"G36": {
+			"VA": 3.6,
+			"VD": 2.2
+		},
+		"Scout": {
+			"VA": 4.0,
+			"VD": 2.0
+		},
+		"AWP": {
+			"VA": 3.0,
+			"VD": 1.5
+		},
+		"Crowbar": {
+			"VA": 6.2,
+			"VD": 6.0
+		},
+		"Tonfa": {
+			"VA": 6.2,
+			"VD": 6.0
+		},
+		"Machete": {
+			"VA": 6.2,
+			"VD": 6.0
+		},
+		"Cuchillo": {
+			"VA": 6.0,
+			"VD": 3.0
+		},
+		"Granada": {
+			"VA": 6.0,
+			"VD": 2.0
+		},
+		"Ballesta": {
+			"VA": 5.0,
+			"VD": 1.5
+		},
+		"LanzaGranadas": {
+			"VA": 3.3,
+			"VD": 1.0
+		},
+		"Bazooka": {
+			"VA": 2.5,
+			"VD": 1.0
+		},
+		"RiflePlasma": {
+			"VA": 5.0,
+			"VD": 4.5
+		},
+		"PistolaPlasma": {
+			"VA": 5.0,
+			"VD": 5.0
+		}
+	}
+}

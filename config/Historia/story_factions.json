@@ -1,0 +1,14 @@
+{
+  "_comentario": "Facciones de los niveles de Historia. Cada facción se define SOLO por su id (int). Los ids están alineados con Enums.Equipo (1=AZUL...), de modo que el daño entre facciones respeta el sistema de fuego amigo existente (GameState). 'hostile_to' marca a qué facciones consideran enemigos (se evalúa de forma simétrica).",
+  "_facciones_definidas": {
+    "1": "Jugador y Aliados (aliados del humano)",
+    "2": "Zombies y Aliens (enemigos PvE)",
+    "3": "Soldados Enemigos (futuro, combate NPC vs NPC)",
+    "4": "Disponible para facción nueva"
+  },
+  "factions": [
+    { "id": 1, "name": "Jugador y Aliados",   "color": "#3d7bf2", "hostile_to": [2, 3] },
+    { "id": 2, "name": "Zombies y Aliens",    "color": "#7cc850", "hostile_to": [1, 3] },
+    { "id": 3, "name": "Soldados Enemigos",   "color": "#e0433e", "hostile_to": [1, 2] }
+  ]
+}

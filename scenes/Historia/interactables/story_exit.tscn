@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://baa8pus2nxxiy"]
+
+[ext_resource type="Script" uid="uid://04yofbgo5uyu" path="res://Scripts/Historia/Interactables/story_exit.gd" id="1_exit"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_exit"]
+size = Vector3(3, 3, 1.5)
+
+[sub_resource type="StandardMaterial3D" id="Mat_exit"]
+transparency = 1
+albedo_color = Color(0.2, 1, 0.3, 0.35)
+emission_enabled = true
+emission = Color(0.1, 1, 0.25, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_exit"]
+size = Vector3(3, 3, 0.08)
+
+[node name="StoryExit" type="Area3D" unique_id=505216798]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_exit")
+destination_scene = ""
+destination_spawn_point = ""
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1099296758]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("BoxShape_exit")
+
+[node name="ExitMesh" type="MeshInstance3D" parent="." unique_id=1846599261]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+material_override = SubResource("Mat_exit")
+mesh = SubResource("BoxMesh_exit")
+
+[node name="StatusLabel" type="Label3D" parent="." unique_id=948095338]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+pixel_size = 0.006
+billboard = 1
+text = "SALIDA"
+outline_size = 5

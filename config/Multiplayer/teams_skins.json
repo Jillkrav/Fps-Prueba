@@ -1,0 +1,12 @@
+{
+  "teams": {
+    "rojo": {
+      "default_skin": "teddy_rojo",
+      "allowed_skins": ["teddy_rojo", "combine"]
+    },
+    "azul": {
+      "default_skin": "teddy_azul",
+      "allowed_skins": ["teddy_azul", "gign"]
+    }
+  }
+}
